@@ -1,0 +1,17 @@
+// a registered pair, both ways round
+>> 'hi' * 2
+>> 2 * 'hi'
+>> 'ab' * 3
+
+// no handler: `+` falls back to the left operand's type
+>> 'hi' + 2
+
+// `=` never crosses types; `≈` promotes and then compares
+>> 'hi' = 2
+>> 'hi' ≈ 2
+>> '12' ≈ 12
+
+// comparisons promote by rank, so position does not change the answer
+>> '12' > 3
+>> 3 < '12'
+>> 1 > true

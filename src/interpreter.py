@@ -1,11 +1,12 @@
 """Walk the AST and run it.
 
 `execute` handles statements (side effects); `evaluate` handles expressions
-(returns a Value). Binary operators are dispatched through grammar tables, so
-the interpreter never mentions an operator character.
+(returns a Value). Binary operators are dispatched through grammar tables and
+their operands reconciled by operations.py, so the interpreter never mentions an
+operator character and never decides what two types mean together.
 """
 
-from src import values
+from src import operations, values
 from src.grammar import BINARY_METHOD, UNARY_METHOD
 from src.nodes import (
     Assignment, BinaryExpression, Boolean, Identifier, If, Number, Print,
@@ -70,10 +71,11 @@ def evaluate(node, env):
 
 
 def apply_binary(operator, left, right, line):
-    # Every value defines every operation, so this always resolves; a stub that
-    # hasn't been filled in raises LynxNotImplemented, which we locate to `line`.
+    # Every value defines every operation and operations.binary reconciles any
+    # pair of types, so this always resolves; a stub that hasn't been filled in
+    # raises LynxNotImplemented, which we locate to `line`.
     try:
-        return getattr(left, BINARY_METHOD[operator])(right)
+        return operations.binary(BINARY_METHOD[operator], left, right)
     except LynxNotImplemented as error:
         if error.line is None:
             error.line = line

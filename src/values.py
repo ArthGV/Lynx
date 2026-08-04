@@ -1,10 +1,15 @@
-"""Runtime values.
+"""Runtime values — what a single value can do.
 
 lynx's rule is that everything works with everything: every operation is defined
 for every type, so there are no "unsupported operand" errors — only operations
 nobody has written yet. `Value` lists the full interface as abstract methods, so
 each type is forced to provide all of them. Fill a stub in by replacing its body
 with real logic.
+
+Combining two *different* types is `operations.py`'s job: it resolves the pair
+before dispatching here, so every method below may assume `other` is its own
+type. Each type owes two declarations for that to work — `rank`, its place in
+the promotion order, and `conversion`, the name of the method that builds one.
 """
 
 from abc import ABC, abstractmethod
@@ -13,7 +18,27 @@ from src.grammar import SPELLING
 from src.errors import LynxNotImplemented
 
 
+def compare_raw(a, b):
+    """-1, 0 or 1 — the shape every type's `compare` returns."""
+    if a == b:
+        return 0
+    return 1 if a > b else -1
+
+
 class Value(ABC):
+    # Declared by every type. `rank` is its place in the promotion order used
+    # for comparisons (higher wins); `conversion` names the method that turns
+    # any other value into this type. __init_subclass__ refuses a type missing
+    # either one, the same way the ABC refuses a type missing an operation.
+    rank = None
+    conversion = None
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        for declaration in ("rank", "conversion"):
+            if getattr(cls, declaration, None) is None:
+                raise TypeError(f"{cls.__name__} must declare `{declaration}`")
+
     def type_name(self):
         return type(self).__name__
 
@@ -22,8 +47,41 @@ class Value(ABC):
         # type, so there is nothing here for a type to stub out.
         return Text(self.type_name())
 
+    def coerce(self, other):
+        # `other` as a value of self's type, built with the conversion method
+        # every type already provides.
+        return getattr(other, self.conversion)()
+
     def todo(self, operation):
         raise LynxNotImplemented(f"'{operation}' is not implemented yet for {self.type_name()}")
+
+    # --- comparisons, derived ------------------------------------------
+    # All seven follow from `compare` and `almost`, so a type never restates
+    # its own ordering and orientation is written once, here: `less` is just
+    # `greater` read the other way round.
+
+    def equals(self, other):
+        # `=` never crosses types — operations.py answers false before we get
+        # here — so reaching this method means the two types already match.
+        return Boolean(self.compare(other) == 0)
+
+    def greater(self, other):
+        return Boolean(self.compare(other) > 0)
+
+    def less(self, other):
+        return Boolean(self.compare(other) < 0)
+
+    def greater_or_equal(self, other):
+        return Boolean(self.compare(other) >= 0)
+
+    def lesser_or_equal(self, other):
+        return Boolean(self.compare(other) <= 0)
+
+    def greater_or_almost(self, other):
+        return Boolean(self.compare(other) > 0 or self.almost(other).is_true())
+
+    def lesser_or_almost(self, other):
+        return Boolean(self.compare(other) < 0 or self.almost(other).is_true())
 
     # Every value must define all of these. Stubs in each type call self.todo(...).
 
@@ -52,26 +110,14 @@ class Value(ABC):
     def power(self, other): ...
     @abstractmethod
     def root(self, other): ...
-
-    # comparisons
-    @abstractmethod
-    def equals(self, other): ...
-    @abstractmethod
-    def almost(self, other): ...
-    @abstractmethod
-    def greater(self, other): ...
-    @abstractmethod
-    def less(self, other): ...
-    @abstractmethod
-    def greater_or_equal(self, other): ...
-    @abstractmethod
-    def lesser_or_equal(self, other): ...
-    @abstractmethod
-    def greater_or_almost(self, other): ...
-    @abstractmethod
-    def lesser_or_almost(self, other): ...
     @abstractmethod
     def xor(self, other): ...
+
+    # ordering: the two primitives the seven comparisons above are built from
+    @abstractmethod
+    def compare(self, other): ...
+    @abstractmethod
+    def almost(self, other): ...
 
     # sequence access
     @abstractmethod
@@ -85,6 +131,9 @@ class Value(ABC):
 
 
 class Number(Value):
+    rank = 3
+    conversion = "number"
+
     def __init__(self, value):
         self.value = float(value)
         if self.value % 1 == 0:
@@ -108,42 +157,32 @@ class Number(Value):
     def divide(self, other):
         return Number(self.value / other.value)
 
-    def greater(self, other):
-        return Boolean(self.value > other.value)
+    def compare(self, other):
+        return compare_raw(self.value, other.value)
 
-    def less(self, other):
-        return Boolean(self.value < other.value)
-
-    def equals(self, other):
-        return Boolean(self.value == other.value)
-
-    def default_value(self): 
+    def default_value(self):
         return 0
-    
+
     def number(self):
         return self
 
-    def text(self): 
+    def text(self):
         return Text(str(self.value))
 
-    def void(self): 
+    def void(self):
         return Void()
 
-    def almost(self, other): 
+    def almost(self, other):
         return Boolean(abs(self.value - other.value) < 1)
 
-    def lenght(self): 
+    def lenght(self):
         return Number(len(str(self.value).replace('.', '').replace('-', '')))
         #return Number(len(str(self.value)))
 
     # --- not implemented yet ---
-    
+
     def power(self, other): self.todo("power")
     def root(self, other): self.todo("root")
-    def greater_or_equal(self, other): self.todo("greater_or_equal")
-    def lesser_or_equal(self, other): self.todo("lesser_or_equal")
-    def greater_or_almost(self, other): self.todo("greater_or_almost")
-    def lesser_or_almost(self, other): self.todo("lesser_or_almost")
     def xor(self, other): self.todo("xor")
     def first(self): self.todo("first")
     def last(self): self.todo("last")
@@ -151,6 +190,9 @@ class Number(Value):
 
 
 class Text(Value):
+    rank = 2
+    conversion = "text"
+
     def __init__(self, value):
         self.value = value
 
@@ -160,22 +202,29 @@ class Text(Value):
     def add(self, other):
         return Text(self.value + other.value)
 
-    def equals(self, other):
-        return Boolean(self.value == other.value)
+    def compare(self, other):
+        # Lexicographic, so 'apple' < 'banana'.
+        return compare_raw(self.value, other.value)
 
     def default_value(self):
         return ''
 
+    def number(self):
+        # The number the text spells, or — when it spells none — how long it is.
+        try:
+            return Number(self.value)
+        except ValueError:
+            return Number(len(self.value))
+
     def text(self):
         return self
 
-    def void(self): 
+    def void(self):
         return Void()
-    
+
 
     # --- not implemented yet ---
-    
-    def number(self): self.todo("number")
+
     def boolean(self): self.todo("boolean")
     def subtract(self, other): self.todo("subtract")
     def multiply(self, other): self.todo("multiply")
@@ -183,12 +232,6 @@ class Text(Value):
     def power(self, other): self.todo("power")
     def root(self, other): self.todo("root")
     def almost(self, other): self.todo("almost")
-    def greater(self, other): self.todo("greater")
-    def less(self, other): self.todo("less")
-    def greater_or_equal(self, other): self.todo("greater_or_equal")
-    def lesser_or_equal(self, other): self.todo("lesser_or_equal")
-    def greater_or_almost(self, other): self.todo("greater_or_almost")
-    def lesser_or_almost(self, other): self.todo("lesser_or_almost")
     def xor(self, other): self.todo("xor")
     def lenght(self): self.todo("lenght")
     def first(self): self.todo("first")
@@ -197,6 +240,9 @@ class Text(Value):
 
 
 class Boolean(Value):
+    rank = 1
+    conversion = "boolean"
+
     def __init__(self, value):
         self.value = bool(value)
 
@@ -206,12 +252,15 @@ class Boolean(Value):
     def default_value(self):
         return False
 
+    def number(self):
+        return Number(1 if self.value else 0)
+
     def boolean(self):
         return self
 
     def text(self):
         return Text(str(self.__repr__()))
-    
+
     def is_true(self):
         return self.value
 
@@ -224,28 +273,19 @@ class Boolean(Value):
     def xor(self, other):
         return Boolean(self.value != other.value)
 
-    def equals(self, other):
-        return Boolean(self.value == other.value)
+    def compare(self, other):
+        return compare_raw(self.value, other.value)
 
     def almost(self, other):
         return Boolean(True)
 
     # --- not implemented yet ---
-    
-    def number(self): self.todo("number")
-    
+
     def void(self): self.todo("void")
     def subtract(self, other): self.todo("subtract")
     def divide(self, other): self.todo("divide")
     def power(self, other): self.todo("power")
     def root(self, other): self.todo("root")
-    
-    def greater(self, other): self.todo("greater")
-    def less(self, other): self.todo("less")
-    def greater_or_equal(self, other): self.todo("greater_or_equal")
-    def lesser_or_equal(self, other): self.todo("lesser_or_equal")
-    def greater_or_almost(self, other): self.todo("greater_or_almost")
-    def lesser_or_almost(self, other): self.todo("lesser_or_almost")
     def lenght(self): self.todo("lenght")
     def first(self): self.todo("first")
     def last(self): self.todo("last")
@@ -256,34 +296,35 @@ class Void(Value):
     """The absence of a value, like Python's None. Everything about how it
     behaves is up to the stubs below."""
 
+    rank = 0
+    conversion = "void"
+
     def __repr__(self):
         return SPELLING[None]
 
-    # --- not implemented yet ---
     def number(self):
         return Number(0)
     def text(self):
         return Text('')
-    def boolean(self): 
+    def boolean(self):
         return Boolean(False)
     def void(self):
         return self
     def default_value(self):
         return None
+
+    def compare(self, other):
+        # There is only one void, so any two are the same.
+        return 0
+
+    # --- not implemented yet ---
     def add(self, other): self.todo("add")
     def subtract(self, other): self.todo("subtract")
     def multiply(self, other): self.todo("multiply")
     def divide(self, other): self.todo("divide")
     def power(self, other): self.todo("power")
     def root(self, other): self.todo("root")
-    def equals(self, other): self.todo("equals")
     def almost(self, other): self.todo("almost")
-    def greater(self, other): self.todo("greater")
-    def less(self, other): self.todo("less")
-    def greater_or_equal(self, other): self.todo("greater_or_equal")
-    def lesser_or_equal(self, other): self.todo("lesser_or_equal")
-    def greater_or_almost(self, other): self.todo("greater_or_almost")
-    def lesser_or_almost(self, other): self.todo("lesser_or_almost")
     def xor(self, other): self.todo("xor")
     def lenght(self): self.todo("lenght")
     def first(self): self.todo("first")
