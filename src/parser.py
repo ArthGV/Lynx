@@ -1,13 +1,14 @@
 """Recursive-descent parser: tokens in, AST out.
 
-Binary-operator precedence is driven entirely by grammar.BINARY_LEVELS, so a
-new operator needs no new parsing code.
+Binary-operator precedence is driven entirely by grammar.BINARY_LEVELS and
+prefix keyword functions by grammar.UNARY_METHOD, so neither a new operator nor
+a new keyword function needs new parsing code.
 """
 
-from src.grammar import BINARY_LEVELS
+from src.grammar import BINARY_LEVELS, UNARY_METHOD, UNARY_OPERAND_LEVEL
 from src.nodes import (
     Assignment, BinaryExpression, Boolean, Branch, Identifier, If, Number,
-    Print, Program, Text, TypeOf, Void, Lenght, ToText
+    Print, Program, Text, UnaryExpression, Void
 )
 from src.errors import LynxSyntaxError
 
@@ -120,15 +121,11 @@ class Parser:
     def parse_primary(self):
         token = self.peek()
         match self.type():
-            case "TYPEOF":
+            case operator if operator in UNARY_METHOD:
                 self.advance()
-                return TypeOf(self.parse_primary())
-            case "TO_TEXT":
-                self.advance()
-                return ToText(self.parse_primary())
-            case "LENGHT":
-                self.advance()
-                return Lenght(self.parse_primary())
+                return UnaryExpression(
+                    operator, self.parse_binary(UNARY_OPERAND_LEVEL), token.line
+                )
             case "NUMBER":
                 return Number(self.advance().value)
             case "TEXT":

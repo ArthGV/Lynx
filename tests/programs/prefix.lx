@@ -1,0 +1,16 @@
+>> len 12345
+>> len 1 + 10
+>> len 100 - 34
+>> len 2 * 3
+>> 1 + len 2 + 3
+>> type 1 + 10
+>> type len 5
+>> text 42
+>> text len 12345
+digits: len 12345
+>> digits
+>> digits > 3
+if: digits > 3
+ >> 'long'
+else:
+ >> 'short'

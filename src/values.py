@@ -17,6 +17,11 @@ class Value(ABC):
     def type_name(self):
         return type(self).__name__
 
+    def type_of(self):
+        # `type`. Concrete like type_name(): every value already knows its own
+        # type, so there is nothing here for a type to stub out.
+        return Text(self.type_name())
+
     def todo(self, operation):
         raise LynxNotImplemented(f"'{operation}' is not implemented yet for {self.type_name()}")
 

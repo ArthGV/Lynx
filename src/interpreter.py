@@ -6,10 +6,10 @@ the interpreter never mentions an operator character.
 """
 
 from src import values
-from src.grammar import BINARY_METHOD
+from src.grammar import BINARY_METHOD, UNARY_METHOD
 from src.nodes import (
     Assignment, BinaryExpression, Boolean, Identifier, If, Number, Print,
-    Program, Text, TypeOf, Void, Lenght, ToText
+    Program, Text, UnaryExpression, Void
 )
 from src.errors import LynxTypeError, LynxNotImplemented
 
@@ -56,17 +56,11 @@ def evaluate(node, env):
         case Void():
             return values.Void()
 
-        case ToText(value):
-            return evaluate(value, env).text()
-
         case Identifier(name, line):
             return env.get(name, line)
 
-        case TypeOf(value):
-            return values.Text(evaluate(value, env).type_name())
-
-        case Lenght(value):
-            return evaluate(value, env).lenght()
+        case UnaryExpression(operator, operand, line):
+            return apply_unary(operator, evaluate(operand, env), line)
 
         case BinaryExpression(left, operator, right, line):
             return apply_binary(operator, evaluate(left, env), evaluate(right, env), line)
@@ -80,6 +74,18 @@ def apply_binary(operator, left, right, line):
     # hasn't been filled in raises LynxNotImplemented, which we locate to `line`.
     try:
         return getattr(left, BINARY_METHOD[operator])(right)
+    except LynxNotImplemented as error:
+        if error.line is None:
+            error.line = line
+        raise
+
+
+def apply_unary(operator, value, line):
+    # Same contract as apply_binary: every value defines every operation, so a
+    # stub that hasn't been filled in raises LynxNotImplemented, which we locate
+    # to `line`.
+    try:
+        return getattr(value, UNARY_METHOD[operator])()
     except LynxNotImplemented as error:
         if error.line is None:
             error.line = line

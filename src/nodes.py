@@ -24,20 +24,6 @@ class Print:
 
 
 @dataclass
-class TypeOf:
-    value: object 
-
-
-@dataclass
-class ToText:
-    value: object
-
-@dataclass
-class Lenght:
-    value: object
-
-
-@dataclass
 class Branch:
     condition: object
     body: list
@@ -80,4 +66,11 @@ class BinaryExpression:
     left: object
     operator: str  # a token type, e.g. "PLUS" — never the character
     right: object
+    line: int | None = None
+
+
+@dataclass
+class UnaryExpression:
+    operator: str  # a token type, e.g. "LENGHT" — never the spelling
+    operand: object
     line: int | None = None

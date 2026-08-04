@@ -61,13 +61,23 @@ age: age + 5    // reassignment is the same syntax
 Note that `=` is **equality**, not assignment (assignment is `:`), and there is no `==`. So
 `>> 5 > 3 = true` prints `true`. For numbers, `≈` is true when the two are less than 1 apart.
 
-**Prefix operators**: `typeof` gives a value's type name as text, `text` converts to text, and
-`len` gives a length — for a number, its digit count.
+**Keyword functions**: `type` gives a value's type name as text, `text` converts to text, and
+`len` gives a length — for a number, its digit count. A keyword function takes the **whole rest
+of the line** as its argument:
 
 ```lynx
->> typeof 'hi'  // Text
->> text 42      // 42
->> len 12345    // 5
+>> type 'hi'     // Text
+>> text 42       // 42
+>> len 12345     // 5
+>> len 1 + 10    // 2 — len (1 + 10), not (len 1) + 10
+```
+
+There are no parentheses yet, so you cannot use the result on the left of an operator:
+`len 12345 > 3` means `len (12345 > 3)`, not `(len 12345) > 3`. Name it first:
+
+```lynx
+digits: len 12345
+>> digits > 3    // true
 ```
 
 **Conditionals** use a colon after the condition, and an indented body. A second condition on an
@@ -102,15 +112,16 @@ python -m pytest
 
 ## Status
 
-Working today: arithmetic, text, booleans, comparisons, `typeof`, `text`, `len`, variables, and
+Working today: arithmetic, text, booleans, comparisons, `type`, `text`, `len`, variables, and
 `if`/`else`. Planned next: complex types (arrays, tables, matrices, graphs), functions, and
 classes — `syntax` at the repo root sketches that surface syntax and is a design doc, not a
 working program.
 
 Known rough edges: many operations in `src/values.py` are still one-line stubs grouped under a
-`# --- not implemented yet ---` comment; `len` binds tighter than arithmetic, so `len 100-34`
-parses as `(len 100) - 34`; and `tests/programs/comparisons.lx` is written with `==`, so that
-one golden test currently fails.
+`# --- not implemented yet ---` comment; there are no parentheses yet, so you cannot group a
+subexpression or use a keyword function's result on the left of an operator without naming it
+first; and `tests/programs/comparisons.lx` is written with `==`, so that one golden test
+currently fails.
 
 ## Layout
 

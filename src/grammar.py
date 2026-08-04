@@ -33,7 +33,7 @@ def _literal_token(value):
 KEYWORDS = {
     "if": "IF",
     "else": "ELSE",
-    "typeof": "TYPEOF",
+    "type": "TYPE",
     "xor": "XOR",
     "len": "LENGHT",
     # "number": "NUMBER",
@@ -69,6 +69,21 @@ BINARY_LEVELS = [
     {"PLUS": "add", "MINUS": "subtract", "XOR": "xor"},
     {"STAR": "multiply", "SLASH": "divide"},
 ]
+
+# Prefix keyword functions: token type -> the zero-argument Value method behind
+# it. Written before their operand, like `len 12345`. Adding one is this line
+# plus its spelling in KEYWORDS — no parser, node, or interpreter change.
+UNARY_METHOD = {
+    "TYPE": "type_of",
+    "TO_TEXT": "text",
+    "LENGHT": "lenght",
+}
+
+# How much of the line a keyword function swallows: its operand is parsed at
+# this BINARY_LEVELS tier, so it takes that tier and every tighter one. At 0 it
+# takes the whole rest of the line, so `len 1 + 10` means `len (1 + 10)`.
+# Raise it to 2 to stop before comparisons, making `len n > 3` mean `(len n) > 3`.
+UNARY_OPERAND_LEVEL = 0
 
 # Reverse lookups derived from the tables above.
 SYMBOL_FOR = {token: symbol for symbol, token in SYMBOLS.items()}

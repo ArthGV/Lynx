@@ -31,3 +31,10 @@ def test_unimplemented_operation_reports_type_and_line():
     with pytest.raises(LynxNotImplemented) as info:
         run(">> 'a' > 1")
     assert str(info.value) == "NotImplemented on line 1: 'greater' is not implemented yet for Text"
+
+
+def test_unimplemented_prefix_operation_reports_type_and_line():
+    # Two lines on purpose: a hard-coded line 1 would pass a one-line version.
+    with pytest.raises(LynxNotImplemented) as info:
+        run(">> text 42\n>> len 'x'")
+    assert str(info.value) == "NotImplemented on line 2: 'lenght' is not implemented yet for Text"

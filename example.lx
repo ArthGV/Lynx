@@ -1,4 +1,4 @@
 // everything on this line is a comment
-a: false
-a: 23
->> a
+>> len 1 + 10   // 2 — len takes the whole line, so this is len (1 + 10)
+a: text 123 + 1
+>> type a
