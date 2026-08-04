@@ -1,0 +1,4 @@
+>> true xor false
+>> true xor true
+>> true + false
+>> true * false
