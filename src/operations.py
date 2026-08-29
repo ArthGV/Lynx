@@ -101,9 +101,30 @@ def binary(method, left, right):
 
 
 @mixed(values.Text, values.Number, "multiply", commutes=True)
-def repeat(text, number):
+def repeat_multiply_text_number(text, number):
     # Whole repetitions only: a fractional count truncates and anything at or
     # below zero gives empty text.
-    return values.Text(text.value * int(number.value))
+    value = int(number.value)
+    if value == 0:
+        return_text = ''
+    else:
+        return_text = text.value * value
+        if value < 0:
+            return_text = return_text[::-1]
+    return values.Text(return_text)
 
+@mixed(values.Boolean, values.Number, "multiply", commutes=True)
+def repeat_multiply_boolean_number(bool, number):
+    return values.Number(bool.number().value * int(number.value))
 
+@mixed(values.Void, values.Number, "multiply", commutes=True)
+def repeat_multiply_void_number(void, number):
+    return values.Number.default()
+
+@mixed(values.Void, values.Text, "multiply", commutes=True)
+def repeat_multiply_void_text(void, text):
+    return values.Text.default()
+
+@mixed(values.Void, values.Boolean, "multiply", commutes=True)
+def repeat_multiply_void_boolean(void, bool):
+    return values.Boolean.default()

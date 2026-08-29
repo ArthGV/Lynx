@@ -85,9 +85,16 @@ class Value(ABC):
 
     # Every value must define all of these. Stubs in each type call self.todo(...).
 
-    # conversions
     @abstractmethod
     def default_value(self): ...
+
+    @classmethod
+    def default(cls):
+        if cls is Void:
+            return Void()
+        return cls(cls.default_value)
+
+    # conversions
     @abstractmethod
     def number(self): ...
     @abstractmethod
@@ -133,6 +140,7 @@ class Value(ABC):
 class Number(Value):
     rank = 3
     conversion = "number"
+    default_value = 0
 
     def __init__(self, value):
         self.value = float(value)
@@ -160,9 +168,6 @@ class Number(Value):
     def compare(self, other):
         return compare_raw(self.value, other.value)
 
-    def default_value(self):
-        return 0
-
     def number(self):
         return self
 
@@ -180,18 +185,20 @@ class Number(Value):
         #return Number(len(str(self.value)))
 
     # --- not implemented yet ---
-
     def power(self, other): self.todo("power")
     def root(self, other): self.todo("root")
     def xor(self, other): self.todo("xor")
-    def first(self): self.todo("first")
-    def last(self): self.todo("last")
+    def first(self): 
+        return Number(str(self.value)[0])
+    def last(self):
+        return Number(str(self.value)[-1])
     def middle(self): self.todo("middle")
 
 
 class Text(Value):
     rank = 2
     conversion = "text"
+    default_value = ''
 
     def __init__(self, value):
         self.value = value
@@ -206,9 +213,6 @@ class Text(Value):
         # Lexicographic, so 'apple' < 'banana'.
         return compare_raw(self.value, other.value)
 
-    def default_value(self):
-        return ''
-
     def number(self):
         # The number the text spells, or — when it spells none — how long it is.
         try:
@@ -221,10 +225,22 @@ class Text(Value):
 
     def void(self):
         return Void()
-
+    
+    def lenght(self): 
+        return Number(len(self.value))
+    
+    def first(self):
+        if len(self.value) > 0:
+            return Text(self.value[0])
+        return Text('')
+    
+    def last(self): 
+        if len(self.value) > 0:
+            return Text(self.value[-1])
+        return Text('')
 
     # --- not implemented yet ---
-
+    def middle(self): self.todo("middle")
     def boolean(self): self.todo("boolean")
     def subtract(self, other): self.todo("subtract")
     def multiply(self, other): self.todo("multiply")
@@ -233,24 +249,18 @@ class Text(Value):
     def root(self, other): self.todo("root")
     def almost(self, other): self.todo("almost")
     def xor(self, other): self.todo("xor")
-    def lenght(self): self.todo("lenght")
-    def first(self): self.todo("first")
-    def last(self): self.todo("last")
-    def middle(self): self.todo("middle")
 
 
 class Boolean(Value):
     rank = 1
     conversion = "boolean"
+    default_value = False
 
     def __init__(self, value):
         self.value = bool(value)
 
     def __repr__(self):
         return SPELLING[self.value]
-
-    def default_value(self):
-        return False
 
     def number(self):
         return Number(1 if self.value else 0)
@@ -298,6 +308,7 @@ class Void(Value):
 
     rank = 0
     conversion = "void"
+    default_value = None
 
     def __repr__(self):
         return SPELLING[None]
@@ -310,23 +321,22 @@ class Void(Value):
         return Boolean(False)
     def void(self):
         return self
-    def default_value(self):
-        return None
 
     def compare(self, other):
         # There is only one void, so any two are the same.
         return 0
 
+    def add(self, other): return Void()
+    def subtract(self, other): return Void()
+    def multiply(self, other): return Void()
+    def divide(self, other): return Void()
+    def power(self, other): return Void()
+    def root(self, other): return Void()
+    def almost(self, other): return Boolean(True)
+    def xor(self, other): return Boolean(False)
+    def first(self): return Void()
+    def last(self): return Void()
+    def middle(self): return Void()
+
     # --- not implemented yet ---
-    def add(self, other): self.todo("add")
-    def subtract(self, other): self.todo("subtract")
-    def multiply(self, other): self.todo("multiply")
-    def divide(self, other): self.todo("divide")
-    def power(self, other): self.todo("power")
-    def root(self, other): self.todo("root")
-    def almost(self, other): self.todo("almost")
-    def xor(self, other): self.todo("xor")
     def lenght(self): self.todo("lenght")
-    def first(self): self.todo("first")
-    def last(self): self.todo("last")
-    def middle(self): self.todo("middle")

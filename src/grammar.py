@@ -36,9 +36,12 @@ KEYWORDS = {
     "type": "TYPE",
     "xor": "XOR",
     "len": "LENGHT",
-    # "number": "NUMBER",
+    "first": "FIRST",
+    "last": "LAST",
+    #types
+    "number": "TO_NUMBER",
+    "boolean": "TO_BOOLEAN",
     "text": "TO_TEXT",
-    # "bool": "BOOLEAN",
     **{word: _literal_token(value) for word, value in LITERALS.items()},
 }
 
@@ -76,7 +79,11 @@ BINARY_LEVELS = [
 UNARY_METHOD = {
     "TYPE": "type_of",
     "TO_TEXT": "text",
+    "TO_NUMBER": "number",
+    "TO_BOOLEAN": "boolean",
     "LENGHT": "lenght",
+    "FIRST": "first",
+    "LAST": "last",
 }
 
 # How much of the line a keyword function swallows: its operand is parsed at

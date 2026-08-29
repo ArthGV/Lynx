@@ -1,4 +1,3 @@
 // everything on this line is a comment
->> len 1 + 10   // 2 — len takes the whole line, so this is len (1 + 10)
-a: text 123 + 1
->> 'hi' * 2
+>> 'string' * 45
+>> false * 45
