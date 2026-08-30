@@ -102,8 +102,9 @@ NotImplemented on line 1: 'multiply' is not implemented yet for Text
 
 ## Tests
 
-Golden tests live in `tests/programs/`: each `*.lx` program is paired with a `*.expected` file
-holding its exact stdout. Add a case by dropping in a new pair — no code change needed.
+Golden tests live in `tests/programs/`, grouped into subfolders by subject. Each `*.lx` program is paired with a `*.expected`
+file holding its exact stdout. Add a case by dropping in a new pair in the fitting subfolder —
+no code change needed.
 
 ```bash
 pip install -e ".[dev]"
@@ -120,7 +121,7 @@ working program.
 Known rough edges: many operations in `src/values.py` are still one-line stubs grouped under a
 `# --- not implemented yet ---` comment; there are no parentheses yet, so you cannot group a
 subexpression or use a keyword function's result on the left of an operator without naming it
-first; and `tests/programs/comparisons.lx` is written with `==`, so that one golden test
+first; and `tests/programs/same_type/comparisons.lx` is written with `==`, so that one golden test
 currently fails.
 
 ## Layout

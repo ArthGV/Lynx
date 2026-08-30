@@ -1,4 +1,4 @@
-"""Golden tests: run each programs/*.lx and compare its stdout to the
+"""Golden tests: run each programs/**/*.lx and compare its stdout to the
 matching *.expected file. Add a case by dropping in a new pair of files.
 """
 
@@ -11,7 +11,7 @@ import pytest
 from src.main import run
 from src.errors import LynxNotImplemented
 
-PROGRAMS = sorted(Path(__file__).parent.glob("programs/*.lx"))
+PROGRAMS = sorted(Path(__file__).parent.glob("programs/**/*.lx"))
 
 
 def run_capturing(source):
