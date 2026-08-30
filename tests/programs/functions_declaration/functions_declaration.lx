@@ -1,0 +1,43 @@
+// declaring and calling a function
+my_function_1: var1, var2
+ >> var1 + var2
+
+a: 5
+b: 6
+my_function_1 a, b
+
+
+// declaring and calling a with direct values
+my_function_2: var1, var2
+ >> var1 + var2
+
+my_function_2 5, 10
+
+
+// declaring a variable in a function
+my_function_3: var1
+ a: 9
+ >> a
+
+a: 5
+my_function_3 a
+
+
+//too many input
+my_function_4: var1, var2
+ >>> var1 + var2
+
+my_function_4 5, 6, 7
+
+
+//too few input
+my_function_5: var1, var2
+ >>> var1 + var2
+
+my_function_5 5
+
+
+// >>> doesn't print
+my_function_6: var1, var2
+ >>> var1 + var2
+my_function_6 5, 6
