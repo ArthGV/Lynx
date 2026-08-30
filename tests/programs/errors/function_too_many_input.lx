@@ -1,0 +1,5 @@
+//too many input
+my_function_many: var1, var2
+ >>> var1 + var2
+
+my_function_many 5, 6, 7

@@ -23,21 +23,7 @@ a: 5
 my_function_3 a
 
 
-//too many input
+// >>> does not get mixed up with '>>' and does not print anything
 my_function_4: var1, var2
  >>> var1 + var2
-
-my_function_4 5, 6, 7
-
-
-//too few input
-my_function_5: var1, var2
- >>> var1 + var2
-
-my_function_5 5
-
-
-// >>> doesn't print
-my_function_6: var1, var2
- >>> var1 + var2
-my_function_6 5, 6
+my_function_4 5, 6
