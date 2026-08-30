@@ -51,6 +51,7 @@ SPELLING = {value: word for word, value in LITERALS.items()}
 # Symbol -> token type. Matched longest-first, so ">>" beats ">" and
 # "//" (comment) beats "/".
 SYMBOLS = {
+    ">>>": "RETURN",
     ">>": "PRINT",
     "=": "EQUAL",
     "≈": "ALMOST",

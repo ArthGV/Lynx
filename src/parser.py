@@ -7,8 +7,8 @@ a new keyword function needs new parsing code.
 
 from src.grammar import BINARY_LEVELS, UNARY_METHOD, UNARY_OPERAND_LEVEL
 from src.nodes import (
-    Assignment, BinaryExpression, Boolean, Branch, Identifier, If, Number,
-    Print, Program, Text, UnaryExpression, Void
+    Assignment, BinaryExpression, Boolean, Branch, Call, Function, Identifier,
+    If, Number, Print, Program, Return, Text, UnaryExpression, Void
 )
 from src.errors import LynxSyntaxError
 
@@ -59,10 +59,12 @@ class Parser:
         match self.type():
             case "PRINT":
                 return self.parse_print()
+            case "RETURN":
+                return self.parse_return()
             case "IF":
                 return self.parse_if()
             case "IDENTIFIER":
-                return self.parse_assignment()
+                return self.parse_name_statement()
         token = self.peek()
         raise LynxSyntaxError(
             f"unexpected {self.type()}", token.line if token else None
@@ -72,10 +74,67 @@ class Parser:
         self.match("PRINT")
         return Print(self.parse_expression())
 
+    def parse_return(self):
+        token = self.match("RETURN")
+        return Return(self.parse_expression(), token.line)
+
+    def parse_name_statement(self):
+        # After a leading identifier we could have an assignment (`x: 5`), a
+        # function declaration (`f: a, b` + indented body) or a function call
+        # (`f a, b`). A colon means declaration-or-assignment, decided by whether
+        # the right-hand side is a parameter list followed by an indented block.
+        start = self.current
+        line = self.peek().line
+        name = self.advance().value
+        if self.type() != "COLON":
+            return self.parse_call(name, line)
+        if self._is_function_declaration():
+            return self._parse_function(name)
+        self.current = start
+        return self.parse_assignment()
+
+    def _is_function_declaration(self):
+        # At the COLON. True when the right-hand side is IDENTIFIER
+        # (, IDENTIFIER)* then an indented block — i.e. a parameter list rather
+        # than an assignment expression.
+        i = self.current + 1  # skip COLON
+        if self._type_at(i) != "IDENTIFIER":
+            return False
+        i += 1
+        while self._type_at(i) == "COMMA":
+            i += 1
+            if self._type_at(i) != "IDENTIFIER":
+                return False
+            i += 1
+        return (
+            self._type_at(i) == "NEWLINE"
+            and self._type_at(i + 1) == "INDENT"
+        )
+
+    def _type_at(self, i):
+        if i < len(self.tokens):
+            return self.tokens[i].type
+        return EOF
+
+    def _parse_function(self, name):
+        self.match("COLON")
+        params = [self.match("IDENTIFIER").value]
+        while self.type() == "COMMA":
+            self.advance()
+            params.append(self.match("IDENTIFIER").value)
+        return Function(name, params, self.parse_body())
+
     def parse_assignment(self):
         name = self.match("IDENTIFIER").value
         self.match("COLON")
         return Assignment(name, self.parse_expression())
+
+    def parse_call(self, name, line):
+        args = [self.parse_expression()]
+        while self.type() == "COMMA":
+            self.advance()
+            args.append(self.parse_expression())
+        return Call(name, args, line)
 
     def parse_if(self):
         self.match("IF")
@@ -136,7 +195,15 @@ class Parser:
                 self.advance()
                 return Void()
             case "IDENTIFIER":
-                return Identifier(self.advance().value, token.line)
+                name = self.advance().value
+                if self._starts_expression(self.type()):
+                    return self.parse_call(name, token.line)
+                return Identifier(name, token.line)
         raise LynxSyntaxError(
             f"unexpected {self.type()}", token.line if token else None
         )
+
+    def _starts_expression(self, token_type):
+        if token_type in ("NUMBER", "TEXT", "BOOLEAN", "VOID", "IDENTIFIER"):
+            return True
+        return token_type in UNARY_METHOD
