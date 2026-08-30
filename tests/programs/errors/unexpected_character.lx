@@ -1,0 +1,4 @@
+// `@` is in no table in grammar.py. Nothing prints at all: the lexer fails
+// before a single statement runs.
+>> 42
+>> 1 @ 2

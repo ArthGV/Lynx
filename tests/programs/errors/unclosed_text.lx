@@ -1,0 +1,3 @@
+// An opening quote with no closing one never becomes a text literal, so the
+// lexer reports the rest of the line as an unexpected character.
+>> 'abc

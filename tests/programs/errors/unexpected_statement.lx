@@ -1,0 +1,4 @@
+// A statement is a print, an if, or an assignment. A bare expression on its
+// own line is none of the three.
+>> 42
+1 + 2

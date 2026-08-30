@@ -1,0 +1,4 @@
+// Nothing defines Text with Void, so the fallback in operations.py lands in a
+// hole. The message names the pair the user wrote, in source order.
+>> 'a' + 'b'
+>> 'a' - void

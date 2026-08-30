@@ -1,0 +1,4 @@
+// A name that was never assigned. The lines before it still print: this is a
+// run-time error, so the program gets as far as the mistake before stopping.
+>> 42
+>> nope

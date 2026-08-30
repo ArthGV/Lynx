@@ -1,0 +1,4 @@
+// A branch body has to be indented under its `if:`.
+>> 42
+if: 1 > 2
+>> 'a'
