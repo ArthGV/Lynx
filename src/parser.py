@@ -5,12 +5,25 @@ prefix keyword functions by grammar.UNARY_METHOD, so neither a new operator nor
 a new keyword function needs new parsing code.
 """
 
+from src.errors.errors import LynxSyntaxError
 from src.grammar import BINARY_LEVELS, UNARY_METHOD, UNARY_OPERAND_LEVEL
 from src.nodes import (
-    Assignment, BinaryExpression, Boolean, Branch, Call, Function, Identifier,
-    If, Number, Print, Program, Return, Text, UnaryExpression, Void
+    Assignment,
+    BinaryExpression,
+    Boolean,
+    Branch,
+    Call,
+    Function,
+    Identifier,
+    If,
+    Number,
+    Print,
+    Program,
+    Return,
+    Text,
+    UnaryExpression,
+    Void,
 )
-from src.errors import LynxSyntaxError
 
 EOF = "EOF"
 

@@ -14,8 +14,8 @@ the promotion order, and `conversion`, the name of the method that builds one.
 
 from abc import ABC, abstractmethod
 
+from src.errors.errors import LynxNotImplemented
 from src.grammar import SPELLING
-from src.errors import LynxNotImplemented
 
 
 def compare_raw(a, b):

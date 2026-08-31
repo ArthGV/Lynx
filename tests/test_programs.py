@@ -13,8 +13,8 @@ from pathlib import Path
 
 import pytest
 
+from src.errors.errors import LynxError, LynxNotImplemented
 from src.main import run
-from src.errors import LynxError, LynxNotImplemented
 
 PROGRAMS = sorted(Path(__file__).parent.glob("programs/**/*.lx"))
 

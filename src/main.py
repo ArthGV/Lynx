@@ -4,11 +4,11 @@ import argparse
 import sys
 
 from src import __version__
+from src.environment import Environment
+from src.errors.errors import LynxError, LynxInputError
+from src.interpreter import _Return, execute
 from src.lexer import tokenize
 from src.parser import Parser
-from src.interpreter import execute, _Return
-from src.environment import Environment
-from src.errors import LynxError, LynxInputError
 
 
 def run(source, env=None):

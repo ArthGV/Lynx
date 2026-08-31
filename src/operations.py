@@ -18,8 +18,8 @@ Because layers 2 and 3 both settle the pair before dispatching, every method in
 `values.py` may assume `other` is its own type.
 """
 
-from src import values
-from src.errors import LynxNotImplemented
+from src.errors.errors import LynxNotImplemented
+from src.types import values
 
 # How an operator reconciles two different types when no `@mixed` handler
 # claims the pair.

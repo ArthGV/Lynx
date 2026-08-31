@@ -6,30 +6,32 @@ their operands reconciled by operations.py, so the interpreter never mentions an
 operator character and never decides what two types mean together.
 """
 
-from src import operations, values
+from src import operations
+from src.errors.errors import (
+    LynxInputError,
+    LynxNameError,
+    LynxNotImplemented,
+    LynxTypeError,
+)
 from src.grammar import BINARY_METHOD, UNARY_METHOD
 from src.nodes import (
-    Assignment, BinaryExpression, Boolean, Call, Function, Identifier, If,
-    Number, Print, Program, Return, Text, UnaryExpression, Void
+    Assignment,
+    BinaryExpression,
+    Boolean,
+    Call,
+    Function,
+    Identifier,
+    If,
+    Number,
+    Print,
+    Program,
+    Return,
+    Text,
+    UnaryExpression,
+    Void,
 )
-from src.errors import LynxTypeError, LynxNotImplemented, LynxNameError, LynxInputError
-
-
-class FunctionValue:
-    """A user-defined function: parameter names, body, and the scope it was
-    declared in (used as the parent of the call's fresh scope)."""
-
-    def __init__(self, params, body, env):
-        self.params = params
-        self.body = body
-        self.env = env
-
-
-class _Return(Exception):
-    """Control-flow signal: a `>>>` statement unwinds the function body."""
-    def __init__(self, value):
-        super().__init__()
-        self.value = value
+from src.types import values
+from src.types.functions import FunctionValue, _Return
 
 
 def execute(node, env):
