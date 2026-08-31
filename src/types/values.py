@@ -184,7 +184,7 @@ class Number(Value):
         return Number(len(str(self.value).replace('.', '').replace('-', '')))
 
     def first(self): 
-        return Number(str(self.value)[0])
+        return Number(str(self.value).replace('.', '').replace('-', '')[0])
     
     def last(self):
         return Number(str(self.value)[-1])
