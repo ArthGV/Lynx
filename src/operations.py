@@ -102,16 +102,18 @@ def binary(method, left, right):
 
 @mixed(values.Text, values.Number, "multiply", commutes=True)
 def repeat_multiply_text_number(text, number):
-    # Whole repetitions only: a fractional count truncates and anything at or
-    # below zero gives empty text.
-    value = int(number.value)
-    if value == 0:
-        return_text = ''
-    else:
-        return_text = text.value * value
-        if value < 0:
-            return_text = return_text[::-1]
-    return values.Text(return_text)
+    # A fractional count adds a proportional slice of the text, so 0.5 always
+    # appends half of it. Negative counts repeat the text unsigned and then
+    # reverse the whole result.
+    magnitude = abs(number.value)
+    whole = int(magnitude)
+    fraction = magnitude - whole
+    result = text.value * whole
+    if fraction > 0:
+        result += text.value[:int(fraction * len(text.value))]
+    if number.value < 0:
+        result = result[::-1]
+    return values.Text(result)
 
 @mixed(values.Boolean, values.Number, "multiply", commutes=True)
 def repeat_multiply_boolean_number(bool, number):
