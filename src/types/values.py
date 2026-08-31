@@ -182,16 +182,17 @@ class Number(Value):
 
     def lenght(self):
         return Number(len(str(self.value).replace('.', '').replace('-', '')))
-        #return Number(len(str(self.value)))
+
+    def first(self): 
+        return Number(str(self.value)[0])
+    
+    def last(self):
+        return Number(str(self.value)[-1])
 
     # --- not implemented yet ---
     def power(self, other): self.todo("power")
     def root(self, other): self.todo("root")
     def xor(self, other): self.todo("xor")
-    def first(self): 
-        return Number(str(self.value)[0])
-    def last(self):
-        return Number(str(self.value)[-1])
     def middle(self): self.todo("middle")
 
 
@@ -337,6 +338,4 @@ class Void(Value):
     def first(self): return Void()
     def last(self): return Void()
     def middle(self): return Void()
-
-    # --- not implemented yet ---
-    def lenght(self): self.todo("lenght")
+    def lenght(self): return Number(0)

@@ -200,6 +200,8 @@ class Parser:
                 )
             case "NUMBER":
                 return Number(self.advance().value)
+            case "MINUS":
+                return self.parse_negative()
             case "TEXT":
                 return Text(self.advance().value)
             case "BOOLEAN":
@@ -215,6 +217,14 @@ class Parser:
         raise LynxSyntaxError(
             f"unexpected {self.type()}", token.line if token else None
         )
+
+    def parse_negative(self):
+        token = self.advance()
+        if self.type() != "NUMBER":
+            raise LynxSyntaxError(
+                f"expected NUMBER after '-', got {self.type()}", token.line
+            )
+        return Number(-float(self.advance().value))
 
     def _starts_expression(self, token_type):
         if token_type in ("NUMBER", "TEXT", "BOOLEAN", "VOID", "IDENTIFIER"):
