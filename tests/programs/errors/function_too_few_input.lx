@@ -1,0 +1,5 @@
+//too few input
+my_function_few: var1, var2
+ >>> var1 + var2
+
+my_function_few 5

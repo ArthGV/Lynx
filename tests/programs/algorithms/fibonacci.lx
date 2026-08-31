@@ -1,0 +1,13 @@
+fib: n
+ if: n < 2
+  >>> 1
+ fib_minus_2: fib n - 2
+ fib_minus_1: fib n - 1
+ >>> fib_minus_1 + fib_minus_2
+
+>> fib 1
+>> fib 2
+>> fib 3
+>> fib 4
+>> fib 5
+>> fib 6

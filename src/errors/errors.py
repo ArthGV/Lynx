@@ -30,6 +30,11 @@ class LynxTypeError(LynxError):
     kind = "TypeError"
 
 
+class LynxInputError(LynxError):
+    """A function was called with the wrong number of arguments."""
+    kind = "InputError"
+
+
 class LynxNotImplemented(LynxError):
     """An operation that the language intends to support but nobody has
     written the logic for yet — a hole to fill, not a user mistake."""

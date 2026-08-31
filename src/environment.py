@@ -4,7 +4,7 @@ A scope holds its own names and defers to its parent for the rest, so nested
 scopes (functions, blocks, classes) fall out naturally once we add them.
 """
 
-from src.errors import LynxNameError
+from src.errors.errors import LynxNameError
 
 
 class Environment:

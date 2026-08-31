@@ -6,13 +6,32 @@ their operands reconciled by operations.py, so the interpreter never mentions an
 operator character and never decides what two types mean together.
 """
 
-from src import operations, values
+from src import operations
+from src.errors.errors import (
+    LynxInputError,
+    LynxNameError,
+    LynxNotImplemented,
+    LynxTypeError,
+)
 from src.grammar import BINARY_METHOD, UNARY_METHOD
 from src.nodes import (
-    Assignment, BinaryExpression, Boolean, Identifier, If, Number, Print,
-    Program, Text, UnaryExpression, Void
+    Assignment,
+    BinaryExpression,
+    Boolean,
+    Call,
+    Function,
+    Identifier,
+    If,
+    Number,
+    Print,
+    Program,
+    Return,
+    Text,
+    UnaryExpression,
+    Void,
 )
-from src.errors import LynxTypeError, LynxNotImplemented
+from src.types import values
+from src.types.functions import FunctionValue, _Return
 
 
 def execute(node, env):
@@ -31,6 +50,15 @@ def execute(node, env):
         case Assignment(name, value):
             env.set(name, evaluate(value, env))
 
+        case Function(name, params, body):
+            env.set(name, FunctionValue(params, body, env))
+
+        case Call(callee, args, line):
+            call(callee, args, line, env)
+
+        case Return(value, line):
+            raise _Return(evaluate(value, env))
+
         case If(branches, else_body):
             for branch in branches:
                 if evaluate(branch.condition, env).boolean().is_true():
@@ -41,6 +69,7 @@ def execute(node, env):
 
         case _:
             raise LynxTypeError(f"cannot execute {type(node).__name__}")
+
 
 
 def evaluate(node, env):
@@ -60,6 +89,9 @@ def evaluate(node, env):
         case Identifier(name, line):
             return env.get(name, line)
 
+        case Call(callee, args, line):
+            return call(callee, args, line, env)
+
         case UnaryExpression(operator, operand, line):
             return apply_unary(operator, evaluate(operand, env), line)
 
@@ -68,6 +100,24 @@ def evaluate(node, env):
 
         case _:
             raise LynxTypeError(f"cannot evaluate {type(node).__name__}")
+
+
+def call(callee, args, line, env):
+    fn = env.get(callee, line)
+    if not isinstance(fn, FunctionValue):
+        raise LynxNameError(f"'{callee}' is not a function", line)
+    if len(args) != len(fn.params):
+        raise LynxInputError(
+            f"{callee} expected {len(fn.params)} input but got {len(args)}", line
+        )
+    scope = fn.env.child()
+    for param, arg in zip(fn.params, args):
+        scope.set(param, evaluate(arg, env))
+    try:
+        execute(fn.body, scope)
+    except _Return as returned:
+        return returned.value
+    return values.Void()
 
 
 def apply_binary(operator, left, right, line):

@@ -19,6 +19,26 @@ class Assignment:
 
 
 @dataclass
+class Function:
+    name: str
+    params: list
+    body: list
+
+
+@dataclass
+class Call:
+    callee: str
+    args: list
+    line: int | None = None
+
+
+@dataclass
+class Return:
+    value: object
+    line: int | None = None
+
+
+@dataclass
 class Print:
     value: object
 

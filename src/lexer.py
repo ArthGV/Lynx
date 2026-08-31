@@ -8,8 +8,8 @@ mean what lives in grammar.py.
 import re
 from dataclasses import dataclass
 
+from src.errors.errors import LynxSyntaxError
 from src.grammar import COMMENT, KEYWORDS, LITERALS, SYMBOLS
-from src.errors import LynxSyntaxError
 
 NUMBER = re.compile(r"\d+(\.\d+)?")
 TEXT = re.compile(r"'([^']*)'")

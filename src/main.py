@@ -4,17 +4,20 @@ import argparse
 import sys
 
 from src import __version__
+from src.environment import Environment
+from src.errors.errors import LynxError, LynxInputError
+from src.interpreter import _Return, execute
 from src.lexer import tokenize
 from src.parser import Parser
-from src.interpreter import execute
-from src.environment import Environment
-from src.errors import LynxError
 
 
 def run(source, env=None):
     """Run lynx source. Raises LynxError on a program error."""
     tree = Parser(tokenize(source)).parse()
-    execute(tree, env or Environment())
+    try:
+        execute(tree, env or Environment())
+    except _Return:
+        raise LynxInputError("return outside of a function")
 
 
 def main():
