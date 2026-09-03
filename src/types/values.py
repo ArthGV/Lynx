@@ -25,6 +25,25 @@ def compare_raw(a, b):
     return 1 if a > b else -1
 
 
+def edit_distance(a, b):
+    """Levenshtein distance between two strings."""
+    if a == b:
+        return 0
+    previous = list(range(len(b) + 1))
+    for i, ca in enumerate(a, 1):
+        current = [i]
+        row_min = i
+        for j, cb in enumerate(b, 1):
+            cost = 0 if ca == cb else 1
+            current.append(min(current[-1] + 1, previous[j] + 1, previous[j - 1] + cost))
+            if current[-1] < row_min:
+                row_min = current[-1]
+        if row_min > 1:
+            return row_min
+        previous = current
+    return previous[-1]
+
+
 class Value(ABC):
     # Declared by every type. `rank` is its place in the promotion order used
     # for comparisons (higher wins); `conversion` names the method that turns
@@ -257,17 +276,43 @@ class Text(Value):
             return Text(self.value[-1])
         return Text('')
 
-    # --- not implemented yet ---
-    def not_(self): self.todo("not")
-    def middle(self): self.todo("middle")
-    def boolean(self): self.todo("boolean")
-    def subtract(self, other): self.todo("subtract")
-    def multiply(self, other): self.todo("multiply")
-    def divide(self, other): self.todo("divide")
-    def power(self, other): self.todo("power")
-    def root(self, other): self.todo("root")
-    def almost(self, other): self.todo("almost")
-    def xor(self, other): self.todo("xor")
+    def middle(self):
+        if len(self.value) == 0:
+            return Text('')
+        return Text(self.value[len(self.value) // 2])
+
+    def boolean(self):
+        return Boolean(self.value != '')
+
+    def not_(self):
+        return Text(str(1 - self.number().value))
+
+    def subtract(self, other):
+        return Text(self.value.replace(other.value, ''))
+
+    def multiply(self, other):
+        return Text(self.value * len(other.value))
+
+    def power(self, other):
+        return Text(self.value * len(other.value))
+
+    def divide(self, other):
+        if other.value == '':
+            return Void()
+        if self.value == '':
+            return Text('')
+        part = len(self.value) // (len(other.value) + 1)
+        return Text(self.value[:max(part, 1)])
+
+    def root(self, other):
+        return Text(self.value[:len(self.value) // 2])
+
+    def almost(self, other):
+        return Boolean(edit_distance(self.value, other.value) <= 1)
+
+    def xor(self, other):
+        combined = Text(self.value + other.value)
+        return combined.multiply(combined.not_())
 
 
 class Boolean(Value):
@@ -375,7 +420,7 @@ class Void(Value):
     def root(self, other): return Void()
     def almost(self, other): return Boolean(True)
     def xor(self, other): return Boolean(False)
-    def not_(self): self.todo("not")
+    def not_(self): return Void()
     def first(self): return Void()
     def last(self): return Void()
     def middle(self): return Void()
