@@ -116,6 +116,8 @@ class Value(ABC):
     @abstractmethod
     def power(self, other): ...
     @abstractmethod
+    def not_(self): ...
+    @abstractmethod
     def root(self, other): ...
     @abstractmethod
     def xor(self, other): ...
@@ -163,6 +165,8 @@ class Number(Value):
         return Number(self.value * other.value)
 
     def divide(self, other):
+        if other.value == 0:
+            return Void()
         return Number(self.value / other.value)
 
     def compare(self, other):
@@ -177,6 +181,9 @@ class Number(Value):
     def void(self):
         return Void()
 
+    def not_(self):
+        return Number(1 - self.value)
+
     def almost(self, other):
         return Boolean(abs(self.value - other.value) < 1)
 
@@ -189,11 +196,21 @@ class Number(Value):
     def last(self):
         return Number(str(self.value)[-1])
 
-    # --- not implemented yet ---
-    def power(self, other): self.todo("power")
-    def root(self, other): self.todo("root")
-    def xor(self, other): self.todo("xor")
-    def middle(self): self.todo("middle")
+    def middle(self):
+        digits = str(self.value).replace('.', '').replace('-', '')
+        return Number(digits[len(digits) // 2])
+
+    def power(self, other):
+        return Number(self.value ** other.value)
+
+    def root(self, other):
+        if other.value == 0:
+            return Void()
+        return Number(self.value ** (1 / other.value))
+
+    def xor(self, other):
+        s = self.value + other.value
+        return Number(s * (1 - s))
 
 
 class Text(Value):
@@ -241,6 +258,7 @@ class Text(Value):
         return Text('')
 
     # --- not implemented yet ---
+    def not_(self): self.todo("not")
     def middle(self): self.todo("middle")
     def boolean(self): self.todo("boolean")
     def subtract(self, other): self.todo("subtract")
@@ -275,6 +293,9 @@ class Boolean(Value):
     def is_true(self):
         return self.value
 
+    def not_(self):
+        return Boolean(not self.value)
+
     def add(self, other):
         return Boolean(self.value or other.value)
 
@@ -292,15 +313,34 @@ class Boolean(Value):
 
     # --- not implemented yet ---
 
-    def void(self): self.todo("void")
-    def subtract(self, other): self.todo("subtract")
-    def divide(self, other): self.todo("divide")
-    def power(self, other): self.todo("power")
-    def root(self, other): self.todo("root")
-    def lenght(self): self.todo("lenght")
-    def first(self): self.todo("first")
-    def last(self): self.todo("last")
-    def middle(self): self.todo("middle")
+    def void(self): 
+        return Void()
+    
+    def subtract(self, other): 
+        return Boolean(self.value or other.value)
+    
+    def divide(self, other):
+        if not other.value:
+            return Void()
+        return Boolean(self.value and other.value)
+    
+    def power(self, other): 
+        return Boolean(self.value if other.value else True)
+    
+    def root(self, other): 
+        return Boolean(self.value)
+    
+    def lenght(self): 
+        return Number(1)
+    
+    def first(self): 
+        return self
+    
+    def last(self): 
+        return self
+    
+    def middle(self): 
+        return self
 
 
 class Void(Value):
@@ -335,6 +375,7 @@ class Void(Value):
     def root(self, other): return Void()
     def almost(self, other): return Boolean(True)
     def xor(self, other): return Boolean(False)
+    def not_(self): self.todo("not")
     def first(self): return Void()
     def last(self): return Void()
     def middle(self): return Void()

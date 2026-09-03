@@ -2,3 +2,12 @@
 >> true xor true
 >> true + false
 >> true * false
+>> true - false
+>> true - true
+>> false - false
+>> true / true
+>> false / true
+>> true / false
+>> len true
+>> first true
+>> last true

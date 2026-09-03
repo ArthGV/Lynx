@@ -1,4 +1,4 @@
-// `xor` on two Numbers is still a one-line stub in values.py. One type, one
+// `xor` on two Texts is still a one-line stub in values.py. One type, one
 // hole — so the message names that type, and the line before it still ran.
->> 1 + 2
->> 1 xor 2
+>> 'a' + 'b'
+>> 'a' xor 'b'
