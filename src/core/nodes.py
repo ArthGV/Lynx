@@ -5,69 +5,70 @@ Nodes that can fail at runtime carry a `line` for error messages.
 """
 
 from dataclasses import dataclass
+from typing import Any
 
 
 @dataclass
 class Program:
-    statements: list
+    statements: list[Any]
 
 
 @dataclass
 class Assignment:
     name: str
-    value: object
+    value: Any
 
 
 @dataclass
 class Function:
     name: str
-    params: list
-    body: list
+    params: list[Any]
+    body: list[Any]
 
 
 @dataclass
 class Call:
     callee: str
-    args: list
+    args: list[Any]
     line: int | None = None
 
 
 @dataclass
 class Return:
-    value: object
+    value: Any
     line: int | None = None
 
 
 @dataclass
 class Print:
-    value: object
+    value: Any
 
 
 @dataclass
 class Branch:
-    condition: object
-    body: list
+    condition: Any
+    body: list[Any]
 
 
 @dataclass
 class If:
-    branches: list
-    else_body: list | None = None
+    branches: list[Any]
+    else_body: list[Any] | None = None
 
 
 @dataclass
 class Number:
-    value: object
+    value: Any
 
 
 @dataclass
 class Text:
-    value: object
+    value: Any
 
 
 @dataclass
 class Boolean:
-    value: object
+    value: Any
 
 
 @dataclass
@@ -83,14 +84,14 @@ class Identifier:
 
 @dataclass
 class BinaryExpression:
-    left: object
+    left: Any
     operator: str  # a token type, e.g. "PLUS" — never the character
-    right: object
+    right: Any
     line: int | None = None
 
 
 @dataclass
 class UnaryExpression:
     operator: str  # a token type, e.g. "LENGHT" — never the spelling
-    operand: object
+    operand: Any
     line: int | None = None

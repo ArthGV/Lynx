@@ -5,7 +5,7 @@ are not reachable from `.lx` programs — there is no keyword for them. These ar
 tested here directly against the values module.
 """
 
-from src.types.values import Boolean, Number, Text, Void
+from src.runtime.values import Boolean, Number, Text, Void
 
 
 def print_(v):

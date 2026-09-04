@@ -7,9 +7,10 @@ mean what lives in grammar.py.
 
 import re
 from dataclasses import dataclass
+from typing import Any
 
+from src.core.grammar import COMMENT, KEYWORDS, LITERALS, SYMBOLS
 from src.errors.errors import LynxSyntaxError
-from src.grammar import COMMENT, KEYWORDS, LITERALS, SYMBOLS
 
 NUMBER = re.compile(r"\d+(\.\d+)?")
 TEXT = re.compile(r"'([^']*)'")
@@ -22,12 +23,12 @@ ORDERED_SYMBOLS = sorted(SYMBOLS, key=len, reverse=True)
 @dataclass
 class Token:
     type: str
-    value: object
+    value: Any
     line: int
 
 
-def tokenize(source):
-    tokens = []
+def tokenize(source: str) -> list[Token]:
+    tokens: list[Token] = []
     indents = [0]
 
     for line_no, raw in enumerate(source.splitlines(), start=1):
@@ -57,7 +58,7 @@ def tokenize(source):
     return tokens
 
 
-def read_token(rest, line_no, tokens):
+def read_token(rest: str, line_no: int, tokens: list[Token]) -> str:
     """Read one token from the front of `rest` and return what's left."""
     match = TEXT.match(rest)
     if match:

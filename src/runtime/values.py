@@ -12,45 +12,18 @@ type. Each type owes two declarations for that to work — `rank`, its place in
 the promotion order, and `conversion`, the name of the method that builds one.
 """
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 
+from src.core.grammar import SPELLING
 from src.errors.errors import LynxNotImplemented
-from src.grammar import SPELLING
-
-
-def compare_raw(a, b):
-    """-1, 0 or 1 — the shape every type's `compare` returns."""
-    if a == b:
-        return 0
-    return 1 if a > b else -1
-
-
-def edit_distance(a, b):
-    """Levenshtein distance between two strings."""
-    if a == b:
-        return 0
-    previous = list(range(len(b) + 1))
-    for i, ca in enumerate(a, 1):
-        current = [i]
-        row_min = i
-        for j, cb in enumerate(b, 1):
-            cost = 0 if ca == cb else 1
-            current.append(min(current[-1] + 1, previous[j] + 1, previous[j - 1] + cost))
-            if current[-1] < row_min:
-                row_min = current[-1]
-        if row_min > 1:
-            return row_min
-        previous = current
-    return previous[-1]
+from src.utils.text import compare_raw, edit_distance
 
 
 class Value(ABC):
-    # Declared by every type. `rank` is its place in the promotion order used
-    # for comparisons (higher wins); `conversion` names the method that turns
-    # any other value into this type. __init_subclass__ refuses a type missing
-    # either one, the same way the ABC refuses a type missing an operation.
-    rank = None
-    conversion = None
+    rank: int | None = None
+    conversion: str | None = None
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -58,51 +31,42 @@ class Value(ABC):
             if getattr(cls, declaration, None) is None:
                 raise TypeError(f"{cls.__name__} must declare `{declaration}`")
 
-    def type_name(self):
+    def type_name(self) -> str:
         return type(self).__name__
 
-    def type_of(self):
-        # `type`. Concrete like type_name(): every value already knows its own
-        # type, so there is nothing here for a type to stub out.
+    def type_of(self) -> Text:
         return Text(self.type_name())
 
-    def coerce(self, other):
-        # `other` as a value of self's type, built with the conversion method
-        # every type already provides.
+    def coerce(self, other: Value) -> Value:
         return getattr(other, self.conversion)()
 
-    def todo(self, operation):
+    def todo(self, operation: str) -> None:
         raise LynxNotImplemented(f"'{operation}' is not implemented yet for {self.type_name()}")
 
     # --- comparisons, derived ------------------------------------------
-    # All seven follow from `compare` and `almost`, so a type never restates
-    # its own ordering and orientation is written once, here: `less` is just
-    # `greater` read the other way round.
 
-    def equals(self, other):
-        # `=` never crosses types — operations.py answers false before we get
-        # here — so reaching this method means the two types already match.
+    def equals(self, other: Value) -> Boolean:
         return Boolean(self.compare(other) == 0)
 
-    def greater(self, other):
+    def greater(self, other: Value) -> Boolean:
         return Boolean(self.compare(other) > 0)
 
-    def less(self, other):
+    def less(self, other: Value) -> Boolean:
         return Boolean(self.compare(other) < 0)
 
-    def greater_or_equal(self, other):
+    def greater_or_equal(self, other: Value) -> Boolean:
         return Boolean(self.compare(other) >= 0)
 
-    def lesser_or_equal(self, other):
+    def lesser_or_equal(self, other: Value) -> Boolean:
         return Boolean(self.compare(other) <= 0)
 
-    def greater_or_almost(self, other):
+    def greater_or_almost(self, other: Value) -> Boolean:
         return Boolean(self.compare(other) > 0 or self.almost(other).is_true())
 
-    def lesser_or_almost(self, other):
+    def lesser_or_almost(self, other: Value) -> Boolean:
         return Boolean(self.compare(other) < 0 or self.almost(other).is_true())
 
-    # Every value must define all of these. Stubs in each type call self.todo(...).
+    # Every value must define all of these.
 
     @abstractmethod
     def default_value(self): ...
@@ -141,7 +105,7 @@ class Value(ABC):
     @abstractmethod
     def xor(self, other): ...
 
-    # ordering: the two primitives the seven comparisons above are built from
+    # ordering
     @abstractmethod
     def compare(self, other): ...
     @abstractmethod
@@ -163,71 +127,71 @@ class Number(Value):
     conversion = "number"
     default_value = 0
 
-    def __init__(self, value):
+    def __init__(self, value: int | float | str) -> None:
         self.value = float(value)
         if self.value % 1 == 0:
             self.value = int(self.value)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self.value)
 
-    def boolean(self):
+    def boolean(self) -> Boolean:
         return Boolean(self.value > 0)
 
-    def add(self, other):
+    def add(self, other: Number) -> Number:
         return Number(self.value + other.value)
 
-    def subtract(self, other):
+    def subtract(self, other: Number) -> Number:
         return Number(self.value - other.value)
 
-    def multiply(self, other):
+    def multiply(self, other: Number) -> Number:
         return Number(self.value * other.value)
 
-    def divide(self, other):
+    def divide(self, other: Number) -> Number | Void:
         if other.value == 0:
             return Void()
         return Number(self.value / other.value)
 
-    def compare(self, other):
+    def compare(self, other: Number) -> int:
         return compare_raw(self.value, other.value)
 
-    def number(self):
+    def number(self) -> Number:
         return self
 
-    def text(self):
+    def text(self) -> Text:
         return Text(str(self.value))
 
-    def void(self):
+    def void(self) -> Void:
         return Void()
 
-    def not_(self):
+    def not_(self) -> Number:
         return Number(1 - self.value)
 
-    def almost(self, other):
+    def almost(self, other: Number) -> Boolean:
         return Boolean(abs(self.value - other.value) < 1)
 
-    def lenght(self):
+    def lenght(self) -> Number:
         return Number(len(str(self.value).replace('.', '').replace('-', '')))
 
-    def first(self): 
+    def first(self) -> Number:
         return Number(str(self.value).replace('.', '').replace('-', '')[0])
-    
-    def last(self):
+
+    def last(self) -> Number:
         return Number(str(self.value)[-1])
 
-    def middle(self):
+    def middle(self) -> Number:
         digits = str(self.value).replace('.', '').replace('-', '')
         return Number(digits[len(digits) // 2])
 
-    def power(self, other):
+    def power(self, other: Number) -> Number:
         return Number(self.value ** other.value)
 
-    def root(self, other):
+    def root(self, other: Number) -> Number | Void:
         if other.value == 0:
             return Void()
         return Number(self.value ** (1 / other.value))
 
-    def xor(self, other):
+    def xor(self, other: Number) -> Number:
         s = self.value + other.value
         return Number(s * (1 - s))
 
@@ -237,66 +201,64 @@ class Text(Value):
     conversion = "text"
     default_value = ''
 
-    def __init__(self, value):
+    def __init__(self, value: str) -> None:
         self.value = value
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self.value)
 
-    def add(self, other):
+    def add(self, other: Text) -> Text:
         return Text(self.value + other.value)
 
-    def compare(self, other):
-        # Lexicographic, so 'apple' < 'banana'.
+    def compare(self, other: Text) -> int:
         return compare_raw(self.value, other.value)
 
-    def number(self):
-        # The number the text spells, or — when it spells none — how long it is.
+    def number(self) -> Number:
         try:
             return Number(self.value)
         except ValueError:
             return Number(len(self.value))
 
-    def text(self):
+    def text(self) -> Text:
         return self
 
-    def void(self):
+    def void(self) -> Void:
         return Void()
-    
-    def lenght(self): 
+
+    def lenght(self) -> Number:
         return Number(len(self.value))
-    
-    def first(self):
+
+    def first(self) -> Text:
         if len(self.value) > 0:
             return Text(self.value[0])
         return Text('')
-    
-    def last(self): 
+
+    def last(self) -> Text:
         if len(self.value) > 0:
             return Text(self.value[-1])
         return Text('')
 
-    def middle(self):
+    def middle(self) -> Text:
         if len(self.value) == 0:
             return Text('')
         return Text(self.value[len(self.value) // 2])
 
-    def boolean(self):
+    def boolean(self) -> Boolean:
         return Boolean(self.value != '')
 
-    def not_(self):
+    def not_(self) -> Text:
         return Text(str(1 - self.number().value))
 
-    def subtract(self, other):
+    def subtract(self, other: Text) -> Text:
         return Text(self.value.replace(other.value, ''))
 
-    def multiply(self, other):
+    def multiply(self, other: Text) -> Text:
         return Text(self.value * len(other.value))
 
-    def power(self, other):
+    def power(self, other: Text) -> Text:
         return Text(self.value * len(other.value))
 
-    def divide(self, other):
+    def divide(self, other: Text) -> Text | Void:
         if other.value == '':
             return Void()
         if self.value == '':
@@ -304,13 +266,13 @@ class Text(Value):
         part = len(self.value) // (len(other.value) + 1)
         return Text(self.value[:max(part, 1)])
 
-    def root(self, other):
+    def root(self, other: Text) -> Text:
         return Text(self.value[:len(self.value) // 2])
 
-    def almost(self, other):
+    def almost(self, other: Text) -> Boolean:
         return Boolean(edit_distance(self.value, other.value) <= 1)
 
-    def xor(self, other):
+    def xor(self, other: Text) -> Text:
         combined = Text(self.value + other.value)
         return combined.multiply(combined.not_())
 
@@ -320,108 +282,114 @@ class Boolean(Value):
     conversion = "boolean"
     default_value = False
 
-    def __init__(self, value):
+    def __init__(self, value: bool) -> None:
         self.value = bool(value)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return SPELLING[self.value]
 
-    def number(self):
+    def number(self) -> Number:
         return Number(1 if self.value else 0)
 
-    def boolean(self):
+    def boolean(self) -> Boolean:
         return self
 
-    def text(self):
+    def text(self) -> Text:
         return Text(str(self.__repr__()))
 
-    def is_true(self):
+    def is_true(self) -> bool:
         return self.value
 
-    def not_(self):
+    def not_(self) -> Boolean:
         return Boolean(not self.value)
 
-    def add(self, other):
+    def add(self, other: Boolean) -> Boolean:
         return Boolean(self.value or other.value)
 
-    def multiply(self, other):
+    def multiply(self, other: Boolean) -> Boolean:
         return Boolean(self.value and other.value)
 
-    def xor(self, other):
+    def xor(self, other: Boolean) -> Boolean:
         return Boolean(self.value != other.value)
 
-    def compare(self, other):
+    def compare(self, other: Boolean) -> int:
         return compare_raw(self.value, other.value)
 
-    def almost(self, other):
+    def almost(self, other: Boolean) -> Boolean:
         return Boolean(True)
 
-    # --- not implemented yet ---
-
-    def void(self): 
+    def void(self) -> Void:
         return Void()
-    
-    def subtract(self, other): 
+
+    def subtract(self, other: Boolean) -> Boolean:
         return Boolean(self.value or other.value)
-    
-    def divide(self, other):
+
+    def divide(self, other: Boolean) -> Boolean | Void:
         if not other.value:
             return Void()
         return Boolean(self.value and other.value)
-    
-    def power(self, other): 
+
+    def power(self, other: Boolean) -> Boolean:
         return Boolean(self.value if other.value else True)
-    
-    def root(self, other): 
+
+    def root(self, other: Boolean) -> Boolean:
         return Boolean(self.value)
-    
-    def lenght(self): 
+
+    def lenght(self) -> Number:
         return Number(1)
-    
-    def first(self): 
+
+    def first(self) -> Boolean:
         return self
-    
-    def last(self): 
+
+    def last(self) -> Boolean:
         return self
-    
-    def middle(self): 
+
+    def middle(self) -> Boolean:
         return self
 
 
 class Void(Value):
-    """The absence of a value, like Python's None. Everything about how it
-    behaves is up to the stubs below."""
+    """The absence of a value, like Python's None."""
 
     rank = 0
     conversion = "void"
     default_value = None
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return SPELLING[None]
 
-    def number(self):
+    def number(self) -> Number:
         return Number(0)
-    def text(self):
+    
+    def text(self) -> Text:
         return Text('')
-    def boolean(self):
+    
+    def boolean(self) -> Boolean:
         return Boolean(False)
-    def void(self):
+    
+    def void(self) -> Void:
         return self
 
-    def compare(self, other):
-        # There is only one void, so any two are the same.
+    def compare(self, other: Value) -> int:
         return 0
 
-    def add(self, other): return Void()
-    def subtract(self, other): return Void()
-    def multiply(self, other): return Void()
-    def divide(self, other): return Void()
-    def power(self, other): return Void()
-    def root(self, other): return Void()
-    def almost(self, other): return Boolean(True)
-    def xor(self, other): return Boolean(False)
-    def not_(self): return Void()
-    def first(self): return Void()
-    def last(self): return Void()
-    def middle(self): return Void()
-    def lenght(self): return Number(0)
+    def almost(self, other: Value) -> Boolean: 
+            return Boolean(True)
+    def xor(self, other: Value) -> Boolean: 
+            return Boolean(False)
+        
+    def lenght(self) -> Number: 
+            return Number(0)
+
+    def add(self, other: Value) -> Void: return Void()
+    def subtract(self, other: Value) -> Void: return Void()
+    def multiply(self, other: Value) -> Void: return Void()
+    def divide(self, other: Value) -> Void: return Void()
+    def power(self, other: Value) -> Void: return Void()
+    def root(self, other: Value) -> Void: return Void()
+    def not_(self) -> Void: return Void()
+    def first(self) -> Void: return Void()
+    def last(self) -> Void: return Void()
+    def middle(self) -> Void: return Void()
+
+    

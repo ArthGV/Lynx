@@ -18,8 +18,11 @@ Because layers 2 and 3 both settle the pair before dispatching, every method in
 `values.py` may assume `other` is its own type.
 """
 
+from collections.abc import Callable
+from typing import Any
+
 from src.errors.errors import LynxNotImplemented
-from src.types import values
+from src.runtime import values
 
 # How an operator reconciles two different types when no `@mixed` handler
 # claims the pair.
@@ -46,10 +49,10 @@ POLICY = {
 }
 
 # (left type, right type, method) -> handler(left, right)
-MIXED = {}
+MIXED: dict[tuple[type, type, str], Callable[..., values.Value]] = {}
 
 
-def mixed(first, second, method, commutes=False):
+def mixed(first: type, second: type, method: str, commutes: bool = False) -> Callable:
     """Register the meaning of one operation on one pair of types.
 
     The handler's parameters are named by type and read in source order, so it
@@ -59,7 +62,7 @@ def mixed(first, second, method, commutes=False):
     two directions differ — `'hi' + 2` is 'hi2', `2 + 'hi'` is '2hi' — is two
     registrations instead, each read left to right.
     """
-    def register(handler):
+    def register(handler: Callable) -> Callable:
         MIXED[(first, second, method)] = handler
         if commutes:
             MIXED[(second, first, method)] = lambda left, right: handler(right, left)
@@ -67,7 +70,7 @@ def mixed(first, second, method, commutes=False):
     return register
 
 
-def binary(method, left, right):
+def binary(method: str, left: values.Value, right: values.Value) -> values.Value:
     if type(left) is type(right):
         return getattr(left, method)(right)
 
@@ -101,7 +104,7 @@ def binary(method, left, right):
 
 
 @mixed(values.Text, values.Number, "multiply", commutes=True)
-def repeat_multiply_text_number(text, number):
+def repeat_multiply_text_number(text: values.Text, number: values.Number) -> values.Text:
     # A fractional count adds a proportional slice of the text, so 0.5 always
     # appends half of it. Negative counts repeat the text unsigned and then
     # reverse the whole result.
@@ -116,17 +119,17 @@ def repeat_multiply_text_number(text, number):
     return values.Text(result)
 
 @mixed(values.Boolean, values.Number, "multiply", commutes=True)
-def repeat_multiply_boolean_number(bool, number):
+def repeat_multiply_boolean_number(bool: values.Boolean, number: values.Number) -> values.Number:
     return values.Number(bool.number().value * int(number.value))
 
 @mixed(values.Void, values.Number, "multiply", commutes=True)
-def repeat_multiply_void_number(void, number):
+def repeat_multiply_void_number(void: values.Void, number: values.Number) -> values.Void:
     return values.Number.default()
 
 @mixed(values.Void, values.Text, "multiply", commutes=True)
-def repeat_multiply_void_text(void, text):
+def repeat_multiply_void_text(void: values.Void, text: values.Text) -> values.Text:
     return values.Text.default()
 
 @mixed(values.Void, values.Boolean, "multiply", commutes=True)
-def repeat_multiply_void_boolean(void, bool):
+def repeat_multiply_void_boolean(void: values.Void, bool: values.Boolean) -> values.Boolean:
     return values.Boolean.default()

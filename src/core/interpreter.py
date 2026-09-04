@@ -6,15 +6,10 @@ their operands reconciled by operations.py, so the interpreter never mentions an
 operator character and never decides what two types mean together.
 """
 
-from src import operations
-from src.errors.errors import (
-    LynxInputError,
-    LynxNameError,
-    LynxNotImplemented,
-    LynxTypeError,
-)
-from src.grammar import BINARY_METHOD, UNARY_METHOD
-from src.nodes import (
+from typing import Any
+
+from src.core.grammar import BINARY_METHOD, UNARY_METHOD
+from src.core.nodes import (
     Assignment,
     BinaryExpression,
     Boolean,
@@ -30,11 +25,19 @@ from src.nodes import (
     UnaryExpression,
     Void,
 )
-from src.types import values
-from src.types.functions import FunctionValue, _Return
+from src.errors.errors import (
+    LynxInputError,
+    LynxNameError,
+    LynxNotImplemented,
+    LynxTypeError,
+)
+from src.runtime import operations
+from src.runtime import values
+from src.runtime.environment import Environment
+from src.runtime.functions import FunctionValue, _Return
 
 
-def execute(node, env):
+def execute(node: Any, env: Environment) -> None:
     if isinstance(node, list):
         for statement in node:
             execute(statement, env)
@@ -72,7 +75,7 @@ def execute(node, env):
 
 
 
-def evaluate(node, env):
+def evaluate(node: Any, env: Environment) -> values.Value:
     match node:
         case Number(value):
             return values.Number(value)
@@ -102,7 +105,7 @@ def evaluate(node, env):
             raise LynxTypeError(f"cannot evaluate {type(node).__name__}")
 
 
-def call(callee, args, line, env):
+def call(callee: str, args: list[Any], line: int | None, env: Environment) -> values.Value:
     fn = env.get(callee, line)
     if not isinstance(fn, FunctionValue):
         raise LynxNameError(f"'{callee}' is not a function", line)
@@ -120,7 +123,7 @@ def call(callee, args, line, env):
     return values.Void()
 
 
-def apply_binary(operator, left, right, line):
+def apply_binary(operator: str, left: values.Value, right: values.Value, line: int | None) -> values.Value:
     # Every value defines every operation and operations.binary reconciles any
     # pair of types, so this always resolves; a stub that hasn't been filled in
     # raises LynxNotImplemented, which we locate to `line`.
@@ -132,7 +135,7 @@ def apply_binary(operator, left, right, line):
         raise
 
 
-def apply_unary(operator, value, line):
+def apply_unary(operator: str, value: values.Value, line: int | None) -> values.Value:
     # Same contract as apply_binary: every value defines every operation, so a
     # stub that hasn't been filled in raises LynxNotImplemented, which we locate
     # to `line`.

@@ -20,7 +20,7 @@ LITERALS = {
 }
 
 
-def _literal_token(value):
+def _literal_token(value: bool | float | None) -> str:
     if isinstance(value, bool):
         return "BOOLEAN"
     if value is None:
