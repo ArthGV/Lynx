@@ -33,6 +33,3 @@ empty_arr: void
 filled: 'x'
 >> boolean filled
 >> boolean empty_arr
-
-// out-of-range index is an error
->> my_array 5

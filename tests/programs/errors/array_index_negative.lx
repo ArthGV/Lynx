@@ -1,0 +1,3 @@
+// a negative index is written with '-', which parses as subtraction
+arr: 1, 2, 3
+>> arr -6

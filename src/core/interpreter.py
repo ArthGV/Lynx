@@ -144,7 +144,12 @@ def index_array(array: values.Array, args: list[Any], line: int | None, env: Env
     for arg in args:
         if not isinstance(current, values.Array):
             raise LynxTypeError("cannot index into a value that is not an array", line)
-        idx = evaluate(arg, env).number().value
+        index_value = evaluate(arg, env)
+        if not isinstance(index_value, values.Number):
+            raise LynxTypeError(
+                f"array index must be a number, got {index_value.type_name()}", line
+            )
+        idx = index_value.value
         if not isinstance(idx, int) or idx < 0 or idx >= len(current.value):
             raise LynxError(
                 f"index {idx} out of range for an array of length {len(current.value)}", line
