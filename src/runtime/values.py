@@ -431,7 +431,7 @@ class Array(ComplexType):
         self.value = list(items)
 
     def __repr__(self) -> str:
-        return ", ".join(str(item) for item in self.value)
+        return "[ " + ", ".join(str(item) for item in self.value) + " ]"
 
     def type_name(self) -> str:
         return "Array"

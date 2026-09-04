@@ -5,8 +5,9 @@ are not reachable from `.lx` programs — there is no keyword for them. These ar
 tested here directly against the values module.
 """
 
-from src.runtime.values import Array, Boolean, Number, Text, Void
 from src.errors.errors import LynxNotImplemented
+from src.runtime.values import Array, Boolean, Number, Text, Void
+
 
 def arr(*items):
     return Array(items)
@@ -33,7 +34,7 @@ def test_array_lenght():
 
 def test_array_conversions():
     a = arr(Number(1), Boolean(True))
-    assert print_(a.text()) == "1, true"
+    assert print_(a.text()) == "[ 1, true ]"
     assert print_(a.number()) == "2"
     assert a.boolean().is_true() is True
     assert arr().boolean().is_true() is False
