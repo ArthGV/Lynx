@@ -20,6 +20,12 @@ class Assignment:
 
 
 @dataclass
+class ArrayLiteral:
+    items: list[Any]
+    line: int | None = None
+
+
+@dataclass
 class Function:
     name: str
     params: list[Any]

@@ -2,9 +2,10 @@
 
 lynx's rule is that everything works with everything: every operation is defined
 for every type, so there are no "unsupported operand" errors — only operations
-nobody has written yet. `Value` lists the full interface as abstract methods, so
-each type is forced to provide all of them. Fill a stub in by replacing its body
-with real logic.
+nobody has written yet. `Type` is the base: `SimpleType` for scalars (Number,
+Text, Boolean, Void) and `ComplexType` for values made of other values (Array).
+`Type` lists the full interface as abstract methods, so each type is forced to
+provide all of them. Fill a stub in by replacing its body with real logic.
 
 Combining two *different* types is `operations.py`'s job: it resolves the pair
 before dispatching here, so every method below may assume `other` is its own
@@ -14,6 +15,7 @@ the promotion order, and `conversion`, the name of the method that builds one.
 
 from __future__ import annotations
 
+import inspect
 from abc import ABC, abstractmethod
 
 from src.core.grammar import SPELLING
@@ -21,12 +23,20 @@ from src.errors.errors import LynxNotImplemented
 from src.utils.text import compare_raw, edit_distance
 
 
-class Value(ABC):
+class Type(ABC):
+    """Every value lynx works with. Subclassed by SimpleType (Number, Text,
+    Boolean, Void) and ComplexType (Array). `rank` and `conversion` let
+    operations.py reconcile pairs of different types."""
+
     rank: int | None = None
     conversion: str | None = None
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
+        # Abstract scaffolds (SimpleType, ComplexType) need no rank/conversion;
+        # only concrete leaf types that can be instantiated must declare them.
+        if inspect.isabstract(cls):
+            return
         for declaration in ("rank", "conversion"):
             if getattr(cls, declaration, None) is None:
                 raise TypeError(f"{cls.__name__} must declare `{declaration}`")
@@ -37,33 +47,38 @@ class Value(ABC):
     def type_of(self) -> Text:
         return Text(self.type_name())
 
-    def coerce(self, other: Value) -> Value:
-        return getattr(other, self.conversion)()
+    def coerce(self, other: Type) -> Type:
+        method = getattr(other, self.conversion, None)
+        if method is None:
+            raise LynxNotImplemented(
+                f"cannot coerce {other.type_name()} into {self.type_name()}"
+            )
+        return method()
 
     def todo(self, operation: str) -> None:
         raise LynxNotImplemented(f"'{operation}' is not implemented yet for {self.type_name()}")
 
     # --- comparisons, derived ------------------------------------------
 
-    def equals(self, other: Value) -> Boolean:
+    def equals(self, other: Type) -> Boolean:
         return Boolean(self.compare(other) == 0)
 
-    def greater(self, other: Value) -> Boolean:
+    def greater(self, other: Type) -> Boolean:
         return Boolean(self.compare(other) > 0)
 
-    def less(self, other: Value) -> Boolean:
+    def less(self, other: Type) -> Boolean:
         return Boolean(self.compare(other) < 0)
 
-    def greater_or_equal(self, other: Value) -> Boolean:
+    def greater_or_equal(self, other: Type) -> Boolean:
         return Boolean(self.compare(other) >= 0)
 
-    def lesser_or_equal(self, other: Value) -> Boolean:
+    def lesser_or_equal(self, other: Type) -> Boolean:
         return Boolean(self.compare(other) <= 0)
 
-    def greater_or_almost(self, other: Value) -> Boolean:
+    def greater_or_almost(self, other: Type) -> Boolean:
         return Boolean(self.compare(other) > 0 or self.almost(other).is_true())
 
-    def lesser_or_almost(self, other: Value) -> Boolean:
+    def lesser_or_almost(self, other: Type) -> Boolean:
         return Boolean(self.compare(other) < 0 or self.almost(other).is_true())
 
     # Every value must define all of these.
@@ -122,7 +137,15 @@ class Value(ABC):
     def middle(self): ...
 
 
-class Number(Value):
+class SimpleType(Type):
+    """A value made of a single scalar: Number, Text, Boolean, Void."""
+
+
+class ComplexType(Type):
+    """A value made of other values: Array. Nested types work here."""
+
+
+class Number(SimpleType):
     rank = 3
     conversion = "number"
     default_value = 0
@@ -196,7 +219,7 @@ class Number(Value):
         return Number(s * (1 - s))
 
 
-class Text(Value):
+class Text(SimpleType):
     rank = 2
     conversion = "text"
     default_value = ''
@@ -277,7 +300,7 @@ class Text(Value):
         return combined.multiply(combined.not_())
 
 
-class Boolean(Value):
+class Boolean(SimpleType):
     rank = 1
     conversion = "boolean"
     default_value = False
@@ -348,7 +371,7 @@ class Boolean(Value):
         return self
 
 
-class Void(Value):
+class Void(SimpleType):
     """The absence of a value, like Python's None."""
 
     rank = 0
@@ -370,26 +393,113 @@ class Void(Value):
     def void(self) -> Void:
         return self
 
-    def compare(self, other: Value) -> int:
+    def compare(self, other: Type) -> int:
         return 0
 
-    def almost(self, other: Value) -> Boolean: 
+    def almost(self, other: Type) -> Boolean: 
             return Boolean(True)
-    def xor(self, other: Value) -> Boolean: 
+    def xor(self, other: Type) -> Boolean: 
             return Boolean(False)
         
     def lenght(self) -> Number: 
             return Number(0)
 
-    def add(self, other: Value) -> Void: return Void()
-    def subtract(self, other: Value) -> Void: return Void()
-    def multiply(self, other: Value) -> Void: return Void()
-    def divide(self, other: Value) -> Void: return Void()
-    def power(self, other: Value) -> Void: return Void()
-    def root(self, other: Value) -> Void: return Void()
+    def add(self, other: Type) -> Void: return Void()
+    def subtract(self, other: Type) -> Void: return Void()
+    def multiply(self, other: Type) -> Void: return Void()
+    def divide(self, other: Type) -> Void: return Void()
+    def power(self, other: Type) -> Void: return Void()
+    def root(self, other: Type) -> Void: return Void()
     def not_(self) -> Void: return Void()
     def first(self) -> Void: return Void()
     def last(self) -> Void: return Void()
     def middle(self) -> Void: return Void()
+
+
+class Array(ComplexType):
+    """A mutable list of other values, simple or complex.
+
+    Literal form is comma-separated and bracket-free: `my_array: 1, true, 'hi'`.
+    Element access reuses the call machinery: `my_array 0`, chained for nesting.
+    """
+
+    rank = 4
+    conversion = "array"
+    default_value = []
+
+    def __init__(self, items: list[Type]) -> None:
+        self.value = list(items)
+
+    def __repr__(self) -> str:
+        return ", ".join(str(item) for item in self.value)
+
+    def type_name(self) -> str:
+        return "Array"
+
+    def lenght(self) -> Number:
+        return Number(len(self.value))
+
+    def first(self) -> Type:
+        if len(self.value) > 0:
+            return self.value[0]
+        return Void()
+
+    def last(self) -> Type:
+        if len(self.value) > 0:
+            return self.value[-1]
+        return Void()
+
+    def middle(self) -> Type:
+        if len(self.value) == 0:
+            return Void()
+        return self.value[len(self.value) // 2]
+
+    def compare(self, other: Array) -> int:
+        if len(self.value) != len(other.value):
+            return compare_raw(len(self.value), len(other.value))
+        for a, b in zip(self.value, other.value):
+            if type(a) is type(b):
+                c = a.compare(b)
+            else:
+                c = compare_raw(a.rank, b.rank)
+            if c != 0:
+                return c
+        return 0
+
+    def almost(self, other: Array) -> Boolean:
+        return self.equals(other)
+
+    def equals(self, other: Array) -> Boolean:
+        if len(self.value) != len(other.value):
+            return Boolean(False)
+        for a, b in zip(self.value, other.value):
+            if type(a) is type(b):
+                if not a.equals(b).is_true():
+                    return Boolean(False)
+            else:
+                return Boolean(False)
+        return Boolean(True)
+
+    def number(self) -> Number:
+        return Number(len(self.value))
+
+    def text(self) -> Text:
+        return Text(self.__repr__())
+
+    def boolean(self) -> Boolean:
+        return Boolean(len(self.value) > 0)
+
+    def void(self) -> Void:
+        return Void()
+
+    # --- not implemented yet ---
+    def add(self, other: Array) -> Type: self.todo("add")
+    def subtract(self, other: Array) -> Type: self.todo("subtract")
+    def multiply(self, other: Array) -> Type: self.todo("multiply")
+    def divide(self, other: Array) -> Type: self.todo("divide")
+    def power(self, other: Array) -> Type: self.todo("power")
+    def root(self, other: Array) -> Type: self.todo("root")
+    def xor(self, other: Array) -> Type: self.todo("xor")
+    def not_(self) -> Type: self.todo("not_")
 
     

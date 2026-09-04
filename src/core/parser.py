@@ -10,6 +10,7 @@ from typing import Any
 from src.core.grammar import BINARY_LEVELS, UNARY_METHOD, UNARY_OPERAND_LEVEL
 from src.core.lexer import Token
 from src.core.nodes import (
+    ArrayLiteral,
     Assignment,
     BinaryExpression,
     Boolean,
@@ -143,7 +144,19 @@ class Parser:
     def parse_assignment(self) -> Assignment:
         name = self.match("IDENTIFIER").value
         self.match("COLON")
-        return Assignment(name, self.parse_expression())
+        return Assignment(name, self.parse_assign_rhs())
+
+    def parse_assign_rhs(self) -> Any:
+        # The right-hand side of `name:` is one expression unless a top-level
+        # comma separates several, in which case it is an array literal.
+        # `,` consumed inside a call's args stays that call's args, never here.
+        items = [self.parse_expression()]
+        while self.type() == "COMMA":
+            self.advance()
+            items.append(self.parse_expression())
+        if len(items) == 1:
+            return items[0]
+        return ArrayLiteral(items)
 
     def parse_call(self, name: str, line: int | None) -> Call:
         args = [self.parse_expression()]
@@ -151,6 +164,22 @@ class Parser:
             self.advance()
             args.append(self.parse_expression())
         return Call(name, args, line)
+
+    def parse_chain(self, operand: Any) -> Any:
+        # After `operand`, a run of space-separated expressions means chained
+        # calls: `a 1 0` -> Call(Call(a, [1]), [0]). `,` inside one run stays
+        # that run's args, so `a 1, 0` is a single two-arg call.
+        while self._starts_expression(self.type()):
+            args = [self.parse_expression()]
+            while self.type() == "COMMA":
+                self.advance()
+                args.append(self.parse_expression())
+            operand = Call(operand, args, self.peek_line())
+        return operand
+
+    def peek_line(self) -> int | None:
+        token = self.peek()
+        return token.line if token else None
 
     def parse_if(self) -> If:
         self.match("IF")
@@ -215,7 +244,7 @@ class Parser:
             case "IDENTIFIER":
                 name = self.advance().value
                 if self._starts_expression(self.type()):
-                    return self.parse_call(name, token.line)
+                    return self.parse_chain(self.parse_call(name, token.line))
                 return Identifier(name, token.line)
         raise LynxSyntaxError(
             f"unexpected {self.type()}", token.line if token else None

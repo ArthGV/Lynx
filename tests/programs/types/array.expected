@@ -1,0 +1,17 @@
+10, 20, 30
+Array
+3
+10
+30
+10
+20
+30
+5, 7, 6
+6
+a, 1, 2
+1
+2
+1
+true
+false
+Error on line 38: index 5 out of range for an array of length 3

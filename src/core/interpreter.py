@@ -10,6 +10,7 @@ from typing import Any
 
 from src.core.grammar import BINARY_METHOD, UNARY_METHOD
 from src.core.nodes import (
+    ArrayLiteral,
     Assignment,
     BinaryExpression,
     Boolean,
@@ -26,6 +27,7 @@ from src.core.nodes import (
     Void,
 )
 from src.errors.errors import (
+    LynxError,
     LynxInputError,
     LynxNameError,
     LynxNotImplemented,
@@ -75,7 +77,7 @@ def execute(node: Any, env: Environment) -> None:
 
 
 
-def evaluate(node: Any, env: Environment) -> values.Value:
+def evaluate(node: Any, env: Environment) -> values.Type:
     match node:
         case Number(value):
             return values.Number(value)
@@ -88,6 +90,9 @@ def evaluate(node: Any, env: Environment) -> values.Value:
 
         case Void():
             return values.Void()
+
+        case ArrayLiteral(items, line):
+            return values.Array([evaluate(item, env) for item in items])
 
         case Identifier(name, line):
             return env.get(name, line)
@@ -105,10 +110,19 @@ def evaluate(node: Any, env: Environment) -> values.Value:
             raise LynxTypeError(f"cannot evaluate {type(node).__name__}")
 
 
-def call(callee: str, args: list[Any], line: int | None, env: Environment) -> values.Value:
-    fn = env.get(callee, line)
+def call(callee: Any, args: list[Any], line: int | None, env: Environment) -> values.Type:
+    # `callee` is either a name (a plain function/index call) or an expression
+    # (the result of an earlier chained call), so resolve it to a value first.
+    if isinstance(callee, str):
+        fn = env.get(callee, line)
+    else:
+        fn = evaluate(callee, env)
+
+    if isinstance(fn, values.Array):
+        return index_array(fn, args, line, env)
+
     if not isinstance(fn, FunctionValue):
-        raise LynxNameError(f"'{callee}' is not a function", line)
+        raise LynxTypeError(f"'{callee}' is not a function", line)
     if len(args) != len(fn.params):
         raise LynxInputError(
             f"{callee} expected {len(fn.params)} input but got {len(args)}", line
@@ -123,7 +137,23 @@ def call(callee: str, args: list[Any], line: int | None, env: Environment) -> va
     return values.Void()
 
 
-def apply_binary(operator: str, left: values.Value, right: values.Value, line: int | None) -> values.Value:
+def index_array(array: values.Array, args: list[Any], line: int | None, env: Environment) -> values.Type:
+    # `,` groups several indices into one access step: `a 1, 0` lowers through
+    # each nesting level in order. Indices are 0-based.
+    current: values.Array = array
+    for arg in args:
+        if not isinstance(current, values.Array):
+            raise LynxTypeError("cannot index into a value that is not an array", line)
+        idx = evaluate(arg, env).number().value
+        if not isinstance(idx, int) or idx < 0 or idx >= len(current.value):
+            raise LynxError(
+                f"index {idx} out of range for an array of length {len(current.value)}", line
+            )
+        current = current.value[idx]
+    return current
+
+
+def apply_binary(operator: str, left: values.Type, right: values.Type, line: int | None) -> values.Type:
     # Every value defines every operation and operations.binary reconciles any
     # pair of types, so this always resolves; a stub that hasn't been filled in
     # raises LynxNotImplemented, which we locate to `line`.
@@ -135,7 +165,7 @@ def apply_binary(operator: str, left: values.Value, right: values.Value, line: i
         raise
 
 
-def apply_unary(operator: str, value: values.Value, line: int | None) -> values.Value:
+def apply_unary(operator: str, value: values.Type, line: int | None) -> values.Type:
     # Same contract as apply_binary: every value defines every operation, so a
     # stub that hasn't been filled in raises LynxNotImplemented, which we locate
     # to `line`.
