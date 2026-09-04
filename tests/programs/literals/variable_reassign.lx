@@ -1,0 +1,21 @@
+// basic reassignment
+x: 5
+>> x
+x: 10
+>> x
+
+// reassignment with expression
+y: 1
+>> y
+y: y + 1
+>> y
+y: y * 3
+>> y
+
+// reassignment changes type
+z: 42
+>> z
+z: 'hello'
+>> z
+z: true
+>> z

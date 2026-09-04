@@ -1,0 +1,18 @@
+// pi literal
+>> pi
+>> pi + 1
+>> pi * 2
+
+// void literal
+>> void
+
+// comments: this line is a comment
+// another comment
+>> 42 // inline comment
+>> 'hello' // another inline
+
+// float literals
+>> 3.14
+>> 0.5
+>> 100.0
+>> -2.5

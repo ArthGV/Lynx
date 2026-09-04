@@ -1,0 +1,29 @@
+// Void * Number (registered pair, commutative)
+>> void * 5
+>> 5 * void
+
+// Void * Text (registered pair, commutative)
+>> void * 'hello'
+>> 'hello' * void
+
+// Void * Boolean (registered pair, commutative)
+>> void * true
+>> true * void
+
+// Void + Number (LEFT policy: coerce right to Void)
+>> void + 5
+
+// Void - Number (LEFT policy)
+>> void - 5
+
+// Void / Number (LEFT policy)
+>> void / 5
+
+// Void + Text (LEFT policy)
+>> void + 'hi'
+
+// Void + Boolean (LEFT policy)
+>> void + true
+
+// Boolean * Void (registered pair)
+>> false * void

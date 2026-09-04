@@ -1,0 +1,16 @@
+// Boolean LEFT of Text: coerce text to boolean
+>> true + 'hello'
+>> false + 'hello'
+>> true * 'hello'
+>> false * 'hello'
+>> true - 'hello'
+>> true / 'hello'
+>> true / ''
+
+// Text LEFT of Boolean: coerce boolean to text
+>> 'hello' + true
+>> 'hello' + false
+>> 'hello' * true
+>> 'hello' * false
+>> 'hello' / true
+>> 'hello' / false

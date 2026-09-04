@@ -1,0 +1,26 @@
+// Void type: conversions
+>> number void
+>> text void
+>> boolean void
+
+// Void type: arithmetic (all return void)
+>> void + 5
+>> void - 5
+>> void * 5
+>> void / 5
+>> void xor 5
+
+// Void type: comparisons
+>> void = void
+>> void ≈ void
+>> void ≈ 5
+>> void ≈ 'hi'
+>> void ≈ true
+
+// Void type: sequence access
+>> len void
+>> first void
+>> last void
+
+// Void type: xor
+>> void xor void

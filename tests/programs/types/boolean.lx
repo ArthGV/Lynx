@@ -1,0 +1,43 @@
+// Boolean type: conversions
+>> number true
+>> number false
+>> text true
+>> text false
+>> boolean true
+>> boolean false
+
+// Boolean type: arithmetic
+>> true + true
+>> true + false
+>> false + false
+>> true * true
+>> true * false
+>> false * false
+>> true - true
+>> true - false
+>> true / true
+>> false / true
+>> true / false
+
+// Boolean type: comparisons
+>> true = true
+>> true = false
+>> true > false
+>> false > true
+>> true < false
+>> true ≈ true
+>> true ≈ false
+
+// Boolean type: sequence access
+>> len true
+>> len false
+>> first true
+>> first false
+>> last true
+>> last false
+
+// Boolean type: xor
+>> true xor true
+>> true xor false
+>> false xor true
+>> false xor false

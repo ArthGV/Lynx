@@ -1,0 +1,51 @@
+// Number type: conversions (number, text, boolean)
+>> number 42
+>> text 42
+>> boolean 42
+>> boolean 0
+>> boolean -5
+
+// Number type: arithmetic
+>> 3 + 4
+>> 10 - 6
+>> 5 * 3
+>> 10 / 4
+>> 10 / 0
+
+// Number type: comparisons
+>> 5 = 5
+>> 5 = 6
+>> 5 > 3
+>> 5 < 3
+>> 5 ≈ 5
+>> 5 ≈ 5.5
+>> 5 ≈ 6
+
+// Number type: not_ (via subtraction from 1)
+>> 1 - 5
+>> 1 - 0
+>> 1 - 1
+
+// Number type: sequence access
+>> len 12345
+>> len 0
+>> len -42
+>> first 12345
+>> first 42
+>> last 12345
+>> last 42
+
+// Number type: xor
+>> 3 xor 4
+>> 0 xor 0
+>> 1 xor 0
+
+// Number type: edge cases with floats
+>> 3.5 + 1.5
+>> 3 * 3.5
+>> 3.14 * 2
+>> len 3.14
+>> first 3.14
+>> last 3.14
+>> first -55
+>> last -55

@@ -1,0 +1,69 @@
+// Cross-coverage: combined operations across types and features
+// A pipeline that converts, concatenates, compares and branches.
+
+// number to text to number
+n: 42
+t: text n
+>> t
+m: number t
+>> m
+>> m = 42
+
+// text operations chained
+word: 'hello'
+>> word + ' world'
+>> len word
+>> first word + last word
+
+// boolean from comparisons used in if
+x: 10
+y: 20
+bigger: x < y
+if: bigger
+ >> 'x is smaller'
+else:
+ >> 'x is bigger'
+
+// function combining types
+describe: v
+ if: boolean v
+  >> 'truthy: ' + text v
+ else:
+  >> 'falsy: ' + text v
+
+describe 42
+describe 0
+describe 'hello'
+describe ''
+describe true
+describe false
+
+// recursion with type conversion
+countdown: n
+ if: n > 0
+  >> n
+  countdown n - 1
+
+countdown 3
+
+// value stored, converted, used in arithmetic
+a: '5'
+b: number a
+c: b * 2
+>> c
+>> c + a
+
+// rank promotion across comparisons
+>> 5 > '3'
+>> '3' < 5
+>> true < 2
+>> 2 > true
+>> 'hi' ≈ 'hi'
+>> 5 = '5'
+
+// void interactions
+v: void
+>> len v
+>> v + 5
+>> boolean v
+>> text v

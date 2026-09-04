@@ -1,0 +1,70 @@
+// multiple condition checks
+score: 85
+if: score > 90
+ >> 'A'
+else: score > 80
+ >> 'B'
+else: score > 70
+ >> 'C'
+else:
+ >> 'F'
+
+// basic if/else
+if: 1 > 2
+ >> 'wrong'
+else:
+ >> 'right'
+
+// if true, skip else
+if: true
+ >> 'yes'
+else:
+ >> 'no'
+
+// if false, take else
+if: false
+ >> 'wrong'
+else:
+ >> 'no'
+
+// nested if in if body
+x: 10
+if: x > 5
+ if: x > 8
+  >> 'inner-both'
+
+// nested if in else body
+y: 3
+if: y > 5
+ >> 'should not print'
+else:
+ if: y > 2
+  >> 'else-inner'
+
+// truthy coercion: number
+val: 42
+if: val
+ >> 'truthy'
+else:
+ >> 'falsy'
+
+// falsy: zero
+val: 0
+if: val
+ >> 'truthy'
+else:
+ >> 'falsy'
+
+// falsy: empty string
+val: ''
+if: val
+ >> 'truthy'
+else:
+ >> 'empty is falsy'
+
+// truthy: non-empty string
+val: 'hello'
+if: val
+ >> 'non-empty is truthy'
+else:
+ >> 'falsy'

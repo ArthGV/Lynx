@@ -1,0 +1,10 @@
+B
+right
+yes
+no
+inner-both
+else-inner
+truthy
+falsy
+empty is falsy
+non-empty is truthy

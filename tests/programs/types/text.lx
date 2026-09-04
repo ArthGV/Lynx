@@ -1,0 +1,37 @@
+// Text type: conversions
+>> number '42'
+>> number 'hello'
+>> number ''
+>> text 'hello'
+>> boolean 'hello'
+>> boolean ''
+
+// Text type: arithmetic
+>> 'hello' + 'world'
+>> 'hello' - 'l'
+>> 'banana' - 'an'
+>> 'ab' * 'xyz'
+>> 'ab' * ''
+>> 'hello' / 'x'
+>> 'hello' / ''
+>> '' / 'x'
+
+// Text type: comparisons
+>> 'apple' = 'apple'
+>> 'apple' = 'banana'
+>> 'apple' > 'banana'
+>> 'banana' > 'apple'
+>> 'apple' < 'banana'
+>> 'apple' ≈ 'apple'
+>> 'apple' ≈ 'apples'
+>> 'apple' ≈ 'bananas'
+>> 'apple' ≈ 'appxle'
+
+// Text type: sequence access
+>> len ''
+>> len 'hello'
+>> len 'a'
+>> first ''
+>> first 'hello'
+>> last ''
+>> last 'hello'

@@ -1,0 +1,17 @@
+// LEFT policy: coerce right to left's type
+// Number LEFT of Text: coerce text to number
+>> 5 + '3'
+>> 5 - '3'
+>> 5 * '3'
+>> 5 / '10'
+
+// Text LEFT of Number: coerce number to text
+>> 'hello' + 3
+>> 'ab' * 3
+
+// Boolean LEFT of Text: coerce text to boolean
+>> true + 'x'
+
+// Number LEFT of Boolean: coerce boolean to number
+>> 5 + true
+>> 5 * false
