@@ -1,0 +1,87 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "lynx",
+  "scopeName": "source.lynx",
+  "fileTypes": [
+    "lx"
+  ],
+  "patterns": [
+    {
+      "name": "comment.block.lynx",
+      "begin": "^\\s*///.*$",
+      "end": "^.*///\\s*$"
+    },
+    {
+      "name": "comment.line.double-slash.lynx",
+      "match": "//.*$"
+    },
+    {
+      "name": "string.quoted.single.lynx",
+      "match": "'([^']*)'"
+    },
+    {
+      "match": "^\\s*(?!(?:boolean|number|first|false|else|type|last|text|true|void|xor|len|if|pi)\\b)([a-zA-Z_][a-zA-Z0-9_]*)(?=\\s*:)",
+      "captures": {
+        "1": {
+          "name": "variable.other.definition.lynx"
+        }
+      }
+    },
+    {
+      "name": "constant.language.lynx",
+      "match": "\\b(?:false|true|void|pi)\\b"
+    },
+    {
+      "name": "keyword.control.lynx",
+      "match": "\\b(?:else|if)\\b"
+    },
+    {
+      "name": "keyword.operator.word.lynx",
+      "match": "\\b(?:xor)\\b"
+    },
+    {
+      "name": "support.function.builtin.lynx",
+      "match": "\\b(?:boolean|number|first|type|last|text|len)\\b"
+    },
+    {
+      "name": "keyword.control.lynx",
+      "match": ">>>|>>"
+    },
+    {
+      "name": "keyword.operator.range.lynx",
+      "match": "__"
+    },
+    {
+      "name": "keyword.operator.comparison.lynx",
+      "match": "=|\u2248|>|<"
+    },
+    {
+      "name": "keyword.operator.arithmetic.lynx",
+      "match": "\\+|\\-|\\*|/"
+    },
+    {
+      "name": "punctuation.separator.comma.lynx",
+      "match": ","
+    },
+    {
+      "name": "keyword.operator.assignment.lynx",
+      "match": ":"
+    },
+    {
+      "name": "punctuation.section.braces.lynx",
+      "match": "\\{|\\}"
+    },
+    {
+      "name": "punctuation.separator.lynx",
+      "match": ";"
+    },
+    {
+      "name": "variable.other.lynx",
+      "match": "[a-zA-Z_][a-zA-Z0-9_]*"
+    },
+    {
+      "name": "constant.numeric.lynx",
+      "match": "(?<![A-Za-z0-9.])\\d+(\\.\\d+)?"
+    }
+  ]
+}

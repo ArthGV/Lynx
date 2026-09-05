@@ -1,0 +1,43 @@
+{
+  "name": "lynx-language",
+  "displayName": "lynx",
+  "description": "Syntax highlighting for the lynx language (.lx)",
+  "version": "0.1.0",
+  "publisher": "Artheme Gauthier-Villars",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "lynx",
+        "aliases": [
+          "lynx",
+          "Lynx"
+        ],
+        "extensions": [
+          ".lx"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "lynx",
+        "scopeName": "source.lynx",
+        "path": "./syntaxes/lynx.tmLanguage.json"
+      }
+    ],
+    "configurationDefaults": {
+      "[lynx]": {
+        "editor.insertSpaces": true,
+        "editor.tabSize": 4,
+        "editor.detectIndentation": false
+      }
+    }
+  }
+}
