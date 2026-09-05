@@ -1,0 +1,3 @@
+// a descending slice past the end reports its high bound
+arr: 1, 2, 3
+>> arr 5__1

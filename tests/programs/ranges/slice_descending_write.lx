@@ -1,0 +1,4 @@
+// a descending slice write assigns positionally in decreasing order
+arr: 10, 20, 30, 40
+arr 3__1: 9, 99, 999
+>> arr

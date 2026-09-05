@@ -111,6 +111,13 @@ class BinaryExpression:
 
 
 @dataclass
+class RangeExpression:
+    start: Any | None  # None = omitted: `__N` runs up from 0
+    end: Any | None    # None = omitted: `N__` runs down to 0
+    line: int | None = None
+
+
+@dataclass
 class UnaryExpression:
     operator: str  # a token type, e.g. "LENGHT" — never the spelling
     operand: Any

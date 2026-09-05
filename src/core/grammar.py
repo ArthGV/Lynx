@@ -71,6 +71,9 @@ SYMBOLS = {
 
 # Binary operators grouped by precedence, lowest first. Each maps a token
 # type to the Value method that implements it. Adding an operator is one line.
+# RANGE is listed at the tightest tier for precedence, but it parses into its
+# own RangeExpression node (see parser.py) and is interpreted by build_range —
+# it never dispatches to a Value method.
 BINARY_LEVELS = [
     {"EQUAL": "equals", "ALMOST": "almost"},
     {"GREATER": "greater", "LESS": "less"},

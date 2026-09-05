@@ -23,6 +23,7 @@ from src.core.nodes import (
     Number,
     Print,
     Program,
+    RangeExpression,
     Return,
     SetItem,
     Text,
@@ -249,13 +250,23 @@ class Parser:
             return self.parse_primary()
         operators = BINARY_LEVELS[level]
         if self.type() == "RANGE" and "RANGE" in operators:
-            left = Number(0)  # `__7` means `0__7`
-        else:
-            left = self.parse_binary(level + 1)
+            # Leading `__N`: the start is omitted, so it runs up from 0.
+            token = self.advance()
+            return RangeExpression(
+                None,
+                self.parse_binary(level + 1) if self._can_start_bound(self.type()) else None,
+                token.line,
+            )
+        left = self.parse_binary(level + 1)
         while self.type() in operators:
             token = self.advance()
-            right = self.parse_binary(level + 1)
-            left = BinaryExpression(left, token.type, right, token.line)
+            if token.type == "RANGE" and "RANGE" in operators:
+                # A trailing `N__` has no end; it runs down to 0.
+                right = self.parse_binary(level + 1) if self._can_start_bound(self.type()) else None
+                left = RangeExpression(left, right, token.line)
+            else:
+                right = self.parse_binary(level + 1)
+                left = BinaryExpression(left, token.type, right, token.line)
         return left
 
     def parse_primary(self) -> Any:
@@ -321,3 +332,6 @@ class Parser:
         if token_type in ("NUMBER", "TEXT", "BOOLEAN", "VOID", "IDENTIFIER", "LBRACE", "RANGE"):
             return True
         return token_type in UNARY_METHOD
+
+    def _can_start_bound(self, token_type: str) -> bool:
+        return token_type == "MINUS" or self._starts_expression(token_type)
