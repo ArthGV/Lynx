@@ -67,8 +67,14 @@ def read_token(rest: str, line_no: int, tokens: list[Token]) -> str:
 
     match = NUMBER.match(rest)
     if match:
+        after = rest[match.end():]
+        if after.startswith("_") and not after.startswith("__"):
+            raise LynxSyntaxError(
+                f"use '__' for ranges, not '_': {rest[:match.end()]}{after}",
+                line_no,
+            )
         tokens.append(Token("NUMBER", match.group(0), line_no))
-        return rest[match.end():].lstrip()
+        return after.lstrip()
 
     for symbol in ORDERED_SYMBOLS:
         if rest.startswith(symbol):
@@ -78,6 +84,10 @@ def read_token(rest: str, line_no: int, tokens: list[Token]) -> str:
     match = IDENTIFIER.match(rest)
     if match:
         word = match.group(0)
+        if "__" in word:
+            raise LynxSyntaxError(
+                f"names cannot contain '__' (reserved for ranges): {word}", line_no
+            )
         # Literal keywords carry their Python value; everything else its text.
         value = LITERALS[word] if word in LITERALS else word
         tokens.append(Token(KEYWORDS.get(word, "IDENTIFIER"), value, line_no))

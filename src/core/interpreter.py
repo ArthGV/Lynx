@@ -162,10 +162,14 @@ def call(callee: Any, args: list[Any], line: int | None, env: Environment) -> va
 
 def index_array(array: values.Array, args: list[Any], line: int | None, env: Environment) -> values.Type:
     # `,` groups several indices into one access step: `a 1, 0` lowers through
-    # each nesting level in order. Indices are 0-based.
+    # each nesting level in order. Indices are 0-based. A range step (`a 3__7`)
+    # is a slice of that level instead of a single element.
     current = array
     for arg in args:
-        current = get_element(current, arg, line, env)
+        if is_range(arg):
+            current = slice_array(current, arg, line, env)
+        else:
+            current = get_element(current, arg, line, env)
     return current
 
 
@@ -173,6 +177,8 @@ def index_map(map_value: values.Map, args: list[Any], line: int | None, env: Env
     # Each arg is one key lookup; a run of args descends through nested maps.
     current = map_value
     for arg in args:
+        if is_range(arg):
+            raise LynxError("range slicing is only supported for arrays", line)
         current = get_element(current, arg, line, env)
     return current
 
@@ -208,7 +214,12 @@ def assign_item(base: str, steps: list[Any], value_node: Any, line: int | None, 
     # `a 1, 0: 5` — walk the deref path to the innermost container, then set.
     container = env.get(base, line)
     for step in steps[:-1]:
+        if is_range(step):
+            raise LynxError("range slicing is only supported for the last index", line)
         container = get_element(container, step, line, env)
+    if is_range(steps[-1]):
+        slice_assign(container, steps[-1], value_node, line, env)
+        return
     key = evaluate(steps[-1], env)
     new_value = evaluate(value_node, env)
     if isinstance(container, values.Array):
@@ -233,10 +244,92 @@ def assign_item(base: str, steps: list[Any], value_node: Any, line: int | None, 
     raise LynxTypeError("cannot index into a value that is not an array or map", line)
 
 
+def is_range(node: Any) -> bool:
+    """True when a call/index step is a range expression (`3__7`, `__7`)."""
+    return isinstance(node, BinaryExpression) and node.operator == "RANGE"
+
+
+def _describe(value: values.Type) -> str:
+    """Echo a value in an error message, quoting text so it reads clearly."""
+    if isinstance(value, values.Text):
+        return repr(value.value)
+    return repr(value)
+
+
+def range_bounds(left: values.Type, right: values.Type, line: int | None) -> tuple[int, int]:
+    """Validate two range endpoints and return them as integer bounds.
+
+    Only non-negative integers are accepted; anything else raises a message
+    that echoes the offending value.
+    """
+    start = _int_bound(left, "start", line)
+    end = _int_bound(right, "end", line)
+    if start > end:
+        raise LynxError(
+            f"range start {start} is greater than range end {end}", line
+        )
+    return start, end
+
+
+def _int_bound(value: values.Type, which: str, line: int | None) -> int:
+    if not isinstance(value, values.Number):
+        raise LynxTypeError(
+            f"range {which} must be an integer, got {_describe(value)}", line
+        )
+    if not isinstance(value.value, int):
+        raise LynxTypeError(
+            f"range {which} must be an integer, got {_describe(value)}", line
+        )
+    if value.value < 0:
+        raise LynxError(
+            f"range {which} must be non-negative, got {value.value}", line
+        )
+    return value.value
+
+
+def _range_node_bounds(node: Any, env: Environment, line: int | None) -> tuple[int, int]:
+    """Resolve the endpoints of a range expression (`<left>__<right>`) to ints."""
+    return range_bounds(evaluate(node.left, env), evaluate(node.right, env), line)
+
+
+def slice_array(array: values.Array, node: Any, line: int | None, env: Environment) -> values.Type:
+    start, end = _range_node_bounds(node, env, line)
+    if end >= len(array.value):
+        raise LynxError(
+            f"range end {end} out of bounds for an array of length {len(array.value)}", line
+        )
+    return values.Array(array.value[start:end + 1])
+
+
+def slice_assign(container: values.Type, node: Any, value_node: Any, line: int | None, env: Environment) -> None:
+    if not isinstance(container, values.Array):
+        raise LynxTypeError("cannot slice a value that is not an array", line)
+    start, end = _range_node_bounds(node, env, line)
+    if end >= len(container.value):
+        raise LynxError(
+            f"range end {end} out of bounds for an array of length {len(container.value)}", line
+        )
+    new_value = evaluate(value_node, env)
+    if not isinstance(new_value, values.Array):
+        new_value = values.Array([new_value])
+    expected = end - start + 1
+    if len(new_value.value) != expected:
+        raise LynxInputError(
+            f"range {start}__{end} covers {expected} elements but got {len(new_value.value)}", line
+        )
+    container.value[start:end + 1] = new_value.value
+
+
 def apply_binary(operator: str, left: values.Type, right: values.Type, line: int | None) -> values.Type:
     # Every value defines every operation and operations.binary reconciles any
     # pair of types, so this always resolves; a stub that hasn't been filled in
     # raises LynxNotImplemented, which we locate to `line`.
+    if operator == "RANGE":
+        # A range is strictly numeric: it must not flow through operations.py,
+        # whose coercion would swallow the type of a bad endpoint before we
+        # could name it in an error.
+        start, end = range_bounds(left, right, line)
+        return values.Array([values.Number(i) for i in range(start, end + 1)])
     try:
         return operations.binary(BINARY_METHOD[operator], left, right)
     except LynxNotImplemented as error:

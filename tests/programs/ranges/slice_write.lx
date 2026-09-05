@@ -1,0 +1,5 @@
+my_arr: void, true, 'hello', 6, 21, 6, 9
+my_arr 3__6: void, true, 'hello', 6
+>> my_arr
+my_arr 3__3: 99
+>> my_arr

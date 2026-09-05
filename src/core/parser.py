@@ -248,7 +248,10 @@ class Parser:
         if level >= len(BINARY_LEVELS):
             return self.parse_primary()
         operators = BINARY_LEVELS[level]
-        left = self.parse_binary(level + 1)
+        if self.type() == "RANGE" and "RANGE" in operators:
+            left = Number(0)  # `__7` means `0__7`
+        else:
+            left = self.parse_binary(level + 1)
         while self.type() in operators:
             token = self.advance()
             right = self.parse_binary(level + 1)
@@ -315,6 +318,6 @@ class Parser:
             return MapLiteral(pairs, opening.line)
 
     def _starts_expression(self, token_type: str) -> bool:
-        if token_type in ("NUMBER", "TEXT", "BOOLEAN", "VOID", "IDENTIFIER", "LBRACE"):
+        if token_type in ("NUMBER", "TEXT", "BOOLEAN", "VOID", "IDENTIFIER", "LBRACE", "RANGE"):
             return True
         return token_type in UNARY_METHOD

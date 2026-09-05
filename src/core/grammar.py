@@ -61,6 +61,7 @@ SYMBOLS = {
     "-": "MINUS",
     "*": "STAR",
     "/": "SLASH",
+    "__": "RANGE",
     ",": "COMMA",
     ":": "COLON",
     "{": "LBRACE",
@@ -75,6 +76,7 @@ BINARY_LEVELS = [
     {"GREATER": "greater", "LESS": "less"},
     {"PLUS": "add", "MINUS": "subtract", "XOR": "xor"},
     {"STAR": "multiply", "SLASH": "divide"},
+    {"RANGE": "range"},
 ]
 
 # Prefix keyword functions: token type -> the zero-argument Value method behind
