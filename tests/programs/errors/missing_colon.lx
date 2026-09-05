@@ -1,4 +1,0 @@
-// `if` is spelled `if:` — the condition comes after the colon.
->> 42
-if 1 > 2
- >> 'a'

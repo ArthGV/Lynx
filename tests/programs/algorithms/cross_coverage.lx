@@ -19,16 +19,16 @@ word: 'hello'
 x: 10
 y: 20
 bigger: x < y
-if: bigger
+if bigger
  >> 'x is smaller'
-else:
+else
  >> 'x is bigger'
 
 // function combining types
 describe: v
- if: boolean v
+ if boolean v
   >> 'truthy: ' + text v
- else:
+ else
   >> 'falsy: ' + text v
 
 describe 42
@@ -40,7 +40,7 @@ describe false
 
 // recursion with type conversion
 countdown: n
- if: n > 0
+ if n > 0
   >> n
   countdown n - 1
 

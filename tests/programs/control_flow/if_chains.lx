@@ -1,70 +1,70 @@
 // multiple condition checks
 score: 85
-if: score > 90
+if score > 90
  >> 'A'
-else: score > 80
+else score > 80
  >> 'B'
-else: score > 70
+else score > 70
  >> 'C'
-else:
+else
  >> 'F'
 
 // basic if/else
-if: 1 > 2
+if 1 > 2
  >> 'wrong'
-else:
+else
  >> 'right'
 
 // if true, skip else
-if: true
+if true
  >> 'yes'
-else:
+else
  >> 'no'
 
 // if false, take else
-if: false
+if false
  >> 'wrong'
-else:
+else
  >> 'no'
 
 // nested if in if body
 x: 10
-if: x > 5
- if: x > 8
+if x > 5
+ if x > 8
   >> 'inner-both'
 
 // nested if in else body
 y: 3
-if: y > 5
+if y > 5
  >> 'should not print'
-else:
- if: y > 2
+else
+ if y > 2
   >> 'else-inner'
 
 // truthy coercion: number
 val: 42
-if: val
+if val
  >> 'truthy'
-else:
+else
  >> 'falsy'
 
 // falsy: zero
 val: 0
-if: val
+if val
  >> 'truthy'
-else:
+else
  >> 'falsy'
 
 // falsy: empty string
 val: ''
-if: val
+if val
  >> 'truthy'
-else:
+else
  >> 'empty is falsy'
 
 // truthy: non-empty string
 val: 'hello'
-if: val
+if val
  >> 'non-empty is truthy'
-else:
+else
  >> 'falsy'

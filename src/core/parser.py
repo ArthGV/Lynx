@@ -217,13 +217,11 @@ class Parser:
 
     def parse_if(self) -> If:
         self.match("IF")
-        self.match("COLON")
         branches = [Branch(self.parse_expression(), self.parse_body())]
         else_body = None
         while self.type() == "ELSE":
             self.advance()
-            self.match("COLON")
-            if self.type() == "NEWLINE":  # bare `else:`
+            if self.type() == "NEWLINE":  # bare else
                 else_body = self.parse_body()
                 break
             branches.append(Branch(self.parse_expression(), self.parse_body()))

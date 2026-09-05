@@ -12,9 +12,9 @@ name: 'world'
 >> 'hello ' + name        // hello world
 
 age: 20
-if: age > 18
+if age > 18
  >> 'adult'
-else:
+else
  >> 'minor'
 ```
 
@@ -80,15 +80,15 @@ digits: len 12345
 >> digits > 3    // true
 ```
 
-**Conditionals** use a colon after the condition, and an indented body. A second condition on an
-`else:` makes it an else-if; a bare `else:` is the fallback.
+**Conditionals** take a condition on the `if` line and an indented body. A second condition on an
+`else` makes it an else-if; a bare `else` is the fallback.
 
 ```lynx
-if: 1 > 2
+if 1 > 2
  >> 'a'
-else: 2 > 1
+else 2 > 1
  >> 'b'
-else:
+else
  >> 'c'
 ```
 

@@ -10,7 +10,7 @@
 digits: len 12345
 >> digits
 >> digits > 3
-if: digits > 3
+if digits > 3
  >> 'long'
-else:
+else
  >> 'short'
