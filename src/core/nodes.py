@@ -26,6 +26,12 @@ class ArrayLiteral:
 
 
 @dataclass
+class MapLiteral:
+    pairs: list[Any]  # list of (key_expr, value_expr) tuples
+    line: int | None = None
+
+
+@dataclass
 class Function:
     name: str
     params: list[Any]

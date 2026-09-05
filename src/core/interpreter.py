@@ -18,6 +18,7 @@ from src.core.nodes import (
     Function,
     Identifier,
     If,
+    MapLiteral,
     Number,
     Print,
     Program,
@@ -94,6 +95,12 @@ def evaluate(node: Any, env: Environment) -> values.Type:
         case ArrayLiteral(items, line):
             return values.Array([evaluate(item, env) for item in items])
 
+        case MapLiteral(pairs, line):
+            return values.Map([
+                (evaluate_key(k, env, line), evaluate(v, env))
+                for k, v in pairs
+            ])
+
         case Identifier(name, line):
             return env.get(name, line)
 
@@ -110,6 +117,15 @@ def evaluate(node: Any, env: Environment) -> values.Type:
             raise LynxTypeError(f"cannot evaluate {type(node).__name__}")
 
 
+def evaluate_key(node: Any, env: Environment, line: int | None) -> values.Type:
+    key = evaluate(node, env)
+    if not isinstance(key, values.SimpleType):
+        raise LynxTypeError(
+            f"map key must be a simple type, got {key.type_name()}", line
+        )
+    return key
+
+
 def call(callee: Any, args: list[Any], line: int | None, env: Environment) -> values.Type:
     # `callee` is either a name (a plain function/index call) or an expression
     # (the result of an earlier chained call), so resolve it to a value first.
@@ -120,6 +136,9 @@ def call(callee: Any, args: list[Any], line: int | None, env: Environment) -> va
 
     if isinstance(fn, values.Array):
         return index_array(fn, args, line, env)
+
+    if isinstance(fn, values.Map):
+        return index_map(fn, args, line, env)
 
     if not isinstance(fn, FunctionValue):
         raise LynxTypeError(f"'{callee}' is not a function", line)
@@ -155,6 +174,24 @@ def index_array(array: values.Array, args: list[Any], line: int | None, env: Env
                 f"index {idx} out of range for an array of length {len(current.value)}", line
             )
         current = current.value[idx]
+    return current
+
+
+def index_map(map_value: values.Map, args: list[Any], line: int | None, env: Environment) -> values.Type:
+    # Each arg is one key lookup; a run of args descends through nested maps.
+    current = map_value
+    for arg in args:
+        if not isinstance(current, values.Map):
+            raise LynxTypeError("cannot index into a value that is not a map", line)
+        key = evaluate(arg, env)
+        if not isinstance(key, values.SimpleType):
+            raise LynxTypeError(
+                f"map key must be a simple type, got {key.type_name()}", line
+            )
+        try:
+            current = current.get_item(key)
+        except KeyError:
+            raise LynxError(f"key not found in map", line)
     return current
 
 

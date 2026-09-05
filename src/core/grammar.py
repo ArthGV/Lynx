@@ -63,6 +63,9 @@ SYMBOLS = {
     "/": "SLASH",
     ",": "COMMA",
     ":": "COLON",
+    "{": "LBRACE",
+    "}": "RBRACE",
+    ";": "SEMICOLON",
 }
 
 # Binary operators grouped by precedence, lowest first. Each maps a token

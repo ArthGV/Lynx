@@ -19,6 +19,7 @@ from src.core.nodes import (
     Function,
     Identifier,
     If,
+    MapLiteral,
     Number,
     Print,
     Program,
@@ -241,6 +242,8 @@ class Parser:
             case "VOID":
                 self.advance()
                 return Void()
+            case "LBRACE":
+                return self.parse_map_literal()
             case "IDENTIFIER":
                 name = self.advance().value
                 if self._starts_expression(self.type()):
@@ -258,7 +261,28 @@ class Parser:
             )
         return Number(-float(self.advance().value))
 
+    def parse_map_literal(self) -> MapLiteral:
+        opening = self.match("LBRACE")
+        pairs: list[Any] = []
+        if self.type() == "RBRACE":
+            self.advance()
+            return MapLiteral(pairs, opening.line)
+        while True:
+            key = self.parse_expression()
+            self.match("COLON")
+            items = [self.parse_expression()]
+            while self.type() == "COMMA":
+                self.advance()
+                items.append(self.parse_expression())
+            value: Any = items[0] if len(items) == 1 else ArrayLiteral(items)
+            pairs.append((key, value))
+            if self.type() == "SEMICOLON":
+                self.advance()
+                continue
+            self.match("RBRACE")
+            return MapLiteral(pairs, opening.line)
+
     def _starts_expression(self, token_type: str) -> bool:
-        if token_type in ("NUMBER", "TEXT", "BOOLEAN", "VOID", "IDENTIFIER"):
+        if token_type in ("NUMBER", "TEXT", "BOOLEAN", "VOID", "IDENTIFIER", "LBRACE"):
             return True
         return token_type in UNARY_METHOD

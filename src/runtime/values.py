@@ -142,7 +142,7 @@ class SimpleType(Type):
 
 
 class ComplexType(Type):
-    """A value made of other values: Array. Nested types work here."""
+    """A value made of other values: Array, Map. Nested types work here."""
 
 
 class Number(SimpleType):
@@ -502,4 +502,112 @@ class Array(ComplexType):
     def xor(self, other: Array) -> Type: self.todo("xor")
     def not_(self) -> Type: self.todo("not_")
 
-    
+
+def _map_key(value: Type):
+    """A hashable, type-qualified representation of a simple value, so `1`
+    and `'1'` are distinct keys. Keys are restricted to simple types."""
+    if isinstance(value, (Number, Text, Boolean, Void)):
+        return (value.type_name(), value.value)
+    return (value.type_name(), repr(value))
+
+
+class Map(ComplexType):
+    """A mutable collection of key→value pairs whose keys are simple types.
+
+    Literal form is `{ 'a': 1; 'b': 2 }` — `;` separates entries so values can
+    be arrays without colliding with the `,` of an array literal. Access reuses
+    the call machinery: `my_map 'a'`, chained for nested maps.
+    """
+
+    rank = 5
+    conversion = "map"
+    default_value = {}
+
+    def __init__(self, entries=None) -> None:
+        self.value: dict[tuple, Type] = {}
+        if entries:
+            for key, value in entries:
+                self.set_item(key, value)
+
+    def set_item(self, key: Type, value: Type) -> None:
+        self.value[_map_key(key)] = value
+
+    def get_item(self, key: Type):
+        return self.value[_map_key(key)]
+
+    def __repr__(self) -> str:
+        if not self.value:
+            return "{}"
+        parts = []
+        for raw, value in self.value.items():
+            parts.append(f"{raw[1]}: {value}")
+        return "{ " + "; ".join(parts) + " }"
+
+    def type_name(self) -> str:
+        return "Map"
+
+    def lenght(self) -> Number:
+        return Number(len(self.value))
+
+    def first(self) -> Type:
+        if self.value:
+            return next(iter(self.value.values()))
+        return Void()
+
+    def last(self) -> Type:
+        if self.value:
+            return list(self.value.values())[-1]
+        return Void()
+
+    def middle(self) -> Type:
+        if not self.value:
+            return Void()
+        values = list(self.value.values())
+        return values[len(values) // 2]
+
+    def compare(self, other: Map) -> int:
+        if len(self.value) != len(other.value):
+            return compare_raw(len(self.value), len(other.value))
+        for (rk, rv), (ok, ov) in zip(self.value.items(), other.value.items()):
+            if rk != ok:
+                return compare_raw(repr(rk), repr(ok))
+            c = rv.compare(ov) if type(rv) is type(ov) else compare_raw(rv.rank, ov.rank)
+            if c != 0:
+                return c
+        return 0
+
+    def almost(self, other: Map) -> Boolean:
+        return self.equals(other)
+
+    def equals(self, other: Map) -> Boolean:
+        if len(self.value) != len(other.value):
+            return Boolean(False)
+        for (rk, rv) in self.value.items():
+            if rk not in other.value:
+                return Boolean(False)
+            ov = other.value[rk]
+            if type(rv) is not type(ov) or not rv.equals(ov).is_true():
+                return Boolean(False)
+        return Boolean(True)
+
+    def number(self) -> Number:
+        return Number(len(self.value))
+
+    def text(self) -> Text:
+        return Text(self.__repr__())
+
+    def boolean(self) -> Boolean:
+        return Boolean(len(self.value) > 0)
+
+    def void(self) -> Void:
+        return Void()
+
+    # --- not implemented yet ---
+    def add(self, other: Map) -> Type: self.todo("add")
+    def subtract(self, other: Map) -> Type: self.todo("subtract")
+    def multiply(self, other: Map) -> Type: self.todo("multiply")
+    def divide(self, other: Map) -> Type: self.todo("divide")
+    def power(self, other: Map) -> Type: self.todo("power")
+    def root(self, other: Map) -> Type: self.todo("root")
+    def xor(self, other: Map) -> Type: self.todo("xor")
+    def not_(self) -> Type: self.todo("not_")
