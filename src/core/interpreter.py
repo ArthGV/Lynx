@@ -191,7 +191,7 @@ def index_map(map_value: values.Map, args: list[Any], line: int | None, env: Env
         try:
             current = current.get_item(key)
         except KeyError:
-            raise LynxError(f"key not found in map", line)
+            raise LynxError(f"key {key!r} not found in map", line)
     return current
 
 
