@@ -1,0 +1,37 @@
+// Element mutation reuses `:` on an indexed target
+a: 1, 2, 3
+a 0: 99
+>> a
+>> a 0
+
+// Nested arrays: comma and chained forms both work
+b: 10, 20
+c: 'x', b
+c 1 0: 7
+>> c
+>> c 1
+c 1, 0: 8
+>> c 1, 0
+
+// Map values: set, overwrite, and add a new key
+m: { 'a': 1; 'b': 2 }
+m 'a': 100
+m 'c': 3
+>> m
+>> m 'a'
+>> m 'c'
+
+// Nested maps via chained access
+nested: { 'k': { 'inner': 1 } }
+nested 'k' 'inner': 42
+>> nested 'k' 'inner'
+
+// Setting an element to an array value
+a 0: 5, 6
+>> a
+>> a 0 0
+
+// Mutating a computed index
+i: 2
+a i: -1
+>> a 2

@@ -32,6 +32,14 @@ class MapLiteral:
 
 
 @dataclass
+class SetItem:
+    base: str  # variable name holding the container being mutated
+    steps: list[Any]  # index/key expressions, applied in order
+    value: Any
+    line: int | None = None
+
+
+@dataclass
 class Function:
     name: str
     params: list[Any]

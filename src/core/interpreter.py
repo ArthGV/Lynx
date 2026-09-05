@@ -23,6 +23,7 @@ from src.core.nodes import (
     Print,
     Program,
     Return,
+    SetItem,
     Text,
     UnaryExpression,
     Void,
@@ -55,6 +56,9 @@ def execute(node: Any, env: Environment) -> None:
 
         case Assignment(name, value):
             env.set(name, evaluate(value, env))
+
+        case SetItem(base, steps, value, line):
+            assign_item(base, steps, value, line, env)
 
         case Function(name, params, body):
             env.set(name, FunctionValue(params, body, env))
@@ -159,21 +163,9 @@ def call(callee: Any, args: list[Any], line: int | None, env: Environment) -> va
 def index_array(array: values.Array, args: list[Any], line: int | None, env: Environment) -> values.Type:
     # `,` groups several indices into one access step: `a 1, 0` lowers through
     # each nesting level in order. Indices are 0-based.
-    current: values.Array = array
+    current = array
     for arg in args:
-        if not isinstance(current, values.Array):
-            raise LynxTypeError("cannot index into a value that is not an array", line)
-        index_value = evaluate(arg, env)
-        if not isinstance(index_value, values.Number):
-            raise LynxTypeError(
-                f"array index must be a number, got {index_value.type_name()}", line
-            )
-        idx = index_value.value
-        if not isinstance(idx, int) or idx < 0 or idx >= len(current.value):
-            raise LynxError(
-                f"index {idx} out of range for an array of length {len(current.value)}", line
-            )
-        current = current.value[idx]
+        current = get_element(current, arg, line, env)
     return current
 
 
@@ -181,18 +173,64 @@ def index_map(map_value: values.Map, args: list[Any], line: int | None, env: Env
     # Each arg is one key lookup; a run of args descends through nested maps.
     current = map_value
     for arg in args:
-        if not isinstance(current, values.Map):
-            raise LynxTypeError("cannot index into a value that is not a map", line)
-        key = evaluate(arg, env)
+        current = get_element(current, arg, line, env)
+    return current
+
+
+def get_element(container, step: Any, line: int | None, env: Environment) -> values.Type:
+    """Fetch one index/key lookup into `container`. Shared by read access and
+    mutation so both validate and report the same way."""
+    key = evaluate(step, env)
+    if isinstance(container, values.Array):
+        if not isinstance(key, values.Number):
+            raise LynxTypeError(
+                f"array index must be a number, got {key.type_name()}", line
+            )
+        idx = key.value
+        if not isinstance(idx, int) or idx < 0 or idx >= len(container.value):
+            raise LynxError(
+                f"index {idx} out of range for an array of length {len(container.value)}", line
+            )
+        return container.value[idx]
+    if isinstance(container, values.Map):
         if not isinstance(key, values.SimpleType):
             raise LynxTypeError(
                 f"map key must be a simple type, got {key.type_name()}", line
             )
         try:
-            current = current.get_item(key)
+            return container.get_item(key)
         except KeyError:
             raise LynxError(f"key {key!r} not found in map", line)
-    return current
+    raise LynxTypeError("cannot index into a value that is not an array or map", line)
+
+
+def assign_item(base: str, steps: list[Any], value_node: Any, line: int | None, env: Environment) -> None:
+    # `a 1, 0: 5` — walk the deref path to the innermost container, then set.
+    container = env.get(base, line)
+    for step in steps[:-1]:
+        container = get_element(container, step, line, env)
+    key = evaluate(steps[-1], env)
+    new_value = evaluate(value_node, env)
+    if isinstance(container, values.Array):
+        if not isinstance(key, values.Number):
+            raise LynxTypeError(
+                f"array index must be a number, got {key.type_name()}", line
+            )
+        idx = key.value
+        if not isinstance(idx, int) or idx < 0 or idx >= len(container.value):
+            raise LynxError(
+                f"index {idx} out of range for an array of length {len(container.value)}", line
+            )
+        container.value[idx] = new_value
+        return
+    if isinstance(container, values.Map):
+        if not isinstance(key, values.SimpleType):
+            raise LynxTypeError(
+                f"map key must be a simple type, got {key.type_name()}", line
+            )
+        container.set_item(key, new_value)
+        return
+    raise LynxTypeError("cannot index into a value that is not an array or map", line)
 
 
 def apply_binary(operator: str, left: values.Type, right: values.Type, line: int | None) -> values.Type:

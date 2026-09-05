@@ -24,6 +24,7 @@ from src.core.nodes import (
     Print,
     Program,
     Return,
+    SetItem,
     Text,
     UnaryExpression,
     Void,
@@ -98,13 +99,18 @@ class Parser:
 
     def parse_name_statement(self) -> Any:
         # After a leading identifier we could have an assignment (`x: 5`), a
-        # function declaration (`f: a, b` + indented body) or a function call
-        # (`f a, b`). A colon means declaration-or-assignment, decided by whether
-        # the right-hand side is a parameter list followed by an indented block.
+        # function declaration (`f: a, b` + indented body), a function call
+        # (`f a, b`) or an element mutation (`a 0: 5`). A colon means
+        # declaration-or-assignment, decided by whether the right-hand side is
+        # a parameter list followed by an indented block.
         start = self.current
         line = self.peek().line
         name = self.advance().value
         if self.type() != "COLON":
+            if self._starts_expression(self.type()):
+                mutation = self.try_parse_mutation(name, line)
+                if mutation is not None:
+                    return mutation
             return self.parse_call(name, line)
         if self._is_function_declaration():
             return self._parse_function(name)
@@ -165,6 +171,32 @@ class Parser:
             self.advance()
             args.append(self.parse_expression())
         return Call(name, args, line)
+
+    def try_parse_mutation(self, name: str, line: int | None) -> SetItem | None:
+        # `name <expr>... : value` is an element mutation (`a 0: 5`). The deref
+        # path is a run of expressions, comma-grouped or space-chained, both
+        # of which are sequential steps. If the run is followed by a colon we
+        # have a mutation; otherwise rewind and let the call machinery handle it.
+        save = self.current
+        steps: list[Any] = []
+        try:
+            steps.append(self.parse_expression())
+            while True:
+                if self.type() == "COMMA":
+                    self.advance()
+                    steps.append(self.parse_expression())
+                elif self._starts_expression(self.type()):
+                    steps.append(self.parse_expression())
+                else:
+                    break
+        except LynxSyntaxError:
+            self.current = save
+            return None
+        if self.type() != "COLON":
+            self.current = save
+            return None
+        self.match("COLON")
+        return SetItem(name, steps, self.parse_assign_rhs(), line)
 
     def parse_chain(self, operand: Any) -> Any:
         # After `operand`, a run of space-separated expressions means chained
