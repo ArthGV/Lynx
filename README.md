@@ -11,6 +11,11 @@ has written yet, which say so and point at the line.
 name: 'world'
 >> 'hello ' + name        // hello world
 
+/// a comment can span several lines,
+like a docstring. It ends on the first
+line whose text ends with ///, done///
+>> 1 + 1                   // 2
+
 age: 20
 if age > 18
  >> 'adult'

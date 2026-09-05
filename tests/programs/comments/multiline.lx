@@ -1,0 +1,37 @@
+// // stays a single-line comment
+/// this
+is
+a
+multiline comment///
+>> 1 + 1
+
+///
+standalone
+block
+///
+>> 1 + 2
+
+// a `///` docstring sits at the top of a function body
+double: n
+ /// doubling helper
+ pass n twice
+ end///
+ >>> n * 2
+>> double 5
+
+a: 1
+/// between
+statements///
+b: 2
+>> a + b
+
+// a `//` inside a block does not close it
+/// double slash inside
+still comment
+end///
+>> 42
+
+if 1 > 2
+ >> 'wrong'
+else /// fallback comment
+ >> 'right'

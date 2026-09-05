@@ -8,6 +8,10 @@ should spell out an operator character.
 # How a comment begins. Everything after it on the line is ignored.
 COMMENT = "//"
 
+# A multi-line (block / docstring) comment: a line starting with this opens one,
+# and a line ending with it closes it. The whole block is ignored.
+BLOCK_COMMENT = "///"
+
 # Literal keywords: spelling -> the Python value it denotes. This is the ONE
 # place these words are spelled — the lexer resolves them to their value and
 # printing (SPELLING) reverses it, so renaming a literal here changes it

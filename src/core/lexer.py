@@ -9,7 +9,7 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
-from src.core.grammar import COMMENT, KEYWORDS, LITERALS, SYMBOLS
+from src.core.grammar import BLOCK_COMMENT, COMMENT, KEYWORDS, LITERALS, SYMBOLS
 from src.errors.errors import LynxSyntaxError
 
 NUMBER = re.compile(r"\d+(\.\d+)?")
@@ -30,9 +30,24 @@ class Token:
 def tokenize(source: str) -> list[Token]:
     tokens: list[Token] = []
     indents = [0]
+    in_block_comment = False
+    block_start = 1
 
     for line_no, raw in enumerate(source.splitlines(), start=1):
         if not raw.strip():
+            continue
+
+        stripped = raw.strip()
+        if in_block_comment:
+            # A line ending with `///` closes the block; everything else is
+            # comment content. No tokens are emitted, so a block comment never
+            # disturbs the indent stack or the statement boundaries around it.
+            if stripped.endswith(BLOCK_COMMENT):
+                in_block_comment = False
+            continue
+        if stripped.startswith(BLOCK_COMMENT):
+            block_start = line_no
+            in_block_comment = True
             continue
 
         indent = len(raw) - len(raw.lstrip(" "))
@@ -43,7 +58,7 @@ def tokenize(source: str) -> list[Token]:
             indents.pop()
             tokens.append(Token("DEDENT", None, line_no))
 
-        rest = raw.strip()
+        rest = stripped
         while rest:
             if rest.startswith(COMMENT):
                 break
@@ -54,6 +69,12 @@ def tokenize(source: str) -> list[Token]:
     while len(indents) > 1:
         indents.pop()
         tokens.append(Token("DEDENT", None, tokens[-1].line if tokens else 1))
+
+    if in_block_comment:
+        raise LynxSyntaxError(
+            f"unterminated multiline comment starting on line {block_start}",
+            block_start,
+        )
 
     return tokens
 
