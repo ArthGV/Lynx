@@ -1,0 +1,5 @@
+// ranges can span negative integers
+>> 3__-2
+>> -3__2
+>> -5__-2
+>> 0__-3

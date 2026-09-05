@@ -1,0 +1,33 @@
+// Map literal: {k: v; k2: v2}, keys are simple types, values anything
+my_dict: { 'a': 1; 'b': 2 }
+>> my_dict
+>> type my_dict
+>> len my_dict
+>> my_dict 'a'
+>> my_dict 'b'
+
+// first / last over the entries' values
+>> first my_dict
+>> last my_dict
+
+// empty map is distinct from void
+empty: {}
+>> empty
+>> len empty
+>> boolean empty
+
+// Values can be arrays, reached by chaining the access
+nested: { 'x': 10, 20; 'y': 30 }
+>> nested 'x'
+>> nested 'x' 0
+>> nested 'x' 1
+
+// Nested maps, reached by chained access
+deep: { 'k': { 'inner': 'hi' } }
+>> deep 'k' 'inner'
+
+// Different simple key types are distinct keys
+distinct: { 1: 'num'; '1': 'text'; true: 'bool' }
+>> distinct 1
+>> distinct '1'
+>> distinct true

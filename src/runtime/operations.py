@@ -49,7 +49,7 @@ POLICY = {
 }
 
 # (left type, right type, method) -> handler(left, right)
-MIXED: dict[tuple[type, type, str], Callable[..., values.Value]] = {}
+MIXED: dict[tuple[type, type, str], Callable[..., values.Type]] = {}
 
 
 def mixed(first: type, second: type, method: str, commutes: bool = False) -> Callable:
@@ -70,7 +70,7 @@ def mixed(first: type, second: type, method: str, commutes: bool = False) -> Cal
     return register
 
 
-def binary(method: str, left: values.Value, right: values.Value) -> values.Value:
+def binary(method: str, left: values.Type, right: values.Type) -> values.Type:
     if type(left) is type(right):
         return getattr(left, method)(right)
 

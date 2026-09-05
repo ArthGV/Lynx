@@ -20,6 +20,26 @@ class Assignment:
 
 
 @dataclass
+class ArrayLiteral:
+    items: list[Any]
+    line: int | None = None
+
+
+@dataclass
+class MapLiteral:
+    pairs: list[Any]  # list of (key_expr, value_expr) tuples
+    line: int | None = None
+
+
+@dataclass
+class SetItem:
+    base: str  # variable name holding the container being mutated
+    steps: list[Any]  # index/key expressions, applied in order
+    value: Any
+    line: int | None = None
+
+
+@dataclass
 class Function:
     name: str
     params: list[Any]
@@ -87,6 +107,13 @@ class BinaryExpression:
     left: Any
     operator: str  # a token type, e.g. "PLUS" — never the character
     right: Any
+    line: int | None = None
+
+
+@dataclass
+class RangeExpression:
+    start: Any | None  # None = omitted: `__N` runs up from 0
+    end: Any | None    # None = omitted: `N__` runs down to 0
     line: int | None = None
 
 

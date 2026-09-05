@@ -5,7 +5,144 @@ are not reachable from `.lx` programs — there is no keyword for them. These ar
 tested here directly against the values module.
 """
 
-from src.runtime.values import Boolean, Number, Text, Void
+from src.errors.errors import LynxNotImplemented
+from src.runtime.values import Array, Boolean, Map, Number, Text, Void
+
+
+def arr(*items):
+    return Array(items)
+
+
+def test_array_middle():
+    assert print_(arr(Number(1), Number(2), Number(3)).middle()) == "2"
+    assert print_(arr(Number(1), Number(2)).middle()) == "2"
+    assert print_(arr(Number(1)).middle()) == "1"
+    assert type(arr().middle()) is Void
+
+
+def test_array_first_last():
+    assert print_(arr(Number(1), Number(2), Number(3)).first()) == "1"
+    assert print_(arr(Number(1), Number(2), Number(3)).last()) == "3"
+    assert type(arr().first()) is Void
+    assert type(arr().last()) is Void
+
+
+def test_array_lenght():
+    assert print_(arr(Number(1), Text("x"), Boolean(True)).lenght()) == "3"
+    assert print_(arr().lenght()) == "0"
+
+
+def test_array_conversions():
+    a = arr(Number(1), Boolean(True))
+    assert print_(a.text()) == "[ 1, true ]"
+    assert print_(a.number()) == "2"
+    assert a.boolean().is_true() is True
+    assert arr().boolean().is_true() is False
+    assert type(a.void()) is Void
+
+
+def test_array_comparison():
+    assert arr(Number(1), Number(2)).equals(arr(Number(1), Number(2))).is_true()
+    assert arr(Number(1), Number(2)).equals(arr(Number(1), Number(3))).is_true() is False
+    assert arr(Number(1), Number(2)).greater(arr(Number(1))).is_true()
+    assert arr(Number(1), Number(2)).less(arr(Number(1), Number(2), Number(3))).is_true()
+
+
+def test_array_arithmetic_not_implemented():
+    a = arr(Number(1), Number(2))
+    for method in ("add", "subtract", "multiply", "divide", "power", "root", "xor"):
+        try:
+            getattr(a, method)(a)
+            assert False, f"{method} should not be implemented"
+        except LynxNotImplemented:
+            pass
+    try:
+        a.not_()
+        assert False, "not_ should not be implemented"
+    except LynxNotImplemented:
+        pass
+
+
+def test_empty_array_is_not_void():
+    empty = Array.default()
+    assert type(empty) is Array
+    assert len(empty.value) == 0
+    assert type(empty) is not Void
+
+
+# --- Map ---------------------------------------------------------------
+
+def mp(*entries):
+    return Map(list(entries))
+
+
+def test_map_lenght():
+    assert print_(mp((Text("a"), Number(1))).lenght()) == "1"
+    assert print_(mp().lenght()) == "0"
+
+
+def test_map_first_last():
+    m = mp((Text("a"), Number(1)), (Text("b"), Number(2)))
+    assert print_(m.first()) == "1"
+    assert print_(m.last()) == "2"
+    assert type(mp().first()) is Void
+    assert type(mp().last()) is Void
+
+
+def test_map_middle():
+    m = mp((Text("a"), Number(1)), (Text("b"), Number(2)), (Text("c"), Number(3)))
+    assert print_(m.middle()) == "2"
+    assert type(mp().middle()) is Void
+
+
+def test_map_conversions():
+    m = mp((Text("a"), Number(1)))
+    assert print_(m.text()) == "{ a: 1 }"
+    assert print_(m.number()) == "1"
+    assert m.boolean().is_true() is True
+    assert mp().boolean().is_true() is False
+    assert type(m.void()) is Void
+    assert print_(mp().text()) == "{}"
+
+
+def test_map_equality():
+    a = mp((Text("a"), Number(1)), (Text("b"), Number(2)))
+    b = mp((Text("a"), Number(1)), (Text("b"), Number(2)))
+    c = mp((Text("a"), Number(1)))
+    d = mp((Text("a"), Number(9)))
+    assert a.equals(b).is_true()
+    assert a.equals(c).is_true() is False
+    assert a.equals(d).is_true() is False
+
+
+def test_map_key_types_are_distinct():
+    # 1, '1', and true are three different keys.
+    m = mp((Number(1), Text("num")), (Text("1"), Text("text")), (Boolean(True), Text("bool")))
+    assert print_(m.get_item(Number(1))) == "num"
+    assert print_(m.get_item(Text("1"))) == "text"
+    assert print_(m.get_item(Boolean(True))) == "bool"
+
+
+def test_map_default_is_not_void():
+    empty = Map.default()
+    assert type(empty) is Map
+    assert len(empty.value) == 0
+
+
+def test_map_arithmetic_not_implemented():
+    m = mp((Text("a"), Number(1)))
+    for method in ("add", "subtract", "multiply", "divide", "power", "root", "xor"):
+        try:
+            getattr(m, method)(m)
+            assert False, f"{method} should not be implemented"
+        except LynxNotImplemented:
+            pass
+    try:
+        m.not_()
+        assert False, "not_ should not be implemented"
+    except LynxNotImplemented:
+        pass
+
 
 
 def print_(v):

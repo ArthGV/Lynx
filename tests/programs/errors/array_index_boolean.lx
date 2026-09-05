@@ -1,0 +1,3 @@
+// indexing an array with a boolean is an error
+arr: 1, 2, 3
+>> arr true

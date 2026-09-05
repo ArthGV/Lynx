@@ -10,6 +10,7 @@ from typing import Any
 from src.core.grammar import BINARY_LEVELS, UNARY_METHOD, UNARY_OPERAND_LEVEL
 from src.core.lexer import Token
 from src.core.nodes import (
+    ArrayLiteral,
     Assignment,
     BinaryExpression,
     Boolean,
@@ -18,10 +19,13 @@ from src.core.nodes import (
     Function,
     Identifier,
     If,
+    MapLiteral,
     Number,
     Print,
     Program,
+    RangeExpression,
     Return,
+    SetItem,
     Text,
     UnaryExpression,
     Void,
@@ -96,13 +100,18 @@ class Parser:
 
     def parse_name_statement(self) -> Any:
         # After a leading identifier we could have an assignment (`x: 5`), a
-        # function declaration (`f: a, b` + indented body) or a function call
-        # (`f a, b`). A colon means declaration-or-assignment, decided by whether
-        # the right-hand side is a parameter list followed by an indented block.
+        # function declaration (`f: a, b` + indented body), a function call
+        # (`f a, b`) or an element mutation (`a 0: 5`). A colon means
+        # declaration-or-assignment, decided by whether the right-hand side is
+        # a parameter list followed by an indented block.
         start = self.current
         line = self.peek().line
         name = self.advance().value
         if self.type() != "COLON":
+            if self._starts_expression(self.type()):
+                mutation = self.try_parse_mutation(name, line)
+                if mutation is not None:
+                    return mutation
             return self.parse_call(name, line)
         if self._is_function_declaration():
             return self._parse_function(name)
@@ -143,7 +152,19 @@ class Parser:
     def parse_assignment(self) -> Assignment:
         name = self.match("IDENTIFIER").value
         self.match("COLON")
-        return Assignment(name, self.parse_expression())
+        return Assignment(name, self.parse_assign_rhs())
+
+    def parse_assign_rhs(self) -> Any:
+        # The right-hand side of `name:` is one expression unless a top-level
+        # comma separates several, in which case it is an array literal.
+        # `,` consumed inside a call's args stays that call's args, never here.
+        items = [self.parse_expression()]
+        while self.type() == "COMMA":
+            self.advance()
+            items.append(self.parse_expression())
+        if len(items) == 1:
+            return items[0]
+        return ArrayLiteral(items)
 
     def parse_call(self, name: str, line: int | None) -> Call:
         args = [self.parse_expression()]
@@ -151,6 +172,48 @@ class Parser:
             self.advance()
             args.append(self.parse_expression())
         return Call(name, args, line)
+
+    def try_parse_mutation(self, name: str, line: int | None) -> SetItem | None:
+        # `name <expr>... : value` is an element mutation (`a 0: 5`). The deref
+        # path is a run of expressions, comma-grouped or space-chained, both
+        # of which are sequential steps. If the run is followed by a colon we
+        # have a mutation; otherwise rewind and let the call machinery handle it.
+        save = self.current
+        steps: list[Any] = []
+        try:
+            steps.append(self.parse_expression())
+            while True:
+                if self.type() == "COMMA":
+                    self.advance()
+                    steps.append(self.parse_expression())
+                elif self._starts_expression(self.type()):
+                    steps.append(self.parse_expression())
+                else:
+                    break
+        except LynxSyntaxError:
+            self.current = save
+            return None
+        if self.type() != "COLON":
+            self.current = save
+            return None
+        self.match("COLON")
+        return SetItem(name, steps, self.parse_assign_rhs(), line)
+
+    def parse_chain(self, operand: Any) -> Any:
+        # After `operand`, a run of space-separated expressions means chained
+        # calls: `a 1 0` -> Call(Call(a, [1]), [0]). `,` inside one run stays
+        # that run's args, so `a 1, 0` is a single two-arg call.
+        while self._starts_expression(self.type()):
+            args = [self.parse_expression()]
+            while self.type() == "COMMA":
+                self.advance()
+                args.append(self.parse_expression())
+            operand = Call(operand, args, self.peek_line())
+        return operand
+
+    def peek_line(self) -> int | None:
+        token = self.peek()
+        return token.line if token else None
 
     def parse_if(self) -> If:
         self.match("IF")
@@ -186,11 +249,24 @@ class Parser:
         if level >= len(BINARY_LEVELS):
             return self.parse_primary()
         operators = BINARY_LEVELS[level]
+        if self.type() == "RANGE" and "RANGE" in operators:
+            # Leading `__N`: the start is omitted, so it runs up from 0.
+            token = self.advance()
+            return RangeExpression(
+                None,
+                self.parse_binary(level + 1) if self._can_start_bound(self.type()) else None,
+                token.line,
+            )
         left = self.parse_binary(level + 1)
         while self.type() in operators:
             token = self.advance()
-            right = self.parse_binary(level + 1)
-            left = BinaryExpression(left, token.type, right, token.line)
+            if token.type == "RANGE" and "RANGE" in operators:
+                # A trailing `N__` has no end; it runs down to 0.
+                right = self.parse_binary(level + 1) if self._can_start_bound(self.type()) else None
+                left = RangeExpression(left, right, token.line)
+            else:
+                right = self.parse_binary(level + 1)
+                left = BinaryExpression(left, token.type, right, token.line)
         return left
 
     def parse_primary(self) -> Any:
@@ -212,10 +288,12 @@ class Parser:
             case "VOID":
                 self.advance()
                 return Void()
+            case "LBRACE":
+                return self.parse_map_literal()
             case "IDENTIFIER":
                 name = self.advance().value
                 if self._starts_expression(self.type()):
-                    return self.parse_call(name, token.line)
+                    return self.parse_chain(self.parse_call(name, token.line))
                 return Identifier(name, token.line)
         raise LynxSyntaxError(
             f"unexpected {self.type()}", token.line if token else None
@@ -229,7 +307,31 @@ class Parser:
             )
         return Number(-float(self.advance().value))
 
+    def parse_map_literal(self) -> MapLiteral:
+        opening = self.match("LBRACE")
+        pairs: list[Any] = []
+        if self.type() == "RBRACE":
+            self.advance()
+            return MapLiteral(pairs, opening.line)
+        while True:
+            key = self.parse_expression()
+            self.match("COLON")
+            items = [self.parse_expression()]
+            while self.type() == "COMMA":
+                self.advance()
+                items.append(self.parse_expression())
+            value: Any = items[0] if len(items) == 1 else ArrayLiteral(items)
+            pairs.append((key, value))
+            if self.type() == "SEMICOLON":
+                self.advance()
+                continue
+            self.match("RBRACE")
+            return MapLiteral(pairs, opening.line)
+
     def _starts_expression(self, token_type: str) -> bool:
-        if token_type in ("NUMBER", "TEXT", "BOOLEAN", "VOID", "IDENTIFIER"):
+        if token_type in ("NUMBER", "TEXT", "BOOLEAN", "VOID", "IDENTIFIER", "LBRACE", "RANGE"):
             return True
         return token_type in UNARY_METHOD
+
+    def _can_start_bound(self, token_type: str) -> bool:
+        return token_type == "MINUS" or self._starts_expression(token_type)

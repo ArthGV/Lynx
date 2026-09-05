@@ -1,0 +1,35 @@
+// Array literal: comma-separated, any element types
+my_array: 10, 20, 30
+>> my_array
+>> type my_array
+>> len my_array
+>> first my_array
+>> last my_array
+
+// Element access is 0-based, space-adjacent like a call
+>> my_array 0
+>> my_array 1
+>> my_array 2
+
+// Arrays hold variables and computed expressions
+f: x
+ >>> x * 2
+a: 5
+b: 7
+vals: a, b, f 3
+>> vals
+>> vals 2
+
+// Nested arrays: an array can hold another array, reached by chaining
+inner: 1, 2
+outer: 'a', inner
+>> outer
+>> outer 1 0
+>> outer 1 1
+>> outer 1, 0
+
+// empty array is distinct from void
+empty_arr: void
+filled: 'x'
+>> boolean filled
+>> boolean empty_arr

@@ -1,0 +1,5 @@
+my_arr: void, true, 'hello', 6, 21, 6, 9
+>> my_arr 3__6
+>> my_arr __2
+>> my_arr 2__2
+>> my_arr 0__1, 1

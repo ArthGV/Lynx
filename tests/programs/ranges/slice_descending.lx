@@ -1,0 +1,5 @@
+// descending slices read back in decreasing order
+arr: 10, 20, 30, 40, 50
+>> arr 4__2
+>> arr 2__
+>> arr 4__0
