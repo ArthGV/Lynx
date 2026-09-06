@@ -42,11 +42,11 @@ CONFIG_OUT = HERE / "language-configuration.json"
 
 # Keyword token types that read as control flow rather than as a function.
 # Anything else that isn't a literal or a UNARY_METHOD is a word operator.
-CONTROL = {"IF", "ELSE"}
+CONTROL = {"IF", "ELSE", "LOOP"}
 
 # Control keywords that open an indented block, and the subset of those that
 # also close the previous one (so typing `else` dedents to line up with `if`).
-BLOCK_OPENERS = {"IF", "ELSE"}
+BLOCK_OPENERS = {"IF", "ELSE", "LOOP"}
 BLOCK_CONTINUATIONS = {"ELSE"}
 
 # Symbol token type -> TextMate scope. Every entry of grammar.SYMBOLS must be

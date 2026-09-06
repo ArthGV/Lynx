@@ -19,6 +19,7 @@ from src.core.nodes import (
     Function,
     Identifier,
     If,
+    Loop,
     MapLiteral,
     Number,
     Print,
@@ -83,6 +84,8 @@ class Parser:
                 return self.parse_return()
             case "IF":
                 return self.parse_if()
+            case "LOOP":
+                return self.parse_loop()
             case "IDENTIFIER":
                 return self.parse_name_statement()
         token = self.peek()
@@ -226,6 +229,12 @@ class Parser:
                 break
             branches.append(Branch(self.parse_expression(), self.parse_body()))
         return If(branches, else_body)
+
+    def parse_loop(self) -> Loop:
+        self.match("LOOP")
+        condition = self.parse_expression()
+        body = self.parse_body()
+        return Loop(condition, body)
 
     def parse_body(self) -> list[Any]:
         self.match("NEWLINE")

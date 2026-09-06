@@ -1,0 +1,4 @@
+//loop with no body
+a: 0
+loop a < 3
+b: 4

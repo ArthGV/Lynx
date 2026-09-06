@@ -77,6 +77,12 @@ class If:
 
 
 @dataclass
+class Loop:
+    condition: Any
+    body: list[Any]
+
+
+@dataclass
 class Number:
     value: Any
 

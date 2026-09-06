@@ -13,7 +13,8 @@ from src.runtime.environment import Environment
 
 def run(source: str, env: Environment | None = None) -> None:
     """Run lynx source. Raises LynxError on a program error."""
-    tree = Parser(tokenize(source)).parse()
+    tokens = tokenize(source)
+    tree = Parser(tokens).parse()
     try:
         execute(tree, env or Environment())
     except _Return:

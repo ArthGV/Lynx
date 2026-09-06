@@ -18,6 +18,7 @@ from src.core.nodes import (
     Function,
     Identifier,
     If,
+    Loop,
     MapLiteral,
     Number,
     Print,
@@ -36,8 +37,7 @@ from src.errors.errors import (
     LynxNotImplemented,
     LynxTypeError,
 )
-from src.runtime import operations
-from src.runtime import values
+from src.runtime import operations, values
 from src.runtime.environment import Environment
 from src.runtime.functions import FunctionValue, _Return
 
@@ -77,6 +77,10 @@ def execute(node: Any, env: Environment) -> None:
                     return
             if else_body is not None:
                 execute(else_body, env)
+
+        case Loop(condition, body):
+            while evaluate(condition, env).boolean().is_true():
+                execute(body, env)
 
         case _:
             raise LynxTypeError(f"cannot execute {type(node).__name__}")

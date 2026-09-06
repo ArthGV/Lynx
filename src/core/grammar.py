@@ -37,6 +37,7 @@ def _literal_token(value: bool | float | None) -> str:
 KEYWORDS = {
     "if": "IF",
     "else": "ELSE",
+    "loop": "LOOP",
     "type": "TYPE",
     "xor": "XOR",
     "len": "LENGHT",
