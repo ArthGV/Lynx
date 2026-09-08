@@ -1,0 +1,3 @@
+// index reading out of range
+my_str: 'abc'
+>> my_str 5

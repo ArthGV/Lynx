@@ -1,0 +1,14 @@
+//for over an array binds each element
+arr: 10, 20, 30
+loop val: arr
+ >> val
+
+//void iterates nothing (empty iterable)
+empty: void
+loop val: empty
+ >> 'should not print'
+>> 'after empty'
+
+//a comma list in the header is an array iterable
+loop v: 1, 2, 3
+ >> v

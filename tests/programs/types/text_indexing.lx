@@ -1,0 +1,28 @@
+// text characters are indexed like arrays, 0-based
+my_str: 'hello'
+>> my_str 2
+>> my_str 0
+>> my_str 4
+
+// a range step is a character slice (inclusive)
+>> my_str 1__2
+>> my_str 2__4
+>> my_str 3__1
+
+// chained access steps through the resulting characters
+>> my_str 1 0
+
+// element assignment replaces one character
+my_str 0: 'H'
+>> my_str
+>> my_str 1__4
+
+// slice assignment replaces a covered run (same length)
+my_str 1__4: 'ELLO'
+>> my_str
+my_str 4__0: 'OLLEH'
+>> my_str
+
+// mutating a character is visible to later reads
+my_str 2: 'x'
+>> my_str

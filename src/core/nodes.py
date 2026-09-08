@@ -80,6 +80,8 @@ class If:
 class Loop:
     condition: Any
     body: list[Any]
+    targets: list[str] | None = None
+    iterable: Any | None = None
 
 
 @dataclass

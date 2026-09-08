@@ -254,3 +254,49 @@ def test_void_root():
 
 def test_void_not_():
     assert type(Void().not_()) is Void
+
+
+# --- iterate ------------------------------------------------------------
+
+def iter_str(value):
+    return [print_(v) for v in value.iterate()]
+
+
+def test_array_iterate():
+    assert iter_str(arr(Number(1), Number(2), Number(3))) == ["1", "2", "3"]
+    assert iter_str(arr()) == []
+    assert iter_str(arr(Text("a"), arr(Number(1)))) == ["a", "[ 1 ]"]
+
+
+def test_map_iterate():
+    m = mp((Text("a"), Number(1)), (Text("b"), Number(2)))
+    assert iter_str(m) == ["a", "b"]
+    assert iter_str(mp()) == []
+
+
+def test_number_iterate():
+    assert iter_str(Number(3)) == ["0", "1", "2", "3"]
+    assert iter_str(Number(0)) == ["0"]
+    assert iter_str(Number(-2)) == ["0", "-1", "-2"]
+    assert iter_str(Number(2.7)) == ["0", "1", "2", "3"]
+    assert iter_str(Number(-2.7)) == ["0", "-1", "-2", "-3"]
+
+
+def test_number_iterate_rounds_like_python():
+    # round() is ties-to-even, so 2.5 counts up to 2 and 3.5 up to 4.
+    assert iter_str(Number(2.5)) == ["0", "1", "2"]
+    assert iter_str(Number(3.5)) == ["0", "1", "2", "3", "4"]
+
+
+def test_text_iterate():
+    assert iter_str(Text("hi!")) == ["h", "i", "!"]
+    assert iter_str(Text("")) == []
+
+
+def test_boolean_iterate():
+    assert iter_str(Boolean(True)) == ["true"]
+    assert iter_str(Boolean(False)) == ["false"]
+
+
+def test_void_iterate():
+    assert iter_str(Void()) == []

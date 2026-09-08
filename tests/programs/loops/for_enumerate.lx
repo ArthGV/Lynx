@@ -1,0 +1,5 @@
+//two loop variables enumerate: index + element
+arr: 'a', 'b', 'c'
+loop i, v: arr
+ >> i
+ >> v

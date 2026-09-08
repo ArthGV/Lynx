@@ -1,0 +1,3 @@
+//loop accepts at most two loop variables
+loop a, b, c: 0__3
+ >> a

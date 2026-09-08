@@ -1,0 +1,6 @@
+//booleans iterate over a single value: themselves
+loop b: true
+ >> b
+>> '--'
+loop b: false
+ >> b

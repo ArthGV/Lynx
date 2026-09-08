@@ -1,0 +1,3 @@
+// a non-number text index is invalid
+my_str: 'abc'
+>> my_str true

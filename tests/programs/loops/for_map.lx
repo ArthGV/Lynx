@@ -1,0 +1,10 @@
+//a map iterates over its keys in insertion order
+m: { 'one': 1; 'two': 2; 3: 'three' }
+loop k: m
+ >> k
+>> '--'
+
+//two variables give index + key
+loop i, k: m
+ >> i
+ >> k

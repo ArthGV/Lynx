@@ -1,0 +1,6 @@
+//nested for loops run independently
+loop i: 0__2
+ loop j: 0__2
+  >> j
+ >> 'inner done'
+>> 'outer'
