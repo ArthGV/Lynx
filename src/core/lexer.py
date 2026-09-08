@@ -14,7 +14,9 @@ from src.errors.errors import LynxSyntaxError
 
 NUMBER = re.compile(r"\d+(\.\d+)?")
 TEXT = re.compile(r"'([^']*)'")
-IDENTIFIER = re.compile(r"[a-zA-Z_][a-zA-Z0-9_]*")
+# An identifier stops before `__`, which is reserved for ranges — so `l__n`
+# lexes as `l`, `__`, `n`, while `a_b` and trailing underscores stay a name.
+IDENTIFIER = re.compile(r"[a-zA-Z_](?:[a-zA-Z0-9]|_(?!_))*")
 
 # Longest symbols first so ">>" wins over ">" and "//" over "/".
 ORDERED_SYMBOLS = sorted(SYMBOLS, key=len, reverse=True)
@@ -105,10 +107,6 @@ def read_token(rest: str, line_no: int, tokens: list[Token]) -> str:
     match = IDENTIFIER.match(rest)
     if match:
         word = match.group(0)
-        if "__" in word:
-            raise LynxSyntaxError(
-                f"names cannot contain '__' (reserved for ranges): {word}", line_no
-            )
         # Literal keywords carry their Python value; everything else its text.
         value = LITERALS[word] if word in LITERALS else word
         tokens.append(Token(KEYWORDS.get(word, "IDENTIFIER"), value, line_no))

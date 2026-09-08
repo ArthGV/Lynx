@@ -1,0 +1,16 @@
+// range ends may be numbers, variables, or omitted
+a: 10
+b: 5
+>> __a
+>> a__
+>> 2__a
+>> a__7
+>> a__b
+>> b__a
+>> 3__
+a_b: 9
+>> a_b
+edge_: 7
+>> edge_
+loop i: a__
+  >> i

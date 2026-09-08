@@ -20,7 +20,7 @@
       "match": "'([^']*)'"
     },
     {
-      "match": "^\\s*(?!(?:boolean|number|first|false|else|loop|stop|skip|type|last|text|true|void|xor|len|if|pi)\\b)([a-zA-Z_][a-zA-Z0-9_]*)(?=\\s*:)",
+      "match": "^\\s*(?!(?:boolean|number|first|false|else|loop|stop|skip|type|last|text|true|void|xor|len|if|pi)\\b)([a-zA-Z_](?:[a-zA-Z0-9]|_(?!_))*)(?=\\s*:)",
       "captures": {
         "1": {
           "name": "variable.other.definition.lynx"
@@ -77,7 +77,7 @@
     },
     {
       "name": "variable.other.lynx",
-      "match": "[a-zA-Z_][a-zA-Z0-9_]*"
+      "match": "[a-zA-Z_](?:[a-zA-Z0-9]|_(?!_))*"
     },
     {
       "name": "constant.numeric.lynx",

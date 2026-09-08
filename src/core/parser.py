@@ -116,6 +116,10 @@ class Parser:
         start = self.current
         line = self.peek().line
         name = self.advance().value
+        if self.type() == "RANGE":
+            # `a__2` as a bare statement is a range expression, not a call.
+            self.current = start
+            return self.parse_expression()
         if self.type() != "COLON":
             if self._starts_expression(self.type()):
                 mutation = self.try_parse_mutation(name, line)
@@ -354,6 +358,10 @@ class Parser:
                 return self.parse_map_literal()
             case "IDENTIFIER":
                 name = self.advance().value
+                # Directly after `__` the RANGE is the operator: `a__7`, `a__b`
+                # and `a__` are ranges over the name, not calls of it.
+                if self.type() == "RANGE":
+                    return Identifier(name, token.line)
                 if self._starts_expression(self.type()):
                     return self.parse_chain(self.parse_call(name, token.line))
                 return Identifier(name, token.line)
