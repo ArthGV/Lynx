@@ -26,3 +26,8 @@ my_str 4__0: 'OLLEH'
 // mutating a character is visible to later reads
 my_str 2: 'x'
 >> my_str
+
+// a text literal is indexed the same way as a text variable
+>> 'Speculose' 3
+>> 'Speculose' 1__3
+>> 'Speculose' 1 0

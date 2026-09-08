@@ -176,10 +176,10 @@ class Parser:
         return ArrayLiteral(items)
 
     def parse_call(self, name: str, line: int | None) -> Call:
-        args = [self.parse_expression()]
+        args = [self.parse_expression(False)]
         while self.type() == "COMMA":
             self.advance()
-            args.append(self.parse_expression())
+            args.append(self.parse_expression(False))
         return Call(name, args, line)
 
     def try_parse_mutation(self, name: str, line: int | None) -> SetItem | None:
@@ -190,13 +190,13 @@ class Parser:
         save = self.current
         steps: list[Any] = []
         try:
-            steps.append(self.parse_expression())
+            steps.append(self.parse_expression(False))
             while True:
                 if self.type() == "COMMA":
                     self.advance()
-                    steps.append(self.parse_expression())
+                    steps.append(self.parse_expression(False))
                 elif self._starts_expression(self.type()):
-                    steps.append(self.parse_expression())
+                    steps.append(self.parse_expression(False))
                 else:
                     break
         except LynxSyntaxError:
@@ -211,12 +211,14 @@ class Parser:
     def parse_chain(self, operand: Any) -> Any:
         # After `operand`, a run of space-separated expressions means chained
         # calls: `a 1 0` -> Call(Call(a, [1]), [0]). `,` inside one run stays
-        # that run's args, so `a 1, 0` is a single two-arg call.
+        # that run's args, so `a 1, 0` is a single two-arg call. Steps are
+        # leaves (allow_chain False) so a text key followed by an index keeps
+        # the chained-call shape: `t 'k' 0` is t['k'][0], not t['k'[0]].
         while self._starts_expression(self.type()):
-            args = [self.parse_expression()]
+            args = [self.parse_expression(False)]
             while self.type() == "COMMA":
                 self.advance()
-                args.append(self.parse_expression())
+                args.append(self.parse_expression(False))
             operand = Call(operand, args, self.peek_line())
         return operand
 
@@ -299,47 +301,50 @@ class Parser:
 
     # -- expressions ----------------------------------------------------
 
-    def parse_expression(self) -> Any:
-        return self.parse_binary(0)
+    def parse_expression(self, allow_chain: bool = True) -> Any:
+        return self.parse_binary(0, allow_chain)
 
-    def parse_binary(self, level: int) -> Any:
+    def parse_binary(self, level: int, allow_chain: bool = True) -> Any:
         if level >= len(BINARY_LEVELS):
-            return self.parse_primary()
+            return self.parse_primary(allow_chain)
         operators = BINARY_LEVELS[level]
         if self.type() == "RANGE" and "RANGE" in operators:
             # Leading `__N`: the start is omitted, so it runs up from 0.
             token = self.advance()
             return RangeExpression(
                 None,
-                self.parse_binary(level + 1) if self._can_start_bound(self.type()) else None,
+                self.parse_binary(level + 1, allow_chain) if self._can_start_bound(self.type()) else None,
                 token.line,
             )
-        left = self.parse_binary(level + 1)
+        left = self.parse_binary(level + 1, allow_chain)
         while self.type() in operators:
             token = self.advance()
             if token.type == "RANGE" and "RANGE" in operators:
                 # A trailing `N__` has no end; it runs down to 0.
-                right = self.parse_binary(level + 1) if self._can_start_bound(self.type()) else None
+                right = self.parse_binary(level + 1, allow_chain) if self._can_start_bound(self.type()) else None
                 left = RangeExpression(left, right, token.line)
             else:
-                right = self.parse_binary(level + 1)
+                right = self.parse_binary(level + 1, allow_chain)
                 left = BinaryExpression(left, token.type, right, token.line)
         return left
 
-    def parse_primary(self) -> Any:
+    def parse_primary(self, allow_chain: bool = True) -> Any:
         token = self.peek()
         match self.type():
             case operator if operator in UNARY_METHOD:
                 self.advance()
                 return UnaryExpression(
-                    operator, self.parse_binary(UNARY_OPERAND_LEVEL), token.line
+                    operator, self.parse_binary(UNARY_OPERAND_LEVEL, allow_chain), token.line
                 )
             case "NUMBER":
                 return Number(self.advance().value)
             case "MINUS":
                 return self.parse_negative()
             case "TEXT":
-                return Text(self.advance().value)
+                text = Text(self.advance().value)
+                if allow_chain and self._starts_expression(self.type()):
+                    return self.parse_chain(text)
+                return text
             case "BOOLEAN":
                 return Boolean(self.advance().value)
             case "VOID":
