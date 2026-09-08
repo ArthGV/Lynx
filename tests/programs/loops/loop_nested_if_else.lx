@@ -1,0 +1,11 @@
+//loop body containing if/else with several statements
+x: 0
+base: 10
+loop x < 4
+ x: x + 1
+ if x = 2
+  >> 'two-' + text base
+ else
+  >> 'other-' + text x
+  >> base + x
+>> 'done'

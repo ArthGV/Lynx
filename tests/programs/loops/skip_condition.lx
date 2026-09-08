@@ -1,0 +1,6 @@
+//skip with an inline condition desugars to if cond: skip
+x: 0
+loop x < 5
+ x: x + 1
+ skip x = 3
+ >> x

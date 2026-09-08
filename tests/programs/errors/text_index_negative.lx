@@ -1,0 +1,4 @@
+// negative text index is invalid
+n: -1
+my_str: 'abc'
+>> my_str n

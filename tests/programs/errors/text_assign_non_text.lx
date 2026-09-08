@@ -1,0 +1,3 @@
+// text index assignment needs a single-character text
+my_str: 'abc'
+my_str 0: 99

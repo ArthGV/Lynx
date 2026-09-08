@@ -77,6 +77,26 @@ class If:
 
 
 @dataclass
+class Loop:
+    condition: Any
+    body: list[Any]
+    targets: list[str] | None = None
+    iterable: Any | None = None
+
+
+@dataclass
+class Stop:
+    condition: Any | None = None
+    line: int | None = None
+
+
+@dataclass
+class Skip:
+    condition: Any | None = None
+    line: int | None = None
+
+
+@dataclass
 class Number:
     value: Any
 

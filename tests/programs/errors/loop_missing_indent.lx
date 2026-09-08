@@ -1,0 +1,5 @@
+//nested loop with a missing indented body
+a: 0
+loop a < 3
+ loop true
+b: 4

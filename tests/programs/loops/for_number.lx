@@ -1,0 +1,23 @@
+//a number counts up from 0 inclusive
+loop i: 3
+ >> i
+>> '--'
+
+//a negative number counts down from 0
+loop i: -2
+ >> i
+>> '--'
+
+//zero is a single iteration
+loop i: 0
+ >> i
+>> '--'
+
+//void iterates nothing
+loop i: void
+ >> 'should not print'
+>> 'after void'
+
+//fractions round to the nearest integer
+loop i: 2.7
+ >> i

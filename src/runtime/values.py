@@ -136,6 +136,13 @@ class Type(ABC):
     @abstractmethod
     def middle(self): ...
 
+    # iteration
+    @abstractmethod
+    def iterate(self) -> list[Type]:
+        """The values a for-loop visits for this value: the elements of an
+        array, the keys of a map, the characters of text, a numeric count, and
+        so on. Never raises — every type is iterable."""
+
 
 class SimpleType(Type):
     """A value made of a single scalar: Number, Text, Boolean, Void."""
@@ -218,6 +225,13 @@ class Number(SimpleType):
         s = self.value + other.value
         return Number(s * (1 - s))
 
+    def iterate(self) -> list[Type]:
+        # Closest integer, then counts 0..n (n >= 0) or 0..n (n < 0, descending).
+        n = round(self.value)
+        if n >= 0:
+            return [Number(i) for i in range(0, n + 1)]
+        return [Number(i) for i in range(0, n - 1, -1)]
+
 
 class Text(SimpleType):
     rank = 2
@@ -299,6 +313,9 @@ class Text(SimpleType):
         combined = Text(self.value + other.value)
         return combined.multiply(combined.not_())
 
+    def iterate(self) -> list[Type]:
+        return [Text(char) for char in self.value]
+
 
 class Boolean(SimpleType):
     rank = 1
@@ -370,6 +387,9 @@ class Boolean(SimpleType):
     def middle(self) -> Boolean:
         return self
 
+    def iterate(self) -> list[Type]:
+        return [self]
+
 
 class Void(SimpleType):
     """The absence of a value, like Python's None."""
@@ -414,6 +434,7 @@ class Void(SimpleType):
     def first(self) -> Void: return Void()
     def last(self) -> Void: return Void()
     def middle(self) -> Void: return Void()
+    def iterate(self) -> list[Type]: return []
 
 
 class Array(ComplexType):
@@ -492,6 +513,9 @@ class Array(ComplexType):
     def void(self) -> Void:
         return Void()
 
+    def iterate(self) -> list[Type]:
+        return list(self.value)
+
     # --- not implemented yet ---
     def add(self, other: Array) -> Type: self.todo("add")
     def subtract(self, other: Array) -> Type: self.todo("subtract")
@@ -509,6 +533,18 @@ def _map_key(value: Type):
     if isinstance(value, (Number, Text, Boolean, Void)):
         return (value.type_name(), value.value)
     return (value.type_name(), repr(value))
+
+
+def _value_from_key(raw: tuple) -> Type:
+    """Reverse of `_map_key`: rebuild the key value stored in a map."""
+    kind, value = raw
+    if kind == "Number":
+        return Number(value)
+    if kind == "Text":
+        return Text(value)
+    if kind == "Boolean":
+        return Boolean(value)
+    return Void()
 
 
 class Map(ComplexType):
@@ -601,6 +637,13 @@ class Map(ComplexType):
 
     def void(self) -> Void:
         return Void()
+
+    def keys(self) -> list[Type]:
+        """The map's keys in insertion order, rebuilt into values."""
+        return [_value_from_key(raw) for raw in self.value.keys()]
+
+    def iterate(self) -> list[Type]:
+        return self.keys()
 
     # --- not implemented yet ---
     def add(self, other: Map) -> Type: self.todo("add")

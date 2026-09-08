@@ -1,0 +1,6 @@
+//for and while coexist; the for variable keeps its last value
+loop i: 2
+ >> 'for ' + text i
+loop i < 5
+ i: i + 1
+ >> 'while ' + text i

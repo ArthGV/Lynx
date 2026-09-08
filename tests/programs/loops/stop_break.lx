@@ -1,0 +1,8 @@
+//stop exits an otherwise-infinite loop
+x: 0
+loop true
+ x: x + 1
+ >> x
+ if x = 3
+  stop
+>> 'done'

@@ -1,0 +1,10 @@
+//a function's >>> return unwinds through the loop it is called in
+f: n
+ >>> n * 10
+y: 0
+loop true
+ y: y + 1
+ if y = 2
+  >> f 99
+  stop
+>> 'done'

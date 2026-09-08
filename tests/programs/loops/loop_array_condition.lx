@@ -1,0 +1,6 @@
+//an array condition: a non-empty array is truthy and the loop runs
+items: 1, 2
+loop items
+ >> 'has items'
+ stop
+>> 'after'

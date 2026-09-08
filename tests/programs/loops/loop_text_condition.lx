@@ -1,0 +1,10 @@
+//a text condition: non-empty runs, empty text is falsy and never runs
+msg: 'go'
+loop msg
+ >> 'running'
+ stop
+>> 'stopped'
+empty: ''
+loop empty
+ >> 'should not print'
+>> 'done'

@@ -1,0 +1,8 @@
+//text iterates one character per iteration
+loop ch: 'hi!'
+ >> ch
+
+//empty text iterates nothing
+loop ch: ''
+ >> 'should not print'
+>> 'after'

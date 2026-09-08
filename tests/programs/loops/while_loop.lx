@@ -1,0 +1,22 @@
+//exiting loop when condition is false
+exit_condition: true
+counter: 0
+loop exit_condition
+ if counter = 3
+  exit_condition: false
+ else
+  counter: counter + 1
+  >> counter
+>> 'exited loop'
+
+//void does not enter loop
+loop void
+ >> 'entered loop'
+>> 'outside loop'
+
+//loop with logic in condition
+a: 0
+loop a < 3
+ a: a + 1
+ >> a
+>> 'exited loop'

@@ -1,0 +1,11 @@
+//loop countdown by number truthiness (value > 0)
+x: 3
+loop x
+ >> x
+ x: x - 1
+>> 'done'
+
+//a zero or negative condition never runs the body
+loop 0
+ >> 'should not print'
+>> 'zero no-run'

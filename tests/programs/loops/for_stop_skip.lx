@@ -1,0 +1,12 @@
+//skip and stop work inside a for loop
+loop i: 0__5
+ skip i = 2
+ stop i = 4
+ >> i
+
+//stop in an inner for only exits the inner loop
+loop x: 0
+ loop y: 0__3
+  stop y = 2
+  >> y
+ >> 'outer continues'
