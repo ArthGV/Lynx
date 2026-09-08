@@ -1,0 +1,3 @@
+//condition references a name that is never defined
+loop unknown_name < 3
+ >> 'should not print'

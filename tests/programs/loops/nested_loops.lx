@@ -1,0 +1,12 @@
+//stop in an inner loop only exits the inner loop
+i: 0
+loop i < 3
+ i: i + 1
+ j: 0
+ >> 'outer ' + text i
+ loop j < 5
+  j: j + 1
+  if j = 2
+   stop
+  >> ' inner' + text j
+>> 'done'

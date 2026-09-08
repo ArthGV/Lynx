@@ -83,6 +83,18 @@ class Loop:
 
 
 @dataclass
+class Stop:
+    condition: Any | None = None
+    line: int | None = None
+
+
+@dataclass
+class Skip:
+    condition: Any | None = None
+    line: int | None = None
+
+
+@dataclass
 class Number:
     value: Any
 

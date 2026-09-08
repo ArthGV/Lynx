@@ -1,0 +1,8 @@
+//skip jumps to the next iteration, skipping a single value
+x: 0
+loop x < 5
+ x: x + 1
+ if x = 3
+  skip
+ >> x
+>> 'done'

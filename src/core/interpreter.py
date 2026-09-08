@@ -26,6 +26,8 @@ from src.core.nodes import (
     RangeExpression,
     Return,
     SetItem,
+    Skip,
+    Stop,
     Text,
     UnaryExpression,
     Void,
@@ -39,7 +41,7 @@ from src.errors.errors import (
 )
 from src.runtime import operations, values
 from src.runtime.environment import Environment
-from src.runtime.functions import FunctionValue, _Return
+from src.runtime.functions import FunctionValue, _Return, _Skip, _Stop
 
 
 def execute(node: Any, env: Environment) -> None:
@@ -80,7 +82,20 @@ def execute(node: Any, env: Environment) -> None:
 
         case Loop(condition, body):
             while evaluate(condition, env).boolean().is_true():
-                execute(body, env)
+                try:
+                    execute(body, env)
+                except _Stop:
+                    break
+                except _Skip:
+                    continue
+
+        case Stop(condition, line):
+            if condition is None or evaluate(condition, env).boolean().is_true():
+                raise _Stop()
+
+        case Skip(condition, line):
+            if condition is None or evaluate(condition, env).boolean().is_true():
+                raise _Skip()
 
         case _:
             raise LynxTypeError(f"cannot execute {type(node).__name__}")

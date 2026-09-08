@@ -27,6 +27,8 @@ from src.core.nodes import (
     RangeExpression,
     Return,
     SetItem,
+    Skip,
+    Stop,
     Text,
     UnaryExpression,
     Void,
@@ -86,6 +88,10 @@ class Parser:
                 return self.parse_if()
             case "LOOP":
                 return self.parse_loop()
+            case "STOP":
+                return self.parse_loop_control(Stop)
+            case "SKIP":
+                return self.parse_loop_control(Skip)
             case "IDENTIFIER":
                 return self.parse_name_statement()
         token = self.peek()
@@ -235,6 +241,16 @@ class Parser:
         condition = self.parse_expression()
         body = self.parse_body()
         return Loop(condition, body)
+
+    def parse_loop_control(self, node_type) -> Any:
+        # `stop`/`skip` may take an optional condition: `stop x > 3` desugars
+        # to `if x > 3: stop`. With no trailing expression the control is
+        # unconditional.
+        token = self.advance()
+        condition = None
+        if self._starts_expression(self.type()):
+            condition = self.parse_expression()
+        return node_type(condition, token.line)
 
     def parse_body(self) -> list[Any]:
         self.match("NEWLINE")

@@ -18,3 +18,11 @@ class _Return(Exception):
     def __init__(self, value: Any) -> None:
         super().__init__()
         self.value = value
+
+
+class _Stop(Exception):
+    """Control-flow signal: a `stop` statement exits the innermost loop."""
+
+
+class _Skip(Exception):
+    """Control-flow signal: a `skip` statement jumps to the next iteration."""

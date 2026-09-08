@@ -38,6 +38,8 @@ KEYWORDS = {
     "if": "IF",
     "else": "ELSE",
     "loop": "LOOP",
+    "stop": "STOP",
+    "skip": "SKIP",
     "type": "TYPE",
     "xor": "XOR",
     "len": "LENGHT",
