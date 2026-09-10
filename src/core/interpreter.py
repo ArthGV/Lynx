@@ -8,7 +8,7 @@ operator character and never decides what two types mean together.
 
 from typing import Any
 
-from src.core.grammar import BINARY_METHOD, UNARY_METHOD
+from src.core.grammar import BINARY_METHOD, UNARY_METHOD, WHERE_OPERATORS
 from src.core.nodes import (
     Append,
     ArrayLiteral,
@@ -30,6 +30,7 @@ from src.core.nodes import (
     Skip,
     Stop,
     TableLiteral,
+    TableQuery,
     Text,
     UnaryExpression,
     Void,
@@ -39,6 +40,7 @@ from src.errors.errors import (
     LynxInputError,
     LynxNameError,
     LynxNotImplemented,
+    LynxSyntaxError,
     LynxTypeError,
 )
 from src.runtime import operations, values
@@ -160,6 +162,9 @@ def evaluate(node: Any, env: Environment) -> values.Type:
         case Call(callee, args, line):
             return call(callee, args, line, env)
 
+        case TableQuery(kind, expression, line):
+            return evaluate_table_query(kind, expression, line, env)
+
         case UnaryExpression(operator, operand, line):
             return apply_unary(operator, evaluate(operand, env), line)
 
@@ -255,6 +260,20 @@ def index_map(map_value: values.Map, args: list[Any], line: int | None, env: Env
 
 
 def index_table(table: values.Table, args: list[Any], line: int | None, env: Environment) -> values.Type:
+    # Several all-text args project a subset of columns: `t 'id', 'price'` is a
+    # new table with those columns, same as `select t 'id', 'price'`. Any other
+    # access falls through to the single-step descent (`t 'id' 0`).
+    if len(args) > 1:
+        columns: list[str] = []
+        for arg in args:
+            if is_range(arg):
+                break
+            key = evaluate(arg, env)
+            if not isinstance(key, values.Text):
+                break
+            columns.append(key.value)
+        else:
+            return table.select(columns, line)
     # Each arg is one access step: a text key picks a column, a number picks a
     # row. A run of args descends through the returned value (`t 'id' 0`).
     current = table
@@ -538,7 +557,7 @@ def apply_binary(operator: str, left: values.Type, right: values.Type, line: int
     # raises LynxNotImplemented, which we locate to `line`.
     try:
         return operations.binary(BINARY_METHOD[operator], left, right)
-    except LynxNotImplemented as error:
+    except LynxError as error:
         if error.line is None:
             error.line = line
         raise
@@ -554,3 +573,62 @@ def apply_unary(operator: str, value: values.Type, line: int | None) -> values.T
         if error.line is None:
             error.line = line
         raise
+
+
+# Which binary operators `where t 'col' <op> value` accepts. Shared with the
+# parser, which splits the operand on any of these tokens.
+_WHERE_OPERATORS = WHERE_OPERATORS
+
+
+def evaluate_table_query(kind: str, expression: Any, line: int | None, env: Environment) -> values.Type:
+    """Resolve one `select` / `order` / `group` / `where` expression.
+
+    The parser stores the raw rest-of-line operand (`parse_binary(0)` — the
+    Call for a table plus columns, or a BinaryExpression for `where`), and this
+    decomposes it per kind so the two sides of a comparison are never coerced
+    into each other before the row-by-row filter runs.
+    """
+    if kind == "WHERE":
+        return evaluate_where(expression, line, env)
+    if not isinstance(expression, Call) or not expression.args:
+        raise LynxSyntaxError(
+            f"{kind.lower()} needs a table and a column, like: {kind.lower()} t 'price'", line
+        )
+    table = table_base(expression, kind, line, env)
+    if kind == "SELECT":
+        return table.select([column_name(arg, line, env) for arg in expression.args], line)
+    if len(expression.args) != 1:
+        raise LynxSyntaxError(f"{kind.lower()} needs exactly one column", line)
+    column = column_name(expression.args[0], line, env)
+    if kind == "ORDER":
+        return table.order_by(column, line)
+    return table.group_by(column, line)
+
+
+def evaluate_where(expression: Any, line: int | None, env: Environment) -> values.Type:
+    if not isinstance(expression, BinaryExpression) or expression.operator not in _WHERE_OPERATORS:
+        raise LynxSyntaxError("where needs a comparison, like: where t 'price' > 20", line)
+    left = expression.left
+    if not isinstance(left, Call) or len(left.args) != 1:
+        raise LynxSyntaxError("where needs a comparison, like: where t 'price' > 20", line)
+    table = table_base(left, "WHERE", line, env)
+    column = column_name(left.args[0], line, env)
+    rhs = evaluate(expression.right, env)
+    return table.rows_where(column, expression.operator, rhs, line)
+
+
+def table_base(call_node: Call, kind: str, line: int | None, env: Environment) -> values.Table:
+    # `callee` is either a name or an expression (from a chained call); same
+    # resolution as call().
+    name = call_node.callee
+    value = env.get(name, line) if isinstance(name, str) else evaluate(name, env)
+    if not isinstance(value, values.Table):
+        raise LynxTypeError(f"{kind.lower()} needs a table, got {value.type_name()}", line)
+    return value
+
+
+def column_name(node: Any, line: int | None, env: Environment) -> str:
+    name = evaluate(node, env)
+    if not isinstance(name, values.Text):
+        raise LynxTypeError(f"table column name must be text, got {name.type_name()}", line)
+    return name.value

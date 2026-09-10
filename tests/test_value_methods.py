@@ -447,6 +447,139 @@ def test_table_default_is_not_void():
     assert empty.nrows == 0
 
 
+# --- SQL-style operations ----------------------------------------------
+
+def test_array_sum():
+    assert arr(Number(1), Number(2), Number(3)).sum().value == 6
+    # non-numbers are skipped
+    assert arr(Number(1), Boolean(True), Text('hi'), Number(4)).sum().value == 5
+    assert type(arr().sum()) is Void
+
+
+def test_array_avg():
+    assert arr(Number(1), Number(2), Number(3)).avg().value == 2
+    assert arr(Number(1), Number(8), Text('x')).avg().value == 4.5
+    assert type(arr().avg()) is Void
+
+
+def test_array_min_max():
+    assert arr(Number(3), Number(1), Number(9)).min().value == 1
+    assert arr(Number(3), Number(1), Number(9)).max().value == 9
+    assert type(arr().min()) is Void
+    assert type(arr().max()) is Void
+
+
+def test_number_aggregates_are_identity():
+    assert Number(7).sum().value == 7
+    assert Number(7).avg().value == 7
+    assert Number(7).min().value == 7
+    assert Number(7).max().value == 7
+
+
+def test_count_defaults():
+    assert arr(Number(1), Number(2)).count().value == 2
+    assert arr().count().value == 0
+    assert Text('hello').count().value == 5
+    assert Text('').count().value == 0
+    assert Void().count().value == 0
+    m = mp((Text('a'), Number(1)), (Text('b'), Number(2)))
+    assert m.count().value == 2
+    assert Boolean(True).count().value == 1
+
+
+def test_table_count_is_rows():
+    t = tbl(('id', [1, 2, 3]))
+    assert t.count().value == 3
+    assert Table([]).count().value == 0
+
+
+def test_distinct_default_is_identity():
+    assert Number(5).distinct().value == 5
+    assert Text('x').distinct().value == 'x'
+    assert type(Void().distinct()) is Void
+
+
+def test_array_distinct():
+    a = arr(Number(1), Number(1), Number(2), Number(3), Number(2))
+    assert [v.value for v in a.distinct().value] == [1, 2, 3]
+    b = arr(Text('a'), Text('a'), Boolean(True), Boolean(True))
+    assert [print_(v) for v in b.distinct().value] == ["a", "true"]
+
+
+def test_table_distinct_rows():
+    t = tbl(('id', [1, 1, 2]), ('v', [5, 5, 9]))
+    d = t.distinct()
+    assert d.nrows == 2
+    assert [c.value for c in d.columns['id']] == [1, 2]
+    assert [c.value for c in d.columns['v']] == [5, 9]
+
+
+def test_table_select():
+    t = tbl(('id', [1, 2, 3]), ('price', [10, 20, 30]))
+    s = t.select(['id', 'price'])
+    assert list(s.columns.keys()) == ['id', 'price']
+    assert s.nrows == 3
+    only = t.select(['price'])
+    assert list(only.columns.keys()) == ['price']
+    assert only.columns['price'][0].value == 10
+
+
+def test_table_select_missing_column_returns_void():
+    t = tbl(('id', [1, 2]))
+    assert type(t.select(['nope'])) is Void
+
+
+def test_table_order_by():
+    t = tbl(('id', [3, 1, 2]), ('v', [Text('c'), Text('a'), Text('b')]))
+    o = t.order_by('v')
+    assert [c.value for c in o.columns['id']] == [1, 2, 3]
+    assert [c.value for c in o.columns['v']] == ['a', 'b', 'c']
+
+
+def test_table_group_by():
+    t = tbl(('dept', [Text('a'), Text('b'), Text('a')]), ('score', [1, 2, 3]))
+    g = t.group_by('dept')
+    assert isinstance(g, Map)
+    assert g.lenght().value == 2
+    group_a = g.get_item(Text('a'))
+    assert isinstance(group_a, Table)
+    assert group_a.nrows == 2
+    assert [c.value for c in group_a.columns['score']] == [1, 3]
+    group_b = g.get_item(Text('b'))
+    assert [c.value for c in group_b.columns['score']] == [2]
+
+
+def test_table_rows_where():
+    t = tbl(('id', [1, 2, 3]), ('price', [10, 20, 30]))
+    big = t.rows_where('price', 'GREATER', Number(15))
+    assert [c.value for c in big.columns['id']] == [2, 3]
+    exact = t.rows_where('price', 'ALMOST', Number(20))
+    assert [c.value for c in exact.columns['id']] == [2]
+    none = t.rows_where('price', 'GREATER', Number(100))
+    assert none.nrows == 0
+
+
+def test_table_join():
+    j1 = tbl(('id', [1, 2]), ('name', [Text('a'), Text('b')]))
+    j2 = tbl(('id', [2, 3]), ('score', [7, 8]))
+    joined = j1.join(j2)
+    assert list(joined.columns.keys()) == ['id', 'name', 'score']
+    assert joined.nrows == 1
+    assert joined.columns['id'][0].value == 2
+    assert joined.columns['name'][0].value == 'b'
+    assert joined.columns['score'][0].value == 7
+
+
+def test_table_join_no_shared_columns_is_empty():
+    a = tbl(('x', [1]))
+    b = tbl(('y', [2]))
+    joined = a.join(b)
+    assert isinstance(joined, Table)
+    assert joined.nrows == 0
+    assert joined.columns == {}
+    assert print_(joined) == "{}"
+
+
 # --- iterate ------------------------------------------------------------
 
 def iter_str(value):

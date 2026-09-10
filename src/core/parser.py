@@ -7,7 +7,7 @@ a new keyword function needs new parsing code.
 
 from typing import Any
 
-from src.core.grammar import BINARY_LEVELS, UNARY_METHOD, UNARY_OPERAND_LEVEL
+from src.core.grammar import BINARY_LEVELS, UNARY_METHOD, UNARY_OPERAND_LEVEL, WHERE_OPERATORS
 from src.core.lexer import Token
 from src.core.nodes import (
     Append,
@@ -31,6 +31,7 @@ from src.core.nodes import (
     Skip,
     Stop,
     TableLiteral,
+    TableQuery,
     Text,
     UnaryExpression,
     Void,
@@ -38,6 +39,11 @@ from src.core.nodes import (
 from src.errors.errors import LynxInputError, LynxSyntaxError
 
 EOF = "EOF"
+
+# Keyword tokens whose operand is the whole rest of the line: a table plus its
+# columns (`select t 'a', 'b'`) or, for where, that plus a comparison. They all
+# keep the raw parse_binary(0) expression and let the interpreter decompose it.
+TABLE_QUERY = {"SELECT", "ORDER", "GROUP", "WHERE"}
 
 
 class Parser:
@@ -375,6 +381,9 @@ class Parser:
                 # Zero-argument constructor: `t: table` is an empty table.
                 self.advance()
                 return TableLiteral([], token.line)
+            case kind if kind in TABLE_QUERY:
+                token = self.advance()
+                return self.parse_table_query(kind, token.line)
             case "LBRACE":
                 return self.parse_map_literal()
             case "LBRACK":
@@ -472,8 +481,39 @@ class Parser:
             self.match("RBRACK")
             return TableLiteral(columns, opening.line)
 
+    def parse_table_query(self, kind: str, line: int | None) -> TableQuery:
+        # `select`/`order`/`group` take the whole rest of the line as their
+        # operand (`select t 'a', 'b'`, `order t 'price'`). `where` is split in
+        # two instead: the table and its column on the left, then one
+        # comparison, so the operator binds between the two rather than being
+        # swallowed into the column step.
+        if kind != "WHERE":
+            return TableQuery(kind, self.parse_binary(0), line)
+        name_token = self.match("IDENTIFIER")
+        left: Any = Identifier(name_token.value, name_token.line)
+        left = self.parse_access_steps(left)
+        if self.type() not in WHERE_OPERATORS:
+            return TableQuery(kind, left, line)
+        operator = self.advance()
+        right = self.parse_binary(0)
+        return TableQuery(kind, BinaryExpression(left, operator.type, right, line), line)
+
+    def parse_access_steps(self, operand: Any) -> Any:
+        # Access steps like parse_chain, except each step is a single primary —
+        # a text column or a number — so a comparison operator that follows the
+        # chain is never swallowed into one of its steps.
+        while self._starts_expression(self.type()):
+            args = [self.parse_primary(False)]
+            while self.type() == "COMMA":
+                self.advance()
+                args.append(self.parse_primary(False))
+            operand = Call(operand, args, self.peek_line())
+        return operand
+
     def _starts_expression(self, token_type: str) -> bool:
         if token_type in ("NUMBER", "TEXT", "BOOLEAN", "VOID", "IDENTIFIER", "LBRACE", "LPAREN", "LBRACK", "RANGE", "ARRAY", "MAP", "TABLE"):
+            return True
+        if token_type in TABLE_QUERY:
             return True
         return token_type in UNARY_METHOD
 

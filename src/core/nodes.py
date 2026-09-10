@@ -152,6 +152,18 @@ class RangeExpression:
 
 
 @dataclass
+class TableQuery:
+    """A table-and-column keyword: `select t 'a'`, `order t 'price'`,
+    `group t 'dept'`, `where t 'price' > 20`. `kind` is the keyword's token type
+    and `expression` is the raw rest-of-line operand, decomposed by the
+    interpreter for each kind."""
+
+    kind: str
+    expression: Any
+    line: int | None = None
+
+
+@dataclass
 class UnaryExpression:
     operator: str  # a token type, e.g. "LENGHT" — never the spelling
     operand: Any

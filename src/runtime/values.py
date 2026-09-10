@@ -17,9 +17,10 @@ from __future__ import annotations
 
 import inspect
 from abc import ABC, abstractmethod
+from functools import cmp_to_key
 
 from src.core.grammar import SPELLING
-from src.errors.errors import LynxNotImplemented, LynxTypeError
+from src.errors.errors import LynxError, LynxNotImplemented, LynxTypeError
 from src.utils.text import compare_raw, edit_distance
 
 
@@ -159,6 +160,32 @@ class Type(ABC):
     def not_equal(self, other: Type) -> Boolean:
         return self.equals(other).not_()
 
+    # --- SQL-style operations ---
+    # Concrete on Type so every value handles every query; Number and
+    # Array/Table override the parts that mean something for them. `count` and
+    # `distinct` need no overrides: iterate() is defined everywhere.
+
+    def sum(self) -> Type:
+        return Void()
+
+    def avg(self) -> Type:
+        return Void()
+
+    def min(self) -> Type:
+        return Void()
+
+    def max(self) -> Type:
+        return Void()
+
+    def count(self) -> Number:
+        return Number(len(self.iterate()))
+
+    def distinct(self) -> Type:
+        return self
+
+    def join(self, other: Type) -> Type:
+        self.todo("join")
+
 
 class SimpleType(Type):
     """A value made of a single scalar: Number, Text, Boolean, Void."""
@@ -240,6 +267,18 @@ class Number(SimpleType):
     def xor(self, other: Number) -> Number:
         s = self.value + other.value
         return Number(s * (1 - s))
+
+    def sum(self) -> Number:
+        return self
+
+    def avg(self) -> Number:
+        return self
+
+    def min(self) -> Number:
+        return self
+
+    def max(self) -> Number:
+        return self
 
     def iterate(self) -> list[Type]:
         # Closest integer, then counts 0..n (n >= 0) or 0..n (n < 0, descending).
@@ -532,6 +571,39 @@ class Array(ComplexType):
     def iterate(self) -> list[Type]:
         return list(self.value)
 
+    # --- SQL-style operations ---
+
+    def sum(self) -> Type:
+        numbers = [v for v in self.value if isinstance(v, Number)]
+        if not numbers:
+            return Void()
+        return Number(sum(v.value for v in numbers))
+
+    def avg(self) -> Type:
+        numbers = [v for v in self.value if isinstance(v, Number)]
+        if not numbers:
+            return Void()
+        return Number(sum(v.value for v in numbers) / len(numbers))
+
+    def min(self) -> Type:
+        numbers = [v for v in self.value if isinstance(v, Number)]
+        if not numbers:
+            return Void()
+        return Number(min(v.value for v in numbers))
+
+    def max(self) -> Type:
+        numbers = [v for v in self.value if isinstance(v, Number)]
+        if not numbers:
+            return Void()
+        return Number(max(v.value for v in numbers))
+
+    def distinct(self) -> Array:
+        seen: list[Type] = []
+        for item in self.value:
+            if not any(type(item) is type(seen_item) and item.equals(seen_item).is_true() for seen_item in seen):
+                seen.append(item)
+        return Array(seen)
+
     # --- not implemented yet ---
     def add(self, other: Array) -> Type: self.todo("add")
     def subtract(self, other: Array) -> Type: self.todo("subtract")
@@ -549,6 +621,11 @@ def _map_key(value: Type):
     if isinstance(value, (Number, Text, Boolean, Void)):
         return (value.type_name(), value.value)
     return (value.type_name(), repr(value))
+
+
+def _cells_equal(a: Type, b: Type) -> bool:
+    """True when two table cells hold equal values of the same type."""
+    return type(a) is type(b) and a.equals(b).is_true()
 
 
 def _value_from_key(raw: tuple) -> Type:
@@ -824,6 +901,89 @@ class Table(ComplexType):
 
     def iterate(self) -> list[Type]:
         return [self.get_row(i) for i in range(self.nrows)]
+
+    # --- SQL-style operations ---
+
+    def distinct(self) -> Table:
+        seen: list[Map] = []
+        indices: list[int] = []
+        for i in range(self.nrows):
+            row = self.get_row(i)
+            if not any(row.equals(prev).is_true() for prev in seen):
+                seen.append(row)
+                indices.append(i)
+        return self._from_row_indices(indices)
+
+    def select(self, names: list[str], line: int | None = None) -> Type:
+        for name in names:
+            if name not in self.columns:
+                return Void()
+        return Table([(name, list(self.columns[name])) for name in names])
+
+    def order_by(self, name: str, line: int | None = None) -> Table:
+        if name not in self.columns:
+            raise LynxError(f"table has no column '{name}'", line)
+        column = self.columns[name]
+        ordered = sorted(
+            range(self.nrows),
+            key=cmp_to_key(lambda i, j: self._compare_cells(column[i], column[j])),
+        )
+        return self._from_row_indices(ordered)
+
+    @staticmethod
+    def _compare_cells(a: Type, b: Type) -> int:
+        if type(a) is type(b):
+            return a.compare(b)
+        return compare_raw(a.rank, b.rank)
+
+    def group_by(self, name: str, line: int | None = None) -> Map:
+        if name not in self.columns:
+            raise LynxError(f"table has no column '{name}'", line)
+        groups: dict[Any, tuple[Type, list[int]]] = {}
+        for i in range(self.nrows):
+            value = self.columns[name][i]
+            raw = _map_key(value)
+            if raw not in groups:
+                groups[raw] = (value, [])
+            groups[raw][1].append(i)
+        result = Map()
+        for raw, (value, indices) in groups.items():
+            result.set_item(value, self._from_row_indices(indices))
+        return result
+
+    def rows_where(self, name: str, operator: str, rhs: Type, line: int | None = None) -> Table:
+        if name not in self.columns:
+            raise LynxError(f"table has no column '{name}'", line)
+        from src.core.grammar import BINARY_METHOD
+        from src.runtime import operations as ops
+
+        method = BINARY_METHOD.get(operator, operator)
+        column = self.columns[name]
+        kept: list[int] = []
+        for i in range(self.nrows):
+            result = ops.binary(method, column[i], rhs)
+            if result.boolean().is_true():
+                kept.append(i)
+        return self._from_row_indices(kept)
+
+    def join(self, other: Table, line: int | None = None) -> Table:
+        shared = [name for name in self.columns if name in other.columns]
+        if not shared:
+            return Table([])
+        names = list(self.columns) + [name for name in other.columns if name not in shared]
+        columns: dict[str, list[Type]] = {name: [] for name in names}
+        for r in range(self.nrows):
+            for s in range(other.nrows):
+                if all(_cells_equal(self.columns[name][r], other.columns[name][s]) for name in shared):
+                    for name in self.columns:
+                        columns[name].append(self.columns[name][r])
+                    for name in other.columns:
+                        if name not in shared:
+                            columns[name].append(other.columns[name][s])
+        return Table(list(columns.items()))
+
+    def _from_row_indices(self, indices: list[int]) -> Table:
+        return Table([(name, [column[i] for i in indices]) for name, column in self.columns.items()])
 
     # --- not implemented yet ---
     def add(self, other: Table) -> Type: self.todo("add")
