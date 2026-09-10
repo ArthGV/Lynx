@@ -1,0 +1,36 @@
+// inline array literals as call arguments: the parens run groups the arrays
+sum_len: items, extra
+ >> (len items) + extra
+sum_len ('a', 'b', 'c'), 2
+sum_len (1, 2, 3), 0
+
+// parens around computed indices and keys
+a: 10, 20, 30
+>> a (0)
+i: 1
+>> a (i + 1)
+m: { 'k': 40 }
+key: 'k'
+>> m (key)
+
+// parens in mutation steps and values
+a (1): 99
+>> a
+a (0): (5 + 5)
+>> a 0
+
+// append/prepend with a grouped array splices it
+a <: (40, 50)
+>> a
+a >: (0, 1)
+>> a
+
+// chained access on a group
+deep: { 'x': 7, 8 }
+>> (deep 'x') 1
+
+// loops over a grouped array
+total: 0
+loop v: (1, 2, 3)
+ total: total + v
+>> total

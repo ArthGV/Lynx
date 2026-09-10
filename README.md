@@ -78,12 +78,24 @@ of the line** as its argument:
 >> len 1 + 10    // 2 — len (1 + 10), not (len 1) + 10
 ```
 
-There are no parentheses yet, so you cannot use the result on the left of an operator:
-`len 12345 > 3` means `len (12345 > 3)`, not `(len 12345) > 3`. Name it first:
+**Parentheses group and override priority** — a `( … )` is a value at any spot, so a keyword
+function's result can go on the left of an operator, and a parenthesized comma-run is an array literal:
 
 ```lynx
-digits: len 12345
->> digits > 3    // true
+>> (len 12345) > 3                // true
+>> (1 + 2) * 3                    // 9
+>> 2 in (1, 2, 3)                 // true
+>> f (1, 2, 3), 4                 // one array arg and one number arg
+```
+
+**Constructors** `array` and `map` create empty collections. Unlike `len`/`type`, they take no
+argument (they do not swallow the rest of the line), so they work anywhere a value works — in
+literals, as call arguments, or as loop iterables:
+
+```lynx
+a: array      // []
+m: map        // {}
+a <: 1, 2     // [ 1, 2 ]
 ```
 
 **Conditionals** take a condition on the `if` line and an indented body. A second condition on an
@@ -106,10 +118,10 @@ Booleans add as *or* and multiply as *and*, so `true + false` is `true` and `tru
 NotImplemented on line 1: 'multiply' is not implemented yet for Text
 ```
 
-**Complex values.** An array is a comma-separated list with no brackets (`1, true, 'hi'`);
-element access reuses the call machinery (`my_array 0`, chained for nesting). A map uses
-`{ 'a': 1; 'b': 2 }` — `;` separates entries so values can be arrays. Reading a missing key
-returns `void`, like a `None`-default dictionary.
+**Complex values.** An array is a comma-separated list (`1, true, 'hi'`), or built empty with
+`array`; element access reuses the call machinery (`my_array 0`, chained for nesting). A map uses
+`{ 'a': 1; 'b': 2 }` or is built empty with `map` — `;` separates entries so values can be
+arrays. Reading a missing key returns `void`, like a `None`-default dictionary.
 
 ```lynx
 m: { 'a': 1; 'b': 2 }
@@ -132,6 +144,18 @@ nums <: 5, 6         // [ 0, 1, 2, 3, 4, 5, 6 ]
 >> nums <: 7         // [ 0, 1, 2, 3, 4, 5, 6, 7 ]
 ```
 
+**Functions** are declared like variables, with `:` and an indented body; parameters are listed
+after the colon. `>>>` returns, and a comma after it returns an array of the values — so functions
+can hand back several things at once:
+
+```lynx
+pair: a, b
+ >>> a, b
+r: pair 7, 9
+>> r 0               // 7
+>> r 1               // 9
+```
+
 ## Tests
 
 Golden tests live in `tests/programs/`, grouped into subfolders by subject. Each `*.lx` program is paired with a `*.expected`
@@ -146,15 +170,9 @@ python -m pytest
 ## Status
 
 Working today: arithmetic, text, booleans, comparisons, `type`, `text`, `len`, variables,
-`if`/`else`, functions, and the complex types (arrays, maps) with `in` and `<:`/`>:`.
-Planned next: tables, matrices, graphs, and input — `syntax` at the repo root sketches that
-surface syntax and is a design doc, not a working program.
-
-Known rough edges: many operations in `src/values.py` are still one-line stubs grouped under a
-`# --- not implemented yet ---` comment; there are no parentheses yet, so you cannot group a
-subexpression or use a keyword function's result on the left of an operator without naming it
-first; and `tests/programs/same_type/comparisons.lx` is written with `==`, so that one golden test
-currently fails.
+`if`/`else`, functions, the complex types (arrays, maps) with `in` and `<:`/`>:`, parentheses
+for grouping, and `array`/`map` constructors.
+Planned next: tables, matrices, graphs, and notebooks.
 
 ## Layout
 

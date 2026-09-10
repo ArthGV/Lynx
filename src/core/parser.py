@@ -106,7 +106,8 @@ class Parser:
 
     def parse_return(self) -> Return:
         token = self.match("RETURN")
-        return Return(self.parse_expression(), token.line)
+        # Comma-separated right-hand side, so `>>> a, b` returns an array.
+        return Return(self.parse_assign_rhs(), token.line)
 
     def parse_name_statement(self) -> Any:
         # After a leading identifier we could have an assignment (`x: 5`), a
@@ -361,8 +362,18 @@ class Parser:
             case "VOID":
                 self.advance()
                 return Void()
+            case "ARRAY":
+                # Zero-argument constructor: `a: array` is an empty array.
+                self.advance()
+                return ArrayLiteral([], token.line)
+            case "MAP":
+                # Zero-argument constructor: `m: map` is an empty map.
+                self.advance()
+                return MapLiteral([], token.line)
             case "LBRACE":
                 return self.parse_map_literal()
+            case "LPAREN":
+                return self.parse_parenthesized(allow_chain)
             case "IDENTIFIER":
                 name = self.advance().value
                 # Directly after `__` the RANGE is the operator: `a__7`, `a__b`
@@ -386,6 +397,22 @@ class Parser:
             )
         return Number(-float(self.advance().value))
 
+    def parse_parenthesized(self, allow_chain: bool) -> Any:
+        """A `( … )` group is a primary: it overrides precedence at its spot,
+        and a comma-run inside it is an array literal, so `(1, 2)` is an array
+        and `(1 + 2) * 3` binds inside the parens. Like any value, a group may
+        be chained — `(f x) 0`, `(m 'k') 0`."""
+        opening = self.match("LPAREN")
+        items = [self.parse_expression()]
+        while self.type() == "COMMA":
+            self.advance()
+            items.append(self.parse_expression())
+        self.match("RPAREN")
+        node: Any = items[0] if len(items) == 1 else ArrayLiteral(items, opening.line)
+        if allow_chain and self._starts_expression(self.type()):
+            return self.parse_chain(node)
+        return node
+
     def parse_map_literal(self) -> MapLiteral:
         opening = self.match("LBRACE")
         pairs: list[Any] = []
@@ -408,7 +435,7 @@ class Parser:
             return MapLiteral(pairs, opening.line)
 
     def _starts_expression(self, token_type: str) -> bool:
-        if token_type in ("NUMBER", "TEXT", "BOOLEAN", "VOID", "IDENTIFIER", "LBRACE", "RANGE"):
+        if token_type in ("NUMBER", "TEXT", "BOOLEAN", "VOID", "IDENTIFIER", "LBRACE", "LPAREN", "RANGE", "ARRAY", "MAP"):
             return True
         return token_type in UNARY_METHOD
 

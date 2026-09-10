@@ -1,0 +1,14 @@
+// a comma after >>> returns an array of the values
+pair: a, b
+ >>> a, b
+r: pair 7, 9
+>> r
+>> r 0
+>> r 1
+
+// three values, and the returned value is really an array
+triple: a, b, c
+ >>> a, b, c
+t: triple 1, 2, 3
+>> t 2
+>> type r

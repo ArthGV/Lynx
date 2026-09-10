@@ -50,6 +50,9 @@ KEYWORDS = {
     "number": "TO_NUMBER",
     "boolean": "TO_BOOLEAN",
     "text": "TO_TEXT",
+    #constructors
+    "array": "ARRAY",
+    "map": "MAP",
     **{word: _literal_token(value) for word, value in LITERALS.items()},
 }
 
@@ -78,6 +81,8 @@ SYMBOLS = {
     ":": "COLON",
     "{": "LBRACE",
     "}": "RBRACE",
+    "(": "LPAREN",
+    ")": "RPAREN",
     ";": "SEMICOLON",
 }
 

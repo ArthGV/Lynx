@@ -1,0 +1,13 @@
+sort_string_by_lenght: stings, threshold
+ short_strings: array
+ long_strings: array
+ loop s: stings
+    if (len s) > threshold
+        long_strings <: s
+    else
+        short_strings <: s
+ >>> short_strings, long_strings
+
+
+>> sort_string_by_lenght ('1','22','333','4444', '55555'), 3
+>> sort_string_by_lenght ('1','22','333','4444', '55555'), 2

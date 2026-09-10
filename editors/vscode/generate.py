@@ -44,6 +44,9 @@ CONFIG_OUT = HERE / "language-configuration.json"
 # Anything else that isn't a literal or a UNARY_METHOD is a word operator.
 CONTROL = {"IF", "ELSE", "LOOP"}
 
+# Zero-argument constructor keywords: colour as builtins like the unary methods.
+CONSTRUCTOR = {"ARRAY", "MAP"}
+
 # Control keywords that open an indented block, and the subset of those that
 # also close the previous one (so typing `else` dedents to line up with `if`).
 BLOCK_OPENERS = {"IF", "ELSE", "LOOP"}
@@ -70,6 +73,8 @@ SYMBOL_SCOPE = {
     "SEMICOLON": "punctuation.separator.lynx",
     "LBRACE": "punctuation.section.braces.lynx",
     "RBRACE": "punctuation.section.braces.lynx",
+    "LPAREN": "punctuation.section.parens.lynx",
+    "RPAREN": "punctuation.section.parens.lynx",
 }
 
 
@@ -78,7 +83,7 @@ def word_scope(word: str, token: str) -> str:
         return "constant.language.lynx"
     if token in CONTROL:
         return "keyword.control.lynx"
-    if token in UNARY_METHOD:
+    if token in UNARY_METHOD or token in CONSTRUCTOR:
         return "support.function.builtin.lynx"
     return "keyword.operator.word.lynx"
 

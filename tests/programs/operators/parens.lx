@@ -1,0 +1,34 @@
+// A single-expression group is just that value, overriding operator priority
+>> 1 + 2 * 3
+>> (1 + 2) * 3
+>> 3 * (1 + 2)
+>> 2 + (3 - 1) * 4
+>> ((2 + 3) * (10 - 8))
+>> (1 + 2) = 3
+>> (5 > 3) = true
+>> (1 + 2) ≈ (2 + 1)
+>> 2 + (-3)
+
+// in: grouped operand, and a grouped comma-run is an array so it can sit
+// right of the operator
+>> 2 in (1, 2, 3)
+>> 4 in (1, 2, 3)
+>> (2 in (1, 2, 3)) = true
+
+// keyword results inside groups: the keyword swallows only its parens
+>> (len 1234) > 3
+>> (len 1234) > 5
+>> type (1, 2)
+
+// a parenthesized comma-run is an array; arrays compare equal
+>> (1, 2) = (1, 2)
+
+// a grouped lookup is a value, so it can sit left of = : missing-key checks
+m: { 'a': 1 }
+>> (m 'a') = 1
+if (m 'nope') = void
+ >> 'missing is void'
+if (m 'nope') = 1
+ >> 'missing is 1'
+else
+ >> 'missing is not 1'

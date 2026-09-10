@@ -1,0 +1,34 @@
+// array and map construct empty collections (zero-argument, do not swallow line)
+a: array
+>> a
+>> len a
+>> boolean a
+>> type a
+
+// fill a, then print
+a <: 1, 2
+>> a
+
+// map: empty, fill via mutation, read back
+m: map
+>> m
+>> len m
+>> boolean m
+m 'k': 5
+>> m
+>> m 'k'
+
+// usable anywhere a value is: call arguments and loop iterables
+f: x
+ >> len x
+f array
+f map
+
+// loop over a map counts keys
+total: 0
+loop v: m
+ total: total + 1
+>> total
+
+// embedded in an array literal
+>> type (array, m)
