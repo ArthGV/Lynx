@@ -5,8 +5,8 @@ are not reachable from `.lx` programs — there is no keyword for them. These ar
 tested here directly against the values module.
 """
 
-from src.errors.errors import LynxNotImplemented
-from src.runtime.values import Array, Boolean, Map, Number, Text, Void
+from src.errors.errors import LynxNotImplemented, LynxTypeError
+from src.runtime.values import Array, Boolean, Map, Number, Table, Text, Void
 
 
 def arr(*items):
@@ -278,6 +278,173 @@ def test_void_root():
 
 def test_void_not_():
     assert type(Void().not_()) is Void
+
+
+# --- Table ---------------------------------------------------------------
+
+def tbl(*columns):
+    """Helper: tbl(('id', [1, 2, 3]), ('price', [10, 20])) → Table"""
+    return Table([(name, [Number(v) if isinstance(v, (int, float)) else v for v in vals])
+                  for name, vals in columns])
+
+
+def test_table_construction():
+    t = tbl(('id', [1, 2, 3]), ('price', [10, 20, 30]))
+    assert t.nrows == 3
+    assert list(t.columns.keys()) == ['id', 'price']
+
+
+def test_table_empty():
+    t = Table([])
+    assert t.nrows == 0
+    assert t.columns == {}
+
+
+def test_table_lenght():
+    t = tbl(('id', [1, 2, 3]), ('price', [10, 20, 30]))
+    result = t.lenght()
+    assert isinstance(result, Array)
+    assert result.value[0].value == 3  # nrows
+    assert result.value[1].value == 2  # ncols
+
+
+def test_table_lenght_empty():
+    t = Table([])
+    result = t.lenght()
+    assert isinstance(result, Array)
+    assert result.value[0].value == 0
+    assert result.value[1].value == 0
+
+
+def test_table_first_last():
+    t = tbl(('id', [1, 2, 3]), ('price', [10, 20, 30]))
+    first = t.first()
+    assert isinstance(first, Map)
+    assert first.get_item(Text('id')).value == 1
+    assert first.get_item(Text('price')).value == 10
+    last = t.last()
+    assert last.get_item(Text('id')).value == 3
+    assert last.get_item(Text('price')).value == 30
+
+
+def test_table_first_last_empty():
+    t = Table([])
+    assert type(t.first()) is Void
+    assert type(t.last()) is Void
+
+
+def test_table_middle():
+    t = tbl(('a', [1, 2, 3, 4, 5]))
+    mid = t.middle()
+    assert isinstance(mid, Map)
+    assert mid.get_item(Text('a')).value == 3
+
+
+def test_table_conversions():
+    t = tbl(('id', [1, 2]))
+    assert t.number().value == 2  # nrows
+    assert t.boolean().is_true() is True
+    assert Table([]).boolean().is_true() is False
+    assert type(t.void()) is Void
+
+
+def test_table_text_repr():
+    t = tbl(('id', [1, 2]), ('name', [Text('a'), Text('b')]))
+    text_val = t.text().value
+    assert 'id' in text_val
+    assert 'name' in text_val
+
+
+def test_table_equals():
+    a = tbl(('x', [1, 2]))
+    b = tbl(('x', [1, 2]))
+    c = tbl(('x', [1, 3]))
+    d = tbl(('y', [1, 2]))
+    assert a.equals(b).is_true()
+    assert a.equals(c).is_true() is False
+    assert a.equals(d).is_true() is False
+
+
+def test_table_get_column():
+    t = tbl(('id', [1, 2, 3]), ('price', [10, 20, 30]))
+    col = t.get_column('id')
+    assert isinstance(col, Array)
+    assert len(col.value) == 3
+    assert col.value[0].value == 1
+
+
+def test_table_missing_column_returns_void():
+    t = tbl(('id', [1, 2]))
+    assert type(t.get_column('nope')) is Void
+
+
+def test_table_get_row():
+    t = tbl(('id', [1, 2, 3]), ('price', [10, 20, 30]))
+    row = t.get_row(0)
+    assert isinstance(row, Map)
+    assert row.get_item(Text('id')).value == 1
+    assert row.get_item(Text('price')).value == 10
+
+
+def test_table_iterate():
+    t = tbl(('x', [1, 2, 3]))
+    rows = list(t.iterate())
+    assert len(rows) == 3
+    assert isinstance(rows[0], Map)
+    assert rows[0].get_item(Text('x')).value == 1
+    assert rows[2].get_item(Text('x')).value == 3
+
+
+def test_table_column_name_must_be_text():
+    try:
+        Table([(123, [Number(1), Number(2)])])
+        assert False, "should have raised TypeError"
+    except LynxTypeError as e:
+        assert "text" in str(e).lower()
+
+
+def test_table_pads_short_columns():
+    t = Table([('a', [Number(1), Number(2)]), ('b', [Number(3)])])
+    assert t.nrows == 2
+    assert len(t.columns['a']) == 2
+    assert len(t.columns['b']) == 2
+    assert type(t.columns['b'][1]) is Void
+
+
+def test_table_empty_column_is_padded():
+    t = Table([('id', []), ('price', [Number(1), Number(2)])])
+    assert t.nrows == 2
+    assert len(t.columns['id']) == 2
+    assert type(t.columns['id'][0]) is Void
+    assert type(t.columns['id'][1]) is Void
+
+
+def test_table_get_row_pads_short_column():
+    t = Table([('id', [Number(1), Number(2)]), ('price', [Number(3)])])
+    row = t.get_row(1)
+    assert row.get_item(Text('id')).value == 2
+    assert type(row.get_item(Text('price'))) is Void
+
+
+def test_table_arithmetic_not_implemented():
+    t = tbl(('x', [1]))
+    for method in ("add", "subtract", "multiply", "divide", "power", "root", "xor"):
+        try:
+            getattr(t, method)(t)
+            assert False, f"{method} should not be implemented"
+        except LynxNotImplemented:
+            pass
+    try:
+        t.not_()
+        assert False, "not_ should not be implemented"
+    except LynxNotImplemented:
+        pass
+
+
+def test_table_default_is_not_void():
+    empty = Table.default()
+    assert type(empty) is Table
+    assert empty.nrows == 0
 
 
 # --- iterate ------------------------------------------------------------
