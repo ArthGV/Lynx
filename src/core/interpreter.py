@@ -10,6 +10,7 @@ from typing import Any
 
 from src.core.grammar import BINARY_METHOD, UNARY_METHOD
 from src.core.nodes import (
+    Append,
     ArrayLiteral,
     Assignment,
     BinaryExpression,
@@ -62,6 +63,9 @@ def execute(node: Any, env: Environment) -> None:
 
         case SetItem(base, steps, value, line):
             assign_item(base, steps, value, line, env)
+
+        case Append(base, value, front, line):
+            append_to(base, value, front, line, env)
 
         case Function(name, params, body):
             env.set(name, FunctionValue(params, body, env))
@@ -134,6 +138,9 @@ def evaluate(node: Any, env: Environment) -> values.Type:
         case ArrayLiteral(items, line):
             return values.Array([evaluate(item, env) for item in items])
 
+        case Append(base, value, front, line):
+            return append_to(base, value, front, line, env)
+
         case MapLiteral(pairs, line):
             return values.Map([
                 (evaluate_key(k, env, line), evaluate(v, env))
@@ -186,7 +193,11 @@ def call(callee: Any, args: list[Any], line: int | None, env: Environment) -> va
         return index_text(fn, args, line, env)
 
     if not isinstance(fn, FunctionValue):
-        raise LynxTypeError(f"'{callee}' is not a function", line)
+        if isinstance(callee, str):
+            raise LynxTypeError(
+                f"'{callee}' is not a function, it is a {fn.type_name()}", line
+            )
+        raise LynxTypeError(f"cannot call a {fn.type_name()}", line)
     if len(args) != len(fn.params):
         raise LynxInputError(
             f"{callee} expected {len(fn.params)} input but got {len(args)}", line
@@ -256,10 +267,7 @@ def get_element(container, step: Any, line: int | None, env: Environment) -> val
             raise LynxTypeError(
                 f"map key must be a simple type, got {key.type_name()}", line
             )
-        try:
-            return container.get_item(key)
-        except KeyError:
-            raise LynxError(f"key {key!r} not found in map", line)
+        return container.get_item(key)
     if isinstance(container, values.Text):
         if not isinstance(key, values.Number):
             raise LynxTypeError(
@@ -272,6 +280,24 @@ def get_element(container, step: Any, line: int | None, env: Environment) -> val
             )
         return values.Text(container.value[idx])
     raise LynxTypeError("cannot index into a value that is not an array or map", line)
+
+
+def append_to(base: str, value_node: Any, front: bool, line: int | None, env: Environment) -> values.Type:
+    # `my_arr <: x` appends at the end; `my_arr >: x` at the front. An Array x
+    # splices its elements, anything else appends as a single element. Returns
+    # the (same, now mutated) array so it can be printed or assigned.
+    container = env.get(base, line)
+    if not isinstance(container, values.Array):
+        raise LynxTypeError(
+            f"cannot {'prepend' if front else 'append'} onto a {container.type_name()}", line
+        )
+    added = evaluate(value_node, env)
+    items = added.value if isinstance(added, values.Array) else [added]
+    if front:
+        container.value[0:0] = items
+    else:
+        container.value.extend(items)
+    return container
 
 
 def assign_item(base: str, steps: list[Any], value_node: Any, line: int | None, env: Environment) -> None:

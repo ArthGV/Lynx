@@ -129,6 +129,30 @@ def test_map_default_is_not_void():
     assert len(empty.value) == 0
 
 
+def test_map_missing_key_returns_void():
+    m = mp((Text("a"), Number(1)))
+    assert type(m.get_item(Text("nope"))) is Void
+    assert type(mp().get_item(Number(0))) is Void
+
+
+def test_in_membership():
+    a = arr(Number(1), Number(2), Number(3))
+    assert Number(2).in_(a).is_true()
+    assert Number(4).in_(a).is_true() is False
+    # different element types never match
+    assert Number(1).in_(arr(Text("1"), Boolean(True))).is_true() is False
+    assert Array([Number(1)]).in_(arr(Text("x"), Array([Number(1)]))).is_true()
+    # a map's keys, not its values
+    m = mp((Text("a"), Number(1)))
+    assert Text("a").in_(m).is_true()
+    assert Number(1).in_(m).is_true() is False
+    # scalars iterate too, so membership has a default there as well
+    assert Number(3).in_(Number(5)).is_true()
+    assert Text("h").in_(Text("hello")).is_true()
+    assert Text("z").in_(Text("hello")).is_true() is False
+    assert Number(1).in_(Void()).is_true() is False
+
+
 def test_map_arithmetic_not_implemented():
     m = mp((Text("a"), Number(1)))
     for method in ("add", "subtract", "multiply", "divide", "power", "root", "xor"):

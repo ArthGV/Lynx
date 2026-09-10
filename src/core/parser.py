@@ -10,6 +10,7 @@ from typing import Any
 from src.core.grammar import BINARY_LEVELS, UNARY_METHOD, UNARY_OPERAND_LEVEL
 from src.core.lexer import Token
 from src.core.nodes import (
+    Append,
     ArrayLiteral,
     Assignment,
     BinaryExpression,
@@ -120,6 +121,8 @@ class Parser:
             # `a__2` as a bare statement is a range expression, not a call.
             self.current = start
             return self.parse_expression()
+        if self.type() in ("APPEND", "PREPEND"):
+            return self.parse_append(name, line)
         if self.type() != "COLON":
             if self._starts_expression(self.type()):
                 mutation = self.try_parse_mutation(name, line)
@@ -185,6 +188,10 @@ class Parser:
             self.advance()
             args.append(self.parse_expression(False))
         return Call(name, args, line)
+
+    def parse_append(self, name: str, line: int | None) -> Append:
+        token = self.advance()
+        return Append(name, self.parse_assign_rhs(), token.type == "PREPEND", line)
 
     def try_parse_mutation(self, name: str, line: int | None) -> SetItem | None:
         # `name <expr>... : value` is an element mutation (`a 0: 5`). The deref
@@ -362,6 +369,8 @@ class Parser:
                 # and `a__` are ranges over the name, not calls of it.
                 if self.type() == "RANGE":
                     return Identifier(name, token.line)
+                if self.type() in ("APPEND", "PREPEND"):
+                    return self.parse_append(name, token.line)
                 if self._starts_expression(self.type()):
                     return self.parse_chain(self.parse_call(name, token.line))
                 return Identifier(name, token.line)

@@ -59,9 +59,10 @@ age: age + 5    // reassignment is the same syntax
 | Level | Operators | Meaning |
 |---|---|---|
 | 1 | `=` `≈` | equal, approximately equal |
-| 2 | `>` `<` | greater, less |
-| 3 | `+` `-` `xor` | add, subtract, exclusive or |
-| 4 | `*` `/` | multiply, divide |
+| 2 | `in` | contained in — element of an array, key of a map |
+| 3 | `>` `<` | greater, less |
+| 4 | `+` `-` `xor` | add, subtract, exclusive or |
+| 5 | `*` `/` | multiply, divide |
 
 Note that `=` is **equality**, not assignment (assignment is `:`), and there is no `==`. So
 `>> 5 > 3 = true` prints `true`. For numbers, `≈` is true when the two are less than 1 apart.
@@ -105,6 +106,32 @@ Booleans add as *or* and multiply as *and*, so `true + false` is `true` and `tru
 NotImplemented on line 1: 'multiply' is not implemented yet for Text
 ```
 
+**Complex values.** An array is a comma-separated list with no brackets (`1, true, 'hi'`);
+element access reuses the call machinery (`my_array 0`, chained for nesting). A map uses
+`{ 'a': 1; 'b': 2 }` — `;` separates entries so values can be arrays. Reading a missing key
+returns `void`, like a `None`-default dictionary.
+
+```lynx
+m: { 'a': 1; 'b': 2 }
+>> m 'nope'       // void
+>> 'a' in m       // true — checks the keys
+```
+
+`in` also works on arrays, and on scalars (which iterate, so `3 in 5` is true and `'h' in 'hello'`
+is character membership).
+
+**Appending to an array** is `<:` (end) and `>: ` (front). The right-hand side is parsed like an
+assignment, so an array splices its elements in and anything else appends as a single element.
+The operation returns the array, so you can print it or chain it.
+
+```lynx
+nums: 1, 2, 3
+nums <: 4            // [ 1, 2, 3, 4 ]
+nums >: 0            // [ 0, 1, 2, 3, 4 ]
+nums <: 5, 6         // [ 0, 1, 2, 3, 4, 5, 6 ]
+>> nums <: 7         // [ 0, 1, 2, 3, 4, 5, 6, 7 ]
+```
+
 ## Tests
 
 Golden tests live in `tests/programs/`, grouped into subfolders by subject. Each `*.lx` program is paired with a `*.expected`
@@ -118,10 +145,10 @@ python -m pytest
 
 ## Status
 
-Working today: arithmetic, text, booleans, comparisons, `type`, `text`, `len`, variables, and
-`if`/`else`. Planned next: complex types (arrays, tables, matrices, graphs), functions, and
-classes — `syntax` at the repo root sketches that surface syntax and is a design doc, not a
-working program.
+Working today: arithmetic, text, booleans, comparisons, `type`, `text`, `len`, variables,
+`if`/`else`, functions, and the complex types (arrays, maps) with `in` and `<:`/`>:`.
+Planned next: tables, matrices, graphs, and input — `syntax` at the repo root sketches that
+surface syntax and is a design doc, not a working program.
 
 Known rough edges: many operations in `src/values.py` are still one-line stubs grouped under a
 `# --- not implemented yet ---` comment; there are no parentheses yet, so you cannot group a

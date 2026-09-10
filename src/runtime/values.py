@@ -81,6 +81,14 @@ class Type(ABC):
     def lesser_or_almost(self, other: Type) -> Boolean:
         return Boolean(self.compare(other) < 0 or self.almost(other).is_true())
 
+    def in_(self, other: Type) -> Boolean:
+        """True when this value appears among `other`'s iterated elements —
+        an element of an array, a key of a map, and so on."""
+        for item in other.iterate():
+            if type(item) is type(self) and self.equals(item).is_true():
+                return Boolean(True)
+        return Boolean(False)
+
     # Every value must define all of these.
 
     @abstractmethod
@@ -568,8 +576,8 @@ class Map(ComplexType):
     def set_item(self, key: Type, value: Type) -> None:
         self.value[_map_key(key)] = value
 
-    def get_item(self, key: Type):
-        return self.value[_map_key(key)]
+    def get_item(self, key: Type) -> Type:
+        return self.value.get(_map_key(key), Void())
 
     def __repr__(self) -> str:
         if not self.value:

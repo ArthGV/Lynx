@@ -20,7 +20,7 @@
       "match": "'([^']*)'"
     },
     {
-      "match": "^\\s*(?!(?:boolean|number|first|false|else|loop|stop|skip|type|last|text|true|void|xor|len|if|pi)\\b)([a-zA-Z_](?:[a-zA-Z0-9]|_(?!_))*)(?=\\s*:)",
+      "match": "^\\s*(?!(?:boolean|number|first|false|else|loop|stop|skip|type|last|text|true|void|xor|len|if|in|pi)\\b)([a-zA-Z_](?:[a-zA-Z0-9]|_(?!_))*)(?=\\s*:)",
       "captures": {
         "1": {
           "name": "variable.other.definition.lynx"
@@ -37,7 +37,7 @@
     },
     {
       "name": "keyword.operator.word.lynx",
-      "match": "\\b(?:stop|skip|xor)\\b"
+      "match": "\\b(?:stop|skip|xor|in)\\b"
     },
     {
       "name": "support.function.builtin.lynx",
@@ -48,12 +48,16 @@
       "match": ">>>|>>"
     },
     {
+      "name": "keyword.operator.assignment.lynx",
+      "match": "<:|>:|:"
+    },
+    {
       "name": "keyword.operator.range.lynx",
       "match": "__"
     },
     {
       "name": "keyword.operator.comparison.lynx",
-      "match": "=|≈|>|<"
+      "match": ">|<|=|≈"
     },
     {
       "name": "keyword.operator.arithmetic.lynx",
@@ -62,10 +66,6 @@
     {
       "name": "punctuation.separator.comma.lynx",
       "match": ","
-    },
-    {
-      "name": "keyword.operator.assignment.lynx",
-      "match": ":"
     },
     {
       "name": "punctuation.section.braces.lynx",

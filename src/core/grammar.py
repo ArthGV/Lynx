@@ -45,6 +45,7 @@ KEYWORDS = {
     "len": "LENGHT",
     "first": "FIRST",
     "last": "LAST",
+    "in": "IN",
     #types
     "number": "TO_NUMBER",
     "boolean": "TO_BOOLEAN",
@@ -60,6 +61,10 @@ SPELLING = {value: word for word, value in LITERALS.items()}
 SYMBOLS = {
     ">>>": "RETURN",
     ">>": "PRINT",
+    ">": "GREATER",
+    "<": "LESS",
+    "<:": "APPEND",
+    ">:": "PREPEND",
     "=": "EQUAL",
     "≈": "ALMOST",
     ">": "GREATER",
@@ -83,6 +88,7 @@ SYMBOLS = {
 # it never dispatches to a Value method.
 BINARY_LEVELS = [
     {"EQUAL": "equals", "ALMOST": "almost"},
+    {"IN": "in_"},
     {"GREATER": "greater", "LESS": "less"},
     {"PLUS": "add", "MINUS": "subtract", "XOR": "xor"},
     {"STAR": "multiply", "SLASH": "divide"},

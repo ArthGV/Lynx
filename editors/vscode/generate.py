@@ -64,6 +64,8 @@ SYMBOL_SCOPE = {
     "STAR": "keyword.operator.arithmetic.lynx",
     "SLASH": "keyword.operator.arithmetic.lynx",
     "COLON": "keyword.operator.assignment.lynx",
+    "APPEND": "keyword.operator.assignment.lynx",
+    "PREPEND": "keyword.operator.assignment.lynx",
     "COMMA": "punctuation.separator.comma.lynx",
     "SEMICOLON": "punctuation.separator.lynx",
     "LBRACE": "punctuation.section.braces.lynx",

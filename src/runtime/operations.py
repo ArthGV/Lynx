@@ -29,6 +29,7 @@ from src.runtime import values
 LEFT = "left"      # coerce the right operand into the left's type
 RANK = "rank"      # promote both operands to the higher-ranked type
 STRICT = "strict"  # different types simply never match
+PASSTHROUGH = "passthrough"  # call left.method(right) with no coercion
 
 # Operator -> its rule, named by the Value method so no operator symbol appears
 # outside grammar.py. LEFT is the default, so only the exceptions are listed.
@@ -46,6 +47,7 @@ POLICY = {
     "lesser_or_equal": RANK,
     "greater_or_almost": RANK,
     "lesser_or_almost": RANK,
+    "in_": PASSTHROUGH,
 }
 
 # (left type, right type, method) -> handler(left, right)
@@ -83,6 +85,10 @@ def binary(method: str, left: values.Type, right: values.Type) -> values.Type:
     policy = POLICY.get(method, LEFT)
     if policy is STRICT:
         return values.Boolean(False)
+    if policy is PASSTHROUGH:
+        # The type decides what "in" means for this pair itself; no coercing
+        # the container into the element's type first.
+        return getattr(left, method)(right)
 
     # Nobody wrote this pair, so reconcile it and borrow the same-type logic.
     # A hole we land in that way belongs to the *pair* the user wrote, not to

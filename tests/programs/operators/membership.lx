@@ -1,0 +1,35 @@
+// `in` checks membership: elements of an array, keys of a map
+nums: 1, 2, 3
+>> 2 in nums
+>> 4 in nums
+
+// Cross-type: 4 is not the same as '4'
+mix: 1, '4', true
+>> 4 in mix
+>> '4' in mix
+>> true in mix
+
+// Maps: membership is about keys, not values
+m: { 'a': 1; 'b': 2 }
+>> 'a' in m
+>> 'c' in m
+>> 1 in m
+
+// Empty containers contain nothing
+>> 1 in void
+>> 1 in {}
+
+// Nested arrays: an array is a single element, matched whole
+inner: 1, 2
+outer: 'x', inner
+>> inner in outer
+
+// Scalars iterate too: 3 in 5 counts 0..5, 'h' in 'hello' is a character
+>> 3 in 5
+>> 'h' in 'hello'
+>> 'z' in 'hello'
+
+// Binds tighter than =, so a flag reads left to right
+flag: 'a' in m
+>> flag
+>> 2 in nums = true

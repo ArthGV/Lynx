@@ -1,0 +1,32 @@
+// <: appends at the end
+my_arr: 1, 2, 3
+my_arr <: 4
+>> my_arr
+
+// An array splices its elements at the end
+my_arr <: 5, 6
+>> my_arr
+other: 7, 8
+my_arr <: other
+>> my_arr
+
+// >: prepends at the front
+my_arr >: 0
+>> my_arr
+my_arr >: -2, -1
+>> my_arr
+front: -4, -3
+my_arr >: front
+>> my_arr
+
+// Returns the array, so it prints and assigns
+>> my_arr <: 9
+aliased: my_arr <: 10
+>> aliased
+>> my_arr
+>> aliased = my_arr
+
+// A non-array payload is a single element
+items: 'x', 'y'
+items <: { 'k': 1 }
+>> items

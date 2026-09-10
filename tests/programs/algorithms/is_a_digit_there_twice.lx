@@ -1,0 +1,16 @@
+is_a_digit_there_twice: entry
+ entry_text: text entry
+ digit_map: {}
+ loop char: entry_text
+  if char in digit_map
+    >>>true
+  else
+    digit_map char: true
+ >>>false
+
+//false
+>> is_a_digit_there_twice 12345678
+>> is_a_digit_there_twice '12345678'
+//true
+>> is_a_digit_there_twice 123456784
+>> is_a_digit_there_twice '123456784'

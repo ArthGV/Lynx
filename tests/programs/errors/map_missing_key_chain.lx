@@ -1,0 +1,2 @@
+my_dict: { 'a': 1 }
+>> my_dict 'x' 'y'

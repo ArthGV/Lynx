@@ -40,6 +40,14 @@ class SetItem:
 
 
 @dataclass
+class Append:
+    base: str  # variable name holding the array being mutated
+    value: Any  # an Array splices its elements, anything else appends as one
+    front: bool = False  # False appends at the end (<:), True at the front (>:)
+    line: int | None = None
+
+
+@dataclass
 class Function:
     name: str
     params: list[Any]
