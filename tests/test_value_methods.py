@@ -485,6 +485,28 @@ def test_count_defaults():
     m = mp((Text('a'), Number(1)), (Text('b'), Number(2)))
     assert m.count().value == 2
     assert Boolean(True).count().value == 1
+    # a single scalar counts as one, whatever its digits
+    assert Number(0).count().value == 1
+    assert Number(12345).count().value == 1
+
+
+def test_join_is_tables_only():
+    for value in (Number(1), Text('a'), Boolean(True), Void(), arr(Number(1)), mp((Text('a'), Number(1)))):
+        try:
+            value.join(value)
+            assert False, "join should not be implemented for non-tables"
+        except LynxNotImplemented:
+            pass
+
+
+def test_aggregates_stub_on_non_numbers():
+    for value in (Text('a'), Boolean(True), Void(), mp((Text('a'), Number(1))), tbl(('x', [1]))):
+        for method in ("sum", "avg", "min", "max"):
+            try:
+                getattr(value, method)()
+                assert False, f"{method} should not be implemented for {type(value).__name__}"
+            except LynxNotImplemented:
+                pass
 
 
 def test_table_count_is_rows():

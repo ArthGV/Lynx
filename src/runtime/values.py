@@ -152,6 +152,27 @@ class Type(ABC):
         array, the keys of a map, the characters of text, a numeric count, and
         so on. Never raises — every type is iterable."""
 
+    # --- table SQL-style operations ---
+    # Abstract like every other operation: each type implements the ones that
+    # mean something for it and leaves a `todo` stub for the rest — `count` is
+    # 1 on a scalar, and `sum` on a Text asks to be written rather than
+    # silently returning void.
+
+    @abstractmethod
+    def sum(self) -> Type: ...
+    @abstractmethod
+    def avg(self) -> Type: ...
+    @abstractmethod
+    def min(self) -> Type: ...
+    @abstractmethod
+    def max(self) -> Type: ...
+    @abstractmethod
+    def count(self) -> Number: ...
+    @abstractmethod
+    def distinct(self) -> Type: ...
+    @abstractmethod
+    def join(self, other: Type) -> Type: ...
+
     # --- convenience (concrete, not abstract) ---
 
     def sqrt(self) -> Type:
@@ -159,32 +180,6 @@ class Type(ABC):
 
     def not_equal(self, other: Type) -> Boolean:
         return self.equals(other).not_()
-
-    # --- SQL-style operations ---
-    # Concrete on Type so every value handles every query; Number and
-    # Array/Table override the parts that mean something for them. `count` and
-    # `distinct` need no overrides: iterate() is defined everywhere.
-
-    def sum(self) -> Type:
-        return Void()
-
-    def avg(self) -> Type:
-        return Void()
-
-    def min(self) -> Type:
-        return Void()
-
-    def max(self) -> Type:
-        return Void()
-
-    def count(self) -> Number:
-        return Number(len(self.iterate()))
-
-    def distinct(self) -> Type:
-        return self
-
-    def join(self, other: Type) -> Type:
-        self.todo("join")
 
 
 class SimpleType(Type):
@@ -280,6 +275,15 @@ class Number(SimpleType):
     def max(self) -> Number:
         return self
 
+    def count(self) -> Number:
+        return Number(1)
+
+    def distinct(self) -> Number:
+        return self
+
+    def join(self, other: Number) -> Type:
+        self.todo("join")
+
     def iterate(self) -> list[Type]:
         # Closest integer, then counts 0..n (n >= 0) or 0..n (n < 0, descending).
         n = round(self.value)
@@ -371,6 +375,20 @@ class Text(SimpleType):
     def iterate(self) -> list[Type]:
         return [Text(char) for char in self.value]
 
+    # --- SQL-style operations ---
+
+    def count(self) -> Number:
+        return Number(len(self.value))
+
+    def distinct(self) -> Text:
+        return self
+
+    def sum(self) -> Type: self.todo("sum")
+    def avg(self) -> Type: self.todo("avg")
+    def min(self) -> Type: self.todo("min")
+    def max(self) -> Type: self.todo("max")
+    def join(self, other: Text) -> Type: self.todo("join")
+
 
 class Boolean(SimpleType):
     rank = 1
@@ -445,6 +463,20 @@ class Boolean(SimpleType):
     def iterate(self) -> list[Type]:
         return [self]
 
+    # --- SQL-style operations ---
+
+    def count(self) -> Number:
+        return Number(1)
+
+    def distinct(self) -> Boolean:
+        return self
+
+    def sum(self) -> Type: self.todo("sum")
+    def avg(self) -> Type: self.todo("avg")
+    def min(self) -> Type: self.todo("min")
+    def max(self) -> Type: self.todo("max")
+    def join(self, other: Boolean) -> Type: self.todo("join")
+
 
 class Void(SimpleType):
     """The absence of a value, like Python's None."""
@@ -490,6 +522,14 @@ class Void(SimpleType):
     def last(self) -> Void: return Void()
     def middle(self) -> Void: return Void()
     def iterate(self) -> list[Type]: return []
+    def count(self) -> Number: return Number(0)
+    def distinct(self) -> Void: return Void()
+    def sum(self) -> Type: return Void()
+    def avg(self) -> Type: return Void()
+    def min(self) -> Type: return Void()
+    def max(self) -> Type: return Void()
+
+    def join(self, other: Type) -> Type: self.todo("join")
 
 
 class Array(ComplexType):
@@ -597,6 +637,9 @@ class Array(ComplexType):
             return Void()
         return Number(max(v.value for v in numbers))
 
+    def count(self) -> Number:
+        return Number(len(self.value))
+
     def distinct(self) -> Array:
         seen: list[Type] = []
         for item in self.value:
@@ -613,6 +656,7 @@ class Array(ComplexType):
     def root(self, other: Array) -> Type: self.todo("root")
     def xor(self, other: Array) -> Type: self.todo("xor")
     def not_(self) -> Type: self.todo("not_")
+    def join(self, other: Array) -> Type: self.todo("join")
 
 
 def _map_key(value: Type):
@@ -738,6 +782,12 @@ class Map(ComplexType):
     def iterate(self) -> list[Type]:
         return self.keys()
 
+    def count(self) -> Number:
+        return Number(len(self.value))
+
+    def distinct(self) -> Map:
+        return self
+
     # --- not implemented yet ---
     def add(self, other: Map) -> Type: self.todo("add")
     def subtract(self, other: Map) -> Type: self.todo("subtract")
@@ -747,6 +797,11 @@ class Map(ComplexType):
     def root(self, other: Map) -> Type: self.todo("root")
     def xor(self, other: Map) -> Type: self.todo("xor")
     def not_(self) -> Type: self.todo("not_")
+    def sum(self) -> Type: self.todo("sum")
+    def avg(self) -> Type: self.todo("avg")
+    def min(self) -> Type: self.todo("min")
+    def max(self) -> Type: self.todo("max")
+    def join(self, other: Map) -> Type: self.todo("join")
 
 
 class Table(ComplexType):
@@ -985,6 +1040,9 @@ class Table(ComplexType):
     def _from_row_indices(self, indices: list[int]) -> Table:
         return Table([(name, [column[i] for i in indices]) for name, column in self.columns.items()])
 
+    def count(self) -> Number:
+        return Number(self.nrows)
+
     # --- not implemented yet ---
     def add(self, other: Table) -> Type: self.todo("add")
     def subtract(self, other: Table) -> Type: self.todo("subtract")
@@ -994,3 +1052,7 @@ class Table(ComplexType):
     def root(self, other: Table) -> Type: self.todo("root")
     def xor(self, other: Table) -> Type: self.todo("xor")
     def not_(self) -> Type: self.todo("not_")
+    def sum(self) -> Type: self.todo("sum")
+    def avg(self) -> Type: self.todo("avg")
+    def min(self) -> Type: self.todo("min")
+    def max(self) -> Type: self.todo("max")
