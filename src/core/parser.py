@@ -102,7 +102,7 @@ class Parser:
 
     def parse_print(self) -> Print:
         self.match("PRINT")
-        return Print(self.parse_expression())
+        return Print(self.parse_assign_rhs())
 
     def parse_return(self) -> Return:
         token = self.match("RETURN")

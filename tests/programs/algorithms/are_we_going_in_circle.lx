@@ -1,0 +1,15 @@
+are_we_going_in_circle: steps
+    direction_counts: map
+    loop step: steps
+        direction_counts step: (number direction_counts step) + 1
+    if ((direction_counts 'u') != (direction_counts 'd')) + ((direction_counts 'l') != (direction_counts 'r'))
+        >>> false
+    >>> true
+    
+
+//true
+>> are_we_going_in_circle ('u', 'd', 'r', 'l', 'u', 'd', 'r', 'l', 'u', 'd', 'r', 'l')
+
+//false
+>> are_we_going_in_circle ('u', 'd', 'l', 'l')
+>> are_we_going_in_circle ('u', 'l')

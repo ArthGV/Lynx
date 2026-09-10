@@ -1,0 +1,9 @@
+// >> with a comma-run prints an array, like assignment's right-hand side
+>> 3, 4
+>> 'a', 'b'
+>> 1, 2, 3
+>> (2 + 1), 6
+>> 1, true, 'hi'
+
+// a single value is still just that value
+>> len 5

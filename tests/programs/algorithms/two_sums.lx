@@ -1,0 +1,12 @@
+two_sums: numbers, target
+    loop ind_i, i: numbers
+        loop ind_j, j: numbers
+            if ((i + j) = target) * (ind_i != ind_j)
+                >>> ind_i, ind_j
+
+//2,4
+>>two_sums (3, 4, 5, 2), 6
+//1,2
+>>two_sums (3, 4, 5, 2), 9
+
+

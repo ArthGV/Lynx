@@ -52,6 +52,7 @@ age: age + 5    // reassignment is the same syntax
 
 ```lynx
 >> 1 + 2        // 3
+>> 3, 4         // [ 3, 4 ] — a comma-run prints as an array, like `x: 3, 4`
 ```
 
 **Operators**, loosest-binding level first:
