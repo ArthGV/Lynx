@@ -1,0 +1,2 @@
+// A bare colon after [ starts a column with no name
+bad: [: 1, 2, 3]
