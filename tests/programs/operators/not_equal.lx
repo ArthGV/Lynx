@@ -1,0 +1,8 @@
+// != negates =, same precedence
+>> 5 != 3
+>> 5 != 5
+>> 'a' != 'b'
+>> 'a' != 'a'
+>> true != false
+>> 5 != '5'
+>> (2 in (1, 2, 3)) != true

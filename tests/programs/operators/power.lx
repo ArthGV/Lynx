@@ -1,0 +1,18 @@
+// ^ : power (tighter than * /)
+>> 2 ^ 3
+>> 9 ^ 0.5
+>> 5 ^ 0
+>> 5 ^ 1
+
+// root : binary keyword, same precedence as ^
+>> 8 root 3
+>> 9 root 2
+
+// sqrt : sugar for root 2
+>> sqrt 4
+>> sqrt 9
+>> sqrt 1
+
+// precedence: ^ binds tighter than *
+>> 2 * 3 ^ 2
+>> 2 ^ 3 * 4

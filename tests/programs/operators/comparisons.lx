@@ -1,4 +1,20 @@
->> 3 > 2
->> 3 < 2
->> 2 = 2
->> 'a' = 'b'
+// >= and <= : standard comparisons
+>> 5 >= 5
+>> 5 >= 6
+>> 6 >= 5
+>> 5 <= 5
+>> 5 <= 6
+>> 6 <= 5
+
+// >~ and <~ : greater-or-almost / lesser-or-almost
+// true when the left is strictly greater/less, OR when they are within 1 of each other
+>> 5 >~ 5
+>> 5 >~ 5.3
+>> 5 >~ 6
+>> 5 <~ 5
+>> 5 <~ 4.7
+>> 5 <~ 3
+
+// same precedence as > and <
+>> (5 >= 3) = true
+>> (5 <= 3) = false

@@ -58,24 +58,33 @@ age: age + 5    // reassignment is the same syntax
 
 | Level | Operators | Meaning |
 |---|---|---|
-| 1 | `=` `≈` | equal, approximately equal |
+| 1 | `=` `!=` `≈` | equal, not equal, approximately equal |
 | 2 | `in` | contained in — element of an array, key of a map |
-| 3 | `>` `<` | greater, less |
+| 3 | `>` `<` `>=` `<=` `>≈` `<≈` | greater, less, and their-or-almost variants |
 | 4 | `+` `-` `xor` | add, subtract, exclusive or |
 | 5 | `*` `/` | multiply, divide |
+| 6 | `^` `root` | power, nth root (`2 ^ 3` = 8, `8 root 3` = 2) |
 
-Note that `=` is **equality**, not assignment (assignment is `:`), and there is no `==`. So
+Note that `=` is **equality**, not assignment (assignment is `:`), and `!=` is its negation —
+there is no `==`. So
 `>> 5 > 3 = true` prints `true`. For numbers, `≈` is true when the two are less than 1 apart.
+The `-or-almost` variants (`>≈`, `<≈`, or the ASCII equivalents `>~`, `<~`) combine comparison
+with approximation: `5 >~ 5.3` is true because 5.3 is within 1 of 5.
 
-**Keyword functions**: `type` gives a value's type name as text, `text` converts to text, and
-`len` gives a length — for a number, its digit count. A keyword function takes the **whole rest
-of the line** as its argument:
+**Keyword functions**: `type` gives a value's type name as text, `text` converts to text,
+`len` gives a length — for a number, its digit count, `not` negates (logical NOT / `1 - x`),
+`middle` returns the middle element, and `sqrt` is square root. A keyword function takes the
+**whole rest of the line** as its argument:
 
 ```lynx
 >> type 'hi'     // Text
 >> text 42       // 42
 >> len 12345     // 5
->> len 1 + 10    // 2 — len (1 + 10), not (len 1) + 10
+>> not true      // false
+>> not 5         // -4
+>> middle 12345  // 3
+>> sqrt 9        // 3
+>> sqrt 4        // 2
 ```
 
 **Parentheses group and override priority** — a `( … )` is a value at any spot, so a keyword
@@ -169,9 +178,10 @@ python -m pytest
 
 ## Status
 
-Working today: arithmetic, text, booleans, comparisons, `type`, `text`, `len`, variables,
-`if`/`else`, functions, the complex types (arrays, maps) with `in` and `<:`/`>:`, parentheses
-for grouping, and `array`/`map` constructors.
+Working today: arithmetic, text, booleans, comparisons (including `>=`, `<=`, `>≈`/`<≈`, `!=`),
+`not`, `middle`, `sqrt`, `type`, `text`, `len`, variables, `if`/`else`, functions, the complex
+types (arrays, maps) with `in` and `<:`/`>:`, `^`/`root` for power, parentheses for grouping,
+and `array`/`map` constructors.
 Planned next: tables, matrices, graphs, and notebooks.
 
 ## Layout

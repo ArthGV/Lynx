@@ -46,6 +46,8 @@ KEYWORDS = {
     "first": "FIRST",
     "last": "LAST",
     "in": "IN",
+    "not": "NOT",
+    "middle": "MIDDLE",
     #types
     "number": "TO_NUMBER",
     "boolean": "TO_BOOLEAN",
@@ -53,6 +55,8 @@ KEYWORDS = {
     #constructors
     "array": "ARRAY",
     "map": "MAP",
+    "sqrt": "SQRT",
+    "root": "ROOT",
     **{word: _literal_token(value) for word, value in LITERALS.items()},
 }
 
@@ -64,16 +68,22 @@ SPELLING = {value: word for word, value in LITERALS.items()}
 SYMBOLS = {
     ">>>": "RETURN",
     ">>": "PRINT",
+    ">≈": "GREATER_OR_ALMOST",
+    ">~": "GREATER_OR_ALMOST",
+    ">=": "GREATER_OR_EQUAL",
     ">": "GREATER",
+    "<≈": "LESSER_OR_ALMOST",
+    "<~": "LESSER_OR_ALMOST",
+    "<=": "LESSER_OR_EQUAL",
     "<": "LESS",
     "<:": "APPEND",
     ">:": "PREPEND",
     "=": "EQUAL",
+    "!=": "NOT_EQUAL",
     "≈": "ALMOST",
-    ">": "GREATER",
-    "<": "LESS",
     "+": "PLUS",
     "-": "MINUS",
+    "^": "POWER",
     "*": "STAR",
     "/": "SLASH",
     "__": "RANGE",
@@ -92,11 +102,14 @@ SYMBOLS = {
 # own RangeExpression node (see parser.py) and is interpreted by build_range —
 # it never dispatches to a Value method.
 BINARY_LEVELS = [
-    {"EQUAL": "equals", "ALMOST": "almost"},
+    {"EQUAL": "equals", "NOT_EQUAL": "not_equal", "ALMOST": "almost"},
     {"IN": "in_"},
-    {"GREATER": "greater", "LESS": "less"},
+    {"GREATER": "greater", "LESS": "less",
+     "GREATER_OR_EQUAL": "greater_or_equal", "LESSER_OR_EQUAL": "lesser_or_equal",
+     "GREATER_OR_ALMOST": "greater_or_almost", "LESSER_OR_ALMOST": "lesser_or_almost"},
     {"PLUS": "add", "MINUS": "subtract", "XOR": "xor"},
     {"STAR": "multiply", "SLASH": "divide"},
+    {"POWER": "power", "ROOT": "root"},
     {"RANGE": "range"},
 ]
 
@@ -111,6 +124,9 @@ UNARY_METHOD = {
     "LENGHT": "lenght",
     "FIRST": "first",
     "LAST": "last",
+    "NOT": "not_",
+    "MIDDLE": "middle",
+    "SQRT": "sqrt",
 }
 
 # How much of the line a keyword function swallows: its operand is parsed at

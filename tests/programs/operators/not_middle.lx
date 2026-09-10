@@ -1,0 +1,11 @@
+// not : logical / arithmetic negation (1 - x)
+>> not true
+>> not false
+>> not 0
+>> not 5
+
+// middle : middle element / digit / character
+>> middle 12345
+>> middle 3
+>> middle 'hello'
+>> middle true

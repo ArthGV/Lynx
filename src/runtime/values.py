@@ -151,6 +151,14 @@ class Type(ABC):
         array, the keys of a map, the characters of text, a numeric count, and
         so on. Never raises — every type is iterable."""
 
+    # --- convenience (concrete, not abstract) ---
+
+    def sqrt(self) -> Type:
+        return self.root(Number(2))
+
+    def not_equal(self, other: Type) -> Boolean:
+        return self.equals(other).not_()
+
 
 class SimpleType(Type):
     """A value made of a single scalar: Number, Text, Boolean, Void."""
