@@ -32,6 +32,12 @@ class MapLiteral:
 
 
 @dataclass
+class TableLiteral:
+    columns: list[Any]  # list of (name_expr, [value_exprs]) tuples
+    line: int | None = None
+
+
+@dataclass
 class SetItem:
     base: str  # variable name holding the container being mutated
     steps: list[Any]  # index/key expressions, applied in order

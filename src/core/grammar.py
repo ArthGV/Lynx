@@ -55,6 +55,7 @@ KEYWORDS = {
     #constructors
     "array": "ARRAY",
     "map": "MAP",
+    "table": "TABLE",
     "sqrt": "SQRT",
     "root": "ROOT",
     **{word: _literal_token(value) for word, value in LITERALS.items()},
@@ -93,6 +94,8 @@ SYMBOLS = {
     "}": "RBRACE",
     "(": "LPAREN",
     ")": "RPAREN",
+    "[": "LBRACK",
+    "]": "RBRACK",
     ";": "SEMICOLON",
 }
 

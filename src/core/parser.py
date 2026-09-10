@@ -30,6 +30,7 @@ from src.core.nodes import (
     SetItem,
     Skip,
     Stop,
+    TableLiteral,
     Text,
     UnaryExpression,
     Void,
@@ -370,8 +371,14 @@ class Parser:
                 # Zero-argument constructor: `m: map` is an empty map.
                 self.advance()
                 return MapLiteral([], token.line)
+            case "TABLE":
+                # Zero-argument constructor: `t: table` is an empty table.
+                self.advance()
+                return TableLiteral([], token.line)
             case "LBRACE":
                 return self.parse_map_literal()
+            case "LBRACK":
+                return self.parse_table_literal()
             case "LPAREN":
                 return self.parse_parenthesized(allow_chain)
             case "IDENTIFIER":
@@ -434,8 +441,39 @@ class Parser:
             self.match("RBRACE")
             return MapLiteral(pairs, opening.line)
 
+    def parse_table_literal(self) -> TableLiteral:
+        # `[ 'id': 1, 2, 3; 'price': 10, 20 ]` — `:` separates a column name
+        # from its values, `;` separates columns. A column with no values is
+        # allowed: `['id': ; 'price': 1, 2]` and bare `['id'; 'price': 1, 2]`
+        # both build an empty `id` column. Names can't be empty, so a stray
+        # `:` or `;` right after `[` is a syntax error before parsing starts.
+        opening = self.match("LBRACK")
+        columns: list[Any] = []
+        if self.type() == "RBRACK":
+            self.advance()
+            return TableLiteral(columns, opening.line)
+        while True:
+            token = self.peek()
+            if self.type() in ("COLON", "SEMICOLON"):
+                raise LynxSyntaxError("table column needs a name", token.line)
+            name = self.parse_expression()
+            values: list[Any] = []
+            if self.type() == "COLON":
+                self.advance()
+                if self._starts_expression(self.type()):
+                    values.append(self.parse_expression())
+                    while self.type() == "COMMA":
+                        self.advance()
+                        values.append(self.parse_expression())
+            columns.append((name, values))
+            if self.type() == "SEMICOLON":
+                self.advance()
+                continue
+            self.match("RBRACK")
+            return TableLiteral(columns, opening.line)
+
     def _starts_expression(self, token_type: str) -> bool:
-        if token_type in ("NUMBER", "TEXT", "BOOLEAN", "VOID", "IDENTIFIER", "LBRACE", "LPAREN", "RANGE", "ARRAY", "MAP"):
+        if token_type in ("NUMBER", "TEXT", "BOOLEAN", "VOID", "IDENTIFIER", "LBRACE", "LPAREN", "LBRACK", "RANGE", "ARRAY", "MAP", "TABLE"):
             return True
         return token_type in UNARY_METHOD
 

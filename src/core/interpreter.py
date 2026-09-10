@@ -29,6 +29,7 @@ from src.core.nodes import (
     SetItem,
     Skip,
     Stop,
+    TableLiteral,
     Text,
     UnaryExpression,
     Void,
@@ -147,6 +148,12 @@ def evaluate(node: Any, env: Environment) -> values.Type:
                 for k, v in pairs
             ])
 
+        case TableLiteral(columns, line):
+            return values.Table([
+                (evaluate_table_key(k, env, line), [evaluate(v, env) for v in values_list])
+                for k, values_list in columns
+            ])
+
         case Identifier(name, line):
             return env.get(name, line)
 
@@ -175,6 +182,15 @@ def evaluate_key(node: Any, env: Environment, line: int | None) -> values.Type:
     return key
 
 
+def evaluate_table_key(node: Any, env: Environment, line: int | None) -> values.Text:
+    name = evaluate(node, env)
+    if not isinstance(name, values.Text):
+        raise LynxTypeError(
+            f"table column name must be text, got {name.type_name()}", line
+        )
+    return name
+
+
 def call(callee: Any, args: list[Any], line: int | None, env: Environment) -> values.Type:
     # `callee` is either a name (a plain function/index call) or an expression
     # (the result of an earlier chained call), so resolve it to a value first.
@@ -188,6 +204,9 @@ def call(callee: Any, args: list[Any], line: int | None, env: Environment) -> va
 
     if isinstance(fn, values.Map):
         return index_map(fn, args, line, env)
+
+    if isinstance(fn, values.Table):
+        return index_table(fn, args, line, env)
 
     if isinstance(fn, values.Text):
         return index_text(fn, args, line, env)
@@ -235,6 +254,17 @@ def index_map(map_value: values.Map, args: list[Any], line: int | None, env: Env
     return current
 
 
+def index_table(table: values.Table, args: list[Any], line: int | None, env: Environment) -> values.Type:
+    # Each arg is one access step: a text key picks a column, a number picks a
+    # row. A run of args descends through the returned value (`t 'id' 0`).
+    current = table
+    for arg in args:
+        if is_range(arg):
+            raise LynxError("range slicing is only supported for arrays", line)
+        current = get_element(current, arg, line, env)
+    return current
+
+
 def index_text(text_value: values.Text, args: list[Any], line: int | None, env: Environment) -> values.Type:
     # Same stepping as index_array: a range step is a characters slice, a plain
     # step is one character lookup.
@@ -268,6 +298,19 @@ def get_element(container, step: Any, line: int | None, env: Environment) -> val
                 f"map key must be a simple type, got {key.type_name()}", line
             )
         return container.get_item(key)
+    if isinstance(container, values.Table):
+        if isinstance(key, values.Text):
+            return container.get_column(key.value)
+        if isinstance(key, values.Number):
+            idx = key.value
+            if not isinstance(idx, int) or idx < 0 or idx >= container.nrows:
+                raise LynxError(
+                    f"index {idx} out of range for a table with {container.nrows} rows", line
+                )
+            return container.get_row(idx)
+        raise LynxTypeError(
+            f"table access needs a column name or a row index, got {key.type_name()}", line
+        )
     if isinstance(container, values.Text):
         if not isinstance(key, values.Number):
             raise LynxTypeError(

@@ -20,7 +20,7 @@
       "match": "'([^']*)'"
     },
     {
-      "match": "^\\s*(?!(?:boolean|middle|number|first|array|false|else|loop|stop|skip|type|last|text|sqrt|root|true|void|xor|len|not|map|if|in|pi)\\b)([a-zA-Z_](?:[a-zA-Z0-9]|_(?!_))*)(?=\\s*:)",
+      "match": "^\\s*(?!(?:boolean|middle|number|first|array|table|false|else|loop|stop|skip|type|last|text|sqrt|root|true|void|xor|len|not|map|if|in|pi)\\b)([a-zA-Z_](?:[a-zA-Z0-9]|_(?!_))*)(?=\\s*:)",
       "captures": {
         "1": {
           "name": "variable.other.definition.lynx"
@@ -41,7 +41,7 @@
     },
     {
       "name": "support.function.builtin.lynx",
-      "match": "\\b(?:boolean|middle|number|first|array|type|last|text|sqrt|len|not|map)\\b"
+      "match": "\\b(?:boolean|middle|number|first|array|table|type|last|text|sqrt|len|not|map)\\b"
     },
     {
       "name": "keyword.control.lynx",
@@ -74,6 +74,10 @@
     {
       "name": "punctuation.section.parens.lynx",
       "match": "\\(|\\)"
+    },
+    {
+      "name": "punctuation.section.brackets.lynx",
+      "match": "\\[|\\]"
     },
     {
       "name": "punctuation.separator.lynx",
