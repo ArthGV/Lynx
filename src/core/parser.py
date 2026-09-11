@@ -7,7 +7,7 @@ a new keyword function needs new parsing code.
 
 from typing import Any
 
-from src.core.grammar import BINARY_LEVELS, UNARY_METHOD, UNARY_OPERAND_LEVEL
+from src.core.grammar import BINARY_LEVELS, UNARY_METHOD, UNARY_OPERAND_LEVEL, WHERE_OPERATORS
 from src.core.lexer import Token
 from src.core.nodes import (
     Append,
@@ -30,6 +30,8 @@ from src.core.nodes import (
     SetItem,
     Skip,
     Stop,
+    TableLiteral,
+    TableQuery,
     Text,
     UnaryExpression,
     Void,
@@ -37,6 +39,11 @@ from src.core.nodes import (
 from src.errors.errors import LynxInputError, LynxSyntaxError
 
 EOF = "EOF"
+
+# Keyword tokens whose operand is the whole rest of the line: a table plus its
+# columns (`select t 'a', 'b'`) or, for where, that plus a comparison. They all
+# keep the raw parse_binary(0) expression and let the interpreter decompose it.
+TABLE_QUERY = {"SELECT", "ORDER", "GROUP", "WHERE"}
 
 
 class Parser:
@@ -345,9 +352,16 @@ class Parser:
         match self.type():
             case operator if operator in UNARY_METHOD:
                 self.advance()
-                return UnaryExpression(
-                    operator, self.parse_binary(UNARY_OPERAND_LEVEL, allow_chain), token.line
-                )
+                first = self.parse_binary(UNARY_OPERAND_LEVEL, allow_chain)
+                if self.type() == "COMMA":
+                    items = [first]
+                    while self.type() == "COMMA":
+                        self.advance()
+                        items.append(
+                            self.parse_binary(UNARY_OPERAND_LEVEL, allow_chain)
+                        )
+                    first = ArrayLiteral(items)
+                return UnaryExpression(operator, first, token.line)
             case "NUMBER":
                 return Number(self.advance().value)
             case "MINUS":
@@ -370,8 +384,17 @@ class Parser:
                 # Zero-argument constructor: `m: map` is an empty map.
                 self.advance()
                 return MapLiteral([], token.line)
+            case "TABLE":
+                # Zero-argument constructor: `t: table` is an empty table.
+                self.advance()
+                return TableLiteral([], token.line)
+            case kind if kind in TABLE_QUERY:
+                token = self.advance()
+                return self.parse_table_query(kind, token.line)
             case "LBRACE":
                 return self.parse_map_literal()
+            case "LBRACK":
+                return self.parse_table_literal()
             case "LPAREN":
                 return self.parse_parenthesized(allow_chain)
             case "IDENTIFIER":
@@ -434,8 +457,70 @@ class Parser:
             self.match("RBRACE")
             return MapLiteral(pairs, opening.line)
 
+    def parse_table_literal(self) -> TableLiteral:
+        # `[ 'id': 1, 2, 3; 'price': 10, 20 ]` — `:` separates a column name
+        # from its values, `;` separates columns. A column with no values is
+        # allowed: `['id': ; 'price': 1, 2]` and bare `['id'; 'price': 1, 2]`
+        # both build an empty `id` column. Names can't be empty, so a stray
+        # `:` or `;` right after `[` is a syntax error before parsing starts.
+        opening = self.match("LBRACK")
+        columns: list[Any] = []
+        if self.type() == "RBRACK":
+            self.advance()
+            return TableLiteral(columns, opening.line)
+        while True:
+            token = self.peek()
+            if self.type() in ("COLON", "SEMICOLON"):
+                raise LynxSyntaxError("table column needs a name", token.line)
+            name = self.parse_expression()
+            values: list[Any] = []
+            if self.type() == "COLON":
+                self.advance()
+                if self._starts_expression(self.type()):
+                    values.append(self.parse_expression())
+                    while self.type() == "COMMA":
+                        self.advance()
+                        values.append(self.parse_expression())
+            columns.append((name, values))
+            if self.type() == "SEMICOLON":
+                self.advance()
+                continue
+            self.match("RBRACK")
+            return TableLiteral(columns, opening.line)
+
+    def parse_table_query(self, kind: str, line: int | None) -> TableQuery:
+        # `select`/`order`/`group` take the whole rest of the line as their
+        # operand (`select t 'a', 'b'`, `order t 'price'`). `where` is split in
+        # two instead: the table and its column on the left, then one
+        # comparison, so the operator binds between the two rather than being
+        # swallowed into the column step.
+        if kind != "WHERE":
+            return TableQuery(kind, self.parse_binary(0), line)
+        name_token = self.match("IDENTIFIER")
+        left: Any = Identifier(name_token.value, name_token.line)
+        left = self.parse_access_steps(left)
+        if self.type() not in WHERE_OPERATORS:
+            return TableQuery(kind, left, line)
+        operator = self.advance()
+        right = self.parse_binary(0)
+        return TableQuery(kind, BinaryExpression(left, operator.type, right, line), line)
+
+    def parse_access_steps(self, operand: Any) -> Any:
+        # Access steps like parse_chain, except each step is a single primary —
+        # a text column or a number — so a comparison operator that follows the
+        # chain is never swallowed into one of its steps.
+        while self._starts_expression(self.type()):
+            args = [self.parse_primary(False)]
+            while self.type() == "COMMA":
+                self.advance()
+                args.append(self.parse_primary(False))
+            operand = Call(operand, args, self.peek_line())
+        return operand
+
     def _starts_expression(self, token_type: str) -> bool:
-        if token_type in ("NUMBER", "TEXT", "BOOLEAN", "VOID", "IDENTIFIER", "LBRACE", "LPAREN", "RANGE", "ARRAY", "MAP"):
+        if token_type in ("NUMBER", "TEXT", "BOOLEAN", "VOID", "IDENTIFIER", "LBRACE", "LPAREN", "LBRACK", "RANGE", "ARRAY", "MAP", "TABLE"):
+            return True
+        if token_type in TABLE_QUERY:
             return True
         return token_type in UNARY_METHOD
 

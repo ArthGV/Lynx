@@ -1,0 +1,65 @@
+// SQL-style operations on tables
+t: ['id': 1, 2, 3; 'price': 10.0, 20.0, 30.0; 'dept': 'a', 'b', 'a']
+
+// aggregates over a column
+>> sum t 'price'
+>> avg t 'price'
+>> min t 'price'
+>> max t 'price'
+>> sum t 'id'
+>> avg t 'id'
+
+// padded short column: void cells are skipped
+p: ['x': 1, 2, 3; 'y': 10]
+>> sum p 'y'
+>> avg p 'y'
+>> max p 'y'
+>> count p
+
+// mixed column: only numbers contribute
+m: ['vals': 1, true, 'hi']
+>> sum m 'vals'
+
+// count rows, column length, characters
+>> count t
+>> count t 'id'
+>> count 'hello'
+
+// distinct drops duplicate rows
+d: ['id': 1, 1, 2; 'v': 5, 5, 9]
+>> distinct d
+>> count (distinct d)
+
+// select keyword and all-text indexing both project columns
+>> select t 'id'
+>> t 'id', 'price'
+
+// order sorts rows ascending by a column
+o: ['id': 3, 1, 2; 'v': 'c', 'a', 'b']
+>> order o 'v'
+
+// where filters rows by a single comparison
+>> where t 'price' > 15
+>> where t 'price' ≈ 20
+>> count (where t 'dept' = 'a')
+
+// group maps each column value to a sub-table of its rows
+g: ['dept': 'a', 'b', 'a'; 'score': 1, 2, 3]
+>> len (group g 'dept')
+>> (group g 'dept') 'a'
+>> (group g 'dept') 'b'
+
+// join on shared columns
+j1: ['id': 1, 2; 'name': 'a', 'b']
+j2: ['id': 2, 3; 'score': 7, 8]
+>> j1 join j2
+>> count (j1 join j2)
+
+// no shared columns: join is the empty table
+n1: ['x': 1]
+n2: ['y': 2]
+>> n1 join n2
+>> count (n1 join n2)
+
+// missing column: select is void
+>> select t 'nope'

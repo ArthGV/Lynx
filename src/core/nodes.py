@@ -32,6 +32,12 @@ class MapLiteral:
 
 
 @dataclass
+class TableLiteral:
+    columns: list[Any]  # list of (name_expr, [value_exprs]) tuples
+    line: int | None = None
+
+
+@dataclass
 class SetItem:
     base: str  # variable name holding the container being mutated
     steps: list[Any]  # index/key expressions, applied in order
@@ -142,6 +148,18 @@ class BinaryExpression:
 class RangeExpression:
     start: Any | None  # None = omitted: `__N` runs up from 0
     end: Any | None    # None = omitted: `N__` runs down to 0
+    line: int | None = None
+
+
+@dataclass
+class TableQuery:
+    """A table-and-column keyword: `select t 'a'`, `order t 'price'`,
+    `group t 'dept'`, `where t 'price' > 20`. `kind` is the keyword's token type
+    and `expression` is the raw rest-of-line operand, decomposed by the
+    interpreter for each kind."""
+
+    kind: str
+    expression: Any
     line: int | None = None
 
 

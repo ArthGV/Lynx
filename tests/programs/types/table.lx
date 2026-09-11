@@ -1,0 +1,65 @@
+// Basic table literal
+my_table: ['id': 1, 2, 3; 'price': 10.0, 20.0, 30.0]
+>> my_table
+>> type my_table
+>> len my_table
+
+// Column access returns an Array
+>> my_table 'id'
+>> my_table 'price'
+
+// Missing column returns void
+>> my_table 'nope'
+
+// Row access returns a Map
+>> my_table 0
+>> my_table 2
+
+// Chained access: column then index
+>> my_table 'id' 0
+
+// First / last row
+>> first my_table
+>> last my_table
+
+// Empty table (keyword constructor)
+empty: table
+>> empty
+>> len empty
+>> boolean empty
+
+// Empty table (bracket constructor)
+also_empty: []
+>> also_empty
+
+// Mixed types in a column
+mixed: ['a': 1, true, 'hello']
+>> mixed
+>> len mixed
+
+// Single column
+single: ['names': 'alice', 'bob']
+>> single
+>> len single
+
+// Empty column, explicit colon
+schema1: ['id': ; 'price': 1, 2]
+>> schema1
+>> len schema1
+
+// Empty column, no colon
+schema2: ['id'; 'price': 1, 2]
+>> schema2
+>> len schema2
+
+// All columns empty
+schema3: ['id'; 'price']
+>> schema3
+>> len schema3
+>> boolean schema3
+
+// For-loop iterates over rows
+total: 0
+loop row: my_table
+ total: total + 1
+>> total

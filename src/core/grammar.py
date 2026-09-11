@@ -55,8 +55,21 @@ KEYWORDS = {
     #constructors
     "array": "ARRAY",
     "map": "MAP",
+    "table": "TABLE",
     "sqrt": "SQRT",
     "root": "ROOT",
+    # table SQL-style operations
+    "sum": "SUM",
+    "avg": "AVG",
+    "min": "MIN",
+    "max": "MAX",
+    "count": "COUNT",
+    "distinct": "DISTINCT",
+    "select": "SELECT",
+    "order": "ORDER",
+    "group": "GROUP",
+    "where": "WHERE",
+    "join": "JOIN",
     **{word: _literal_token(value) for word, value in LITERALS.items()},
 }
 
@@ -93,6 +106,8 @@ SYMBOLS = {
     "}": "RBRACE",
     "(": "LPAREN",
     ")": "RPAREN",
+    "[": "LBRACK",
+    "]": "RBRACK",
     ";": "SEMICOLON",
 }
 
@@ -102,6 +117,7 @@ SYMBOLS = {
 # own RangeExpression node (see parser.py) and is interpreted by build_range —
 # it never dispatches to a Value method.
 BINARY_LEVELS = [
+    {"JOIN": "join"},
     {"EQUAL": "equals", "NOT_EQUAL": "not_equal", "ALMOST": "almost"},
     {"IN": "in_"},
     {"GREATER": "greater", "LESS": "less",
@@ -127,6 +143,12 @@ UNARY_METHOD = {
     "NOT": "not_",
     "MIDDLE": "middle",
     "SQRT": "sqrt",
+    "SUM": "sum",
+    "AVG": "avg",
+    "MIN": "min",
+    "MAX": "max",
+    "COUNT": "count",
+    "DISTINCT": "distinct",
 }
 
 # How much of the line a keyword function swallows: its operand is parsed at
@@ -134,6 +156,14 @@ UNARY_METHOD = {
 # takes the whole rest of the line, so `len 1 + 10` means `len (1 + 10)`.
 # Raise it to 2 to stop before comparisons, making `len n > 3` mean `(len n) > 3`.
 UNARY_OPERAND_LEVEL = 0
+
+# The comparison tokens `where t 'col' <op> value` accepts on its right side.
+WHERE_OPERATORS = {
+    "EQUAL", "NOT_EQUAL", "ALMOST",
+    "GREATER", "LESS",
+    "GREATER_OR_EQUAL", "LESSER_OR_EQUAL",
+    "GREATER_OR_ALMOST", "LESSER_OR_ALMOST",
+}
 
 # Reverse lookups derived from the tables above.
 SYMBOL_FOR = {token: symbol for symbol, token in SYMBOLS.items()}

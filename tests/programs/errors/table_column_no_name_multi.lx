@@ -1,0 +1,2 @@
+// A column in the middle with no name
+bad: ['a': 1, 2; : 3, 4]

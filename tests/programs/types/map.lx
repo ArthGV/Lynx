@@ -32,7 +32,7 @@ deep: { 'k': { 'inner': 'hi' } }
 >> deep 'k' 'inner'
 
 // Different simple key types are distinct keys
-distinct: { 1: 'num'; '1': 'text'; true: 'bool' }
->> distinct 1
->> distinct '1'
->> distinct true
+keys: { 1: 'num'; '1': 'text'; true: 'bool' }
+>> keys 1
+>> keys '1'
+>> keys true
