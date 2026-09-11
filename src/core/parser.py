@@ -352,9 +352,16 @@ class Parser:
         match self.type():
             case operator if operator in UNARY_METHOD:
                 self.advance()
-                return UnaryExpression(
-                    operator, self.parse_binary(UNARY_OPERAND_LEVEL, allow_chain), token.line
-                )
+                first = self.parse_binary(UNARY_OPERAND_LEVEL, allow_chain)
+                if self.type() == "COMMA":
+                    items = [first]
+                    while self.type() == "COMMA":
+                        self.advance()
+                        items.append(
+                            self.parse_binary(UNARY_OPERAND_LEVEL, allow_chain)
+                        )
+                    first = ArrayLiteral(items)
+                return UnaryExpression(operator, first, token.line)
             case "NUMBER":
                 return Number(self.advance().value)
             case "MINUS":

@@ -28,6 +28,10 @@ outer: 'a', inner
 >> outer 1 1
 >> outer 1, 0
 
+// type on comma-separated values returns Array
+>> type 4, 5
+>> type 1, 2, 3
+
 // empty array is distinct from void
 empty_arr: void
 filled: 'x'
