@@ -1,17 +1,22 @@
 """Expression-side evaluation helpers: call resolution, indexing and slicing of
 every container type, range building, and table-query evaluation. The two
-dispatchers (`execute`/`evaluate`) live in `__init__.py` and route here.
+dispatchers (`execute`/`evaluate`) live in `_base.py` and route here.
 
 This module imports its shared helpers (`evaluate`, `execute`, `is_range`,
-...) back from the partially-loaded package `__init__` — the package in turn
-imports this module only at the bottom of its file, after those functions
-exist.
+...) back from the partially-loaded `_base` — which in turn imports this
+module only at the bottom of its file, after those functions exist.
 """
 
 from typing import Any
 
 from src.core.grammar import WHERE_OPERATORS
-from src.core.interpreter import _describe, _int_bound, evaluate, execute, is_range
+from src.core.interpreter._base import (
+    _describe,
+    _int_bound,
+    evaluate,
+    execute,
+    is_range,
+)
 from src.core.nodes import BinaryExpression, Call, RangeExpression
 from src.errors.errors import LynxError, LynxInputError, LynxSyntaxError, LynxTypeError
 from src.runtime import values

@@ -1,15 +1,15 @@
 """Statement-side mutation helpers.
 
-`execute` in `__init__.py` dispatches statements; the two mutations that have
+`execute` in `_base.py` dispatches statements; the two mutations that have
 enough standalone logic to matter — `append_to` for `<:`/`>:` and `assign_item`
-for `name path: value` — live here. They are imported back by the package
-`__init__`, which is why their imports from it come from the partially-loaded
-module's already-defined functions only.
+for `name path: value` — live here. They are imported back by `_base`, which is
+why their imports from it come from the partially-loaded module's
+already-defined functions only.
 """
 
 from typing import Any
 
-from src.core.interpreter import evaluate, is_range
+from src.core.interpreter._base import evaluate, is_range
 from src.core.interpreter.expressions import get_element, slice_assign
 from src.errors.errors import LynxError, LynxTypeError
 from src.runtime import values
