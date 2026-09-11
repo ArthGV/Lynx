@@ -1,0 +1,12 @@
+// every comparison operator `where` accepts on its right side
+t: ['id': 1, 2, 3; 'price': 10.0, 20.0, 30.0]
+
+>> where t 'price' > 15
+>> where t 'price' < 20
+>> where t 'price' >= 20
+>> where t 'price' <= 20
+>> where t 'price' != 20
+>> where t 'price' = 20
+>> where t 'price' ≈ 20
+>> where t 'price' >~ 20
+>> where t 'price' <~ 20

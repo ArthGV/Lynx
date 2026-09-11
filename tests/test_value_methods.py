@@ -48,6 +48,12 @@ def test_array_comparison():
     assert arr(Number(1), Number(2)).less(arr(Number(1), Number(2), Number(3))).is_true()
 
 
+def test_array_almost():
+    assert arr(Number(1), Number(2)).almost(arr(Number(1), Number(2))).is_true()
+    assert arr(Number(1), Number(2)).almost(arr(Number(1), Number(3))).is_true() is False
+    assert arr(Number(1)).almost(arr(Number(1), Number(2))).is_true() is False
+
+
 def test_array_arithmetic_not_implemented():
     a = arr(Number(1), Number(2))
     for method in ("add", "subtract", "multiply", "divide", "power", "root", "xor"):
@@ -151,6 +157,34 @@ def test_in_membership():
     assert Text("h").in_(Text("hello")).is_true()
     assert Text("z").in_(Text("hello")).is_true() is False
     assert Number(1).in_(Void()).is_true() is False
+
+
+def test_map_compare():
+    a = mp((Text("a"), Number(1)), (Text("b"), Number(2)))
+    b = mp((Text("a"), Number(1)), (Text("b"), Number(2)))
+    c = mp((Text("a"), Number(1)))
+    d = mp((Text("a"), Number(9)))
+    assert a.compare(b) == 0
+    assert a.greater(c).is_true()
+    assert c.less(a).is_true()
+    assert a.greater(d).is_true()
+    assert d.less(a).is_true()
+
+
+def test_map_almost():
+    a = mp((Text("a"), Number(1)), (Text("b"), Number(2)))
+    b = mp((Text("a"), Number(1)), (Text("b"), Number(2)))
+    c = mp((Text("a"), Number(9)))
+    assert a.almost(b).is_true()
+    assert a.almost(c).is_true() is False
+
+
+def test_map_distinct_is_identity():
+    assert mp().distinct() is not None
+    m = mp((Text('a'), Number(1)), (Text('b'), Number(2)))
+    d = m.distinct()
+    assert d.get_item(Text('a')).value == 1
+    assert d.get_item(Text('b')).value == 2
 
 
 def test_map_arithmetic_not_implemented():
@@ -365,6 +399,26 @@ def test_table_equals():
     assert a.equals(d).is_true() is False
 
 
+def test_table_compare():
+    a = tbl(('x', [1, 2]))
+    b = tbl(('x', [1, 2]))
+    c = tbl(('x', [1]))
+    d = tbl(('y', [1, 2]))
+    assert a.compare(b) == 0
+    assert a.greater(c).is_true()
+    assert c.less(a).is_true()
+    assert a.less(d).is_true()
+    assert d.greater(a).is_true()
+
+
+def test_table_almost():
+    a = tbl(('x', [1, 2]))
+    b = tbl(('x', [1, 2]))
+    c = tbl(('x', [1, 3]))
+    assert a.almost(b).is_true()
+    assert a.almost(c).is_true() is False
+
+
 def test_table_get_column():
     t = tbl(('id', [1, 2, 3]), ('price', [10, 20, 30]))
     col = t.get_column('id')
@@ -500,13 +554,18 @@ def test_join_is_tables_only():
 
 
 def test_aggregates_stub_on_non_numbers():
-    for value in (Text('a'), Boolean(True), Void(), mp((Text('a'), Number(1))), tbl(('x', [1]))):
+    for value in (Text('a'), Boolean(True), mp((Text('a'), Number(1))), tbl(('x', [1]))):
         for method in ("sum", "avg", "min", "max"):
             try:
                 getattr(value, method)()
                 assert False, f"{method} should not be implemented for {type(value).__name__}"
             except LynxNotImplemented:
                 pass
+
+
+def test_void_aggregates_return_void():
+    for method in ("sum", "avg", "min", "max"):
+        assert type(getattr(Void(), method)()) is Void
 
 
 def test_table_count_is_rows():

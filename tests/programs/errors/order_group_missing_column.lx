@@ -1,0 +1,2 @@
+t: ['id': 1, 2; 'price': 10, 20]
+>> order t 'nope'

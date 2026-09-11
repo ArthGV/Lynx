@@ -1,0 +1,7 @@
+// Boolean × Number multiply: repeat by count, both directions
+>> true * 5
+>> false * 3
+>> true * 0
+>> 5 * true
+>> 3 * false
+>> 2 * true

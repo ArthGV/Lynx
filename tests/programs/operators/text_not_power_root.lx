@@ -1,0 +1,16 @@
+// Text power, root, and not — prefix keywords on text
+>> not 'hello'
+>> not '3'
+>> not ''
+>> not '42'
+
+// Text ^ Text : repeat by the other text's length
+>> 'ab' ^ 'xyz'
+>> 'a' ^ 'bc'
+>> 'hello' ^ 'x'
+
+// Text root Text : first half by length
+>> 'hello' root 'ab'
+>> 'abcdef' root 'xyz'
+>> 'a' root 'b'
+>> '' root 'abc'
