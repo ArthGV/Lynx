@@ -1,199 +1,26 @@
-"""Walk the AST and run it.
+"""Expression-side evaluation helpers: call resolution, indexing and slicing of
+every container type, range building, and table-query evaluation. The two
+dispatchers (`execute`/`evaluate`) live in `__init__.py` and route here.
 
-`execute` handles statements (side effects); `evaluate` handles expressions
-(returns a Value). Binary operators are dispatched through grammar tables and
-their operands reconciled by operations.py, so the interpreter never mentions an
-operator character and never decides what two types mean together.
+This module imports its shared helpers (`evaluate`, `execute`, `is_range`,
+...) back from the partially-loaded package `__init__` — the package in turn
+imports this module only at the bottom of its file, after those functions
+exist.
 """
 
 from typing import Any
 
-from src.core.grammar import BINARY_METHOD, UNARY_METHOD, WHERE_OPERATORS
-from src.core.nodes import (
-    Append,
-    ArrayLiteral,
-    Assignment,
-    BinaryExpression,
-    Boolean,
-    Call,
-    Function,
-    Identifier,
-    If,
-    Loop,
-    MapLiteral,
-    Number,
-    Print,
-    Program,
-    RangeExpression,
-    Return,
-    SetItem,
-    Skip,
-    Stop,
-    TableLiteral,
-    TableQuery,
-    Text,
-    UnaryExpression,
-    Void,
-)
-from src.errors.errors import (
-    LynxError,
-    LynxInputError,
-    LynxNameError,
-    LynxNotImplemented,
-    LynxSyntaxError,
-    LynxTypeError,
-)
-from src.runtime import operations, values
+from src.core.grammar import WHERE_OPERATORS
+from src.core.interpreter import _describe, _int_bound, evaluate, execute, is_range
+from src.core.nodes import BinaryExpression, Call, RangeExpression
+from src.errors.errors import LynxError, LynxInputError, LynxSyntaxError, LynxTypeError
+from src.runtime import values
 from src.runtime.environment import Environment
-from src.runtime.functions import FunctionValue, _Return, _Skip, _Stop
+from src.runtime.functions import FunctionValue, _Return
 
-
-def execute(node: Any, env: Environment) -> None:
-    if isinstance(node, list):
-        for statement in node:
-            execute(statement, env)
-        return
-
-    match node:
-        case Program(statements):
-            execute(statements, env)
-
-        case Print(value):
-            print(evaluate(value, env))
-
-        case Assignment(name, value):
-            env.set(name, evaluate(value, env))
-
-        case SetItem(base, steps, value, line):
-            assign_item(base, steps, value, line, env)
-
-        case Append(base, value, front, line):
-            append_to(base, value, front, line, env)
-
-        case Function(name, params, body):
-            env.set(name, FunctionValue(params, body, env))
-
-        case Call(callee, args, line):
-            call(callee, args, line, env)
-
-        case Return(value, line):
-            raise _Return(evaluate(value, env))
-
-        case If(branches, else_body):
-            for branch in branches:
-                if evaluate(branch.condition, env).boolean().is_true():
-                    execute(branch.body, env)
-                    return
-            if else_body is not None:
-                execute(else_body, env)
-
-        case Loop(condition, body, targets, iterable):
-            if targets is None:
-                while evaluate(condition, env).boolean().is_true():
-                    try:
-                        execute(body, env)
-                    except _Stop:
-                        break
-                    except _Skip:
-                        continue
-            else:
-                items = evaluate(iterable, env).iterate()
-                for index, item in enumerate(items):
-                    if len(targets) == 1:
-                        env.set(targets[0], item)
-                    else:
-                        env.set(targets[0], values.Number(index))
-                        env.set(targets[1], item)
-                    try:
-                        execute(body, env)
-                    except _Stop:
-                        break
-                    except _Skip:
-                        continue
-
-        case Stop(condition, line):
-            if condition is None or evaluate(condition, env).boolean().is_true():
-                raise _Stop()
-
-        case Skip(condition, line):
-            if condition is None or evaluate(condition, env).boolean().is_true():
-                raise _Skip()
-
-        case _:
-            raise LynxTypeError(f"cannot execute {type(node).__name__}")
-
-
-
-def evaluate(node: Any, env: Environment) -> values.Type:
-    match node:
-        case Number(value):
-            return values.Number(value)
-
-        case Text(value):
-            return values.Text(value)
-
-        case Boolean(value):
-            return values.Boolean(value)
-
-        case Void():
-            return values.Void()
-
-        case ArrayLiteral(items, line):
-            return values.Array([evaluate(item, env) for item in items])
-
-        case Append(base, value, front, line):
-            return append_to(base, value, front, line, env)
-
-        case MapLiteral(pairs, line):
-            return values.Map([
-                (evaluate_key(k, env, line), evaluate(v, env))
-                for k, v in pairs
-            ])
-
-        case TableLiteral(columns, line):
-            return values.Table([
-                (evaluate_table_key(k, env, line), [evaluate(v, env) for v in values_list])
-                for k, values_list in columns
-            ])
-
-        case Identifier(name, line):
-            return env.get(name, line)
-
-        case Call(callee, args, line):
-            return call(callee, args, line, env)
-
-        case TableQuery(kind, expression, line):
-            return evaluate_table_query(kind, expression, line, env)
-
-        case UnaryExpression(operator, operand, line):
-            return apply_unary(operator, evaluate(operand, env), line)
-
-        case BinaryExpression(left, operator, right, line):
-            return apply_binary(operator, evaluate(left, env), evaluate(right, env), line)
-
-        case RangeExpression(start, end, line):
-            return build_range(start, end, line, env)
-
-        case _:
-            raise LynxTypeError(f"cannot evaluate {type(node).__name__}")
-
-
-def evaluate_key(node: Any, env: Environment, line: int | None) -> values.Type:
-    key = evaluate(node, env)
-    if not isinstance(key, values.SimpleType):
-        raise LynxTypeError(
-            f"map key must be a simple type, got {key.type_name()}", line
-        )
-    return key
-
-
-def evaluate_table_key(node: Any, env: Environment, line: int | None) -> values.Text:
-    name = evaluate(node, env)
-    if not isinstance(name, values.Text):
-        raise LynxTypeError(
-            f"table column name must be text, got {name.type_name()}", line
-        )
-    return name
+# Which binary operators `where t 'col' <op> value` accepts. Shared with the
+# parser, which splits the operand on any of these tokens.
+_WHERE_OPERATORS = WHERE_OPERATORS
 
 
 def call(callee: Any, args: list[Any], line: int | None, env: Environment) -> values.Type:
@@ -344,104 +171,6 @@ def get_element(container, step: Any, line: int | None, env: Environment) -> val
     raise LynxTypeError("cannot index into a value that is not an array or map", line)
 
 
-def append_to(base: str, value_node: Any, front: bool, line: int | None, env: Environment) -> values.Type:
-    # `my_arr <: x` appends at the end; `my_arr >: x` at the front. An Array x
-    # splices its elements, anything else appends as a single element. Returns
-    # the (same, now mutated) array so it can be printed or assigned.
-    container = env.get(base, line)
-    if not isinstance(container, values.Array):
-        raise LynxTypeError(
-            f"cannot {'prepend' if front else 'append'} onto a {container.type_name()}", line
-        )
-    added = evaluate(value_node, env)
-    items = added.value if isinstance(added, values.Array) else [added]
-    if front:
-        container.value[0:0] = items
-    else:
-        container.value.extend(items)
-    return container
-
-
-def assign_item(base: str, steps: list[Any], value_node: Any, line: int | None, env: Environment) -> None:
-    # `a 1, 0: 5` — walk the deref path to the innermost container, then set.
-    container = env.get(base, line)
-    for step in steps[:-1]:
-        if is_range(step):
-            raise LynxError("range slicing is only supported for the last index", line)
-        container = get_element(container, step, line, env)
-    if is_range(steps[-1]):
-        slice_assign(container, steps[-1], value_node, line, env)
-        return
-    key = evaluate(steps[-1], env)
-    new_value = evaluate(value_node, env)
-    if isinstance(container, values.Array):
-        if not isinstance(key, values.Number):
-            raise LynxTypeError(
-                f"array index must be a number, got {key.type_name()}", line
-            )
-        idx = key.value
-        if not isinstance(idx, int) or idx < 0 or idx >= len(container.value):
-            raise LynxError(
-                f"index {idx} out of range for an array of length {len(container.value)}", line
-            )
-        container.value[idx] = new_value
-        return
-    if isinstance(container, values.Map):
-        if not isinstance(key, values.SimpleType):
-            raise LynxTypeError(
-                f"map key must be a simple type, got {key.type_name()}", line
-            )
-        container.set_item(key, new_value)
-        return
-    if isinstance(container, values.Text):
-        if not isinstance(key, values.Number):
-            raise LynxTypeError(
-                f"text index must be a number, got {key.type_name()}", line
-            )
-        idx = key.value
-        if not isinstance(idx, int) or idx < 0 or idx >= len(container.value):
-            raise LynxError(
-                f"index {idx} out of range for text of length {len(container.value)}", line
-            )
-        if not isinstance(new_value, values.Text):
-            raise LynxTypeError(
-                f"text index assignment needs a text, got {new_value.type_name()}", line
-            )
-        if len(new_value.value) != 1:
-            raise LynxError(
-                f"text index assignment needs exactly one character, got {len(new_value.value)}", line
-            )
-        chars = list(container.value)
-        chars[idx] = new_value.value
-        container.value = "".join(chars)
-        return
-    raise LynxTypeError("cannot index into a value that is not an array or map", line)
-
-
-def is_range(node: Any) -> bool:
-    """True when a call/index step is a range expression (`3__7`, `__7`, `5__`)."""
-    return isinstance(node, RangeExpression)
-
-
-def _describe(value: values.Type) -> str:
-    """Echo a value in an error message, quoting text so it reads clearly."""
-    if isinstance(value, values.Text):
-        return repr(value.value)
-    return repr(value)
-
-
-def _int_bound(value: values.Type, which: str, line: int | None) -> int:
-    if not isinstance(value, values.Number):
-        raise LynxTypeError(
-            f"range {which} must be an integer, got {_describe(value)}", line
-        )
-    if not isinstance(value.value, int):
-        raise LynxTypeError(
-            f"range {which} must be an integer, got {_describe(value)}", line
-        )
-    return value.value
-
-
 def build_range(start_node: Any, end_node: Any, line: int | None, env: Environment) -> values.Type:
     """Evaluate a range expression (`<start>__<end>`) into an array.
 
@@ -549,35 +278,6 @@ def _slice_assign_text(container: values.Text, node: Any, value_node: Any, line:
     for index, char in zip(indices, new_value.value):
         chars[index] = char
     container.value = "".join(chars)
-
-
-def apply_binary(operator: str, left: values.Type, right: values.Type, line: int | None) -> values.Type:
-    # Every value defines every operation and operations.binary reconciles any
-    # pair of types, so this always resolves; a stub that hasn't been filled in
-    # raises LynxNotImplemented, which we locate to `line`.
-    try:
-        return operations.binary(BINARY_METHOD[operator], left, right)
-    except LynxError as error:
-        if error.line is None:
-            error.line = line
-        raise
-
-
-def apply_unary(operator: str, value: values.Type, line: int | None) -> values.Type:
-    # Same contract as apply_binary: every value defines every operation, so a
-    # stub that hasn't been filled in raises LynxNotImplemented, which we locate
-    # to `line`.
-    try:
-        return getattr(value, UNARY_METHOD[operator])()
-    except LynxNotImplemented as error:
-        if error.line is None:
-            error.line = line
-        raise
-
-
-# Which binary operators `where t 'col' <op> value` accepts. Shared with the
-# parser, which splits the operand on any of these tokens.
-_WHERE_OPERATORS = WHERE_OPERATORS
 
 
 def evaluate_table_query(kind: str, expression: Any, line: int | None, env: Environment) -> values.Type:

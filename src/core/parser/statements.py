@@ -1,0 +1,245 @@
+"""Statement grammar: the token-type dispatch, each statement rule, and the
+lookahead that tells assignments from function declarations and while-loops
+from for-loops.
+
+Everything here is a `StatementMixin` on the base `Parser`, so statement rules
+may call expression rules (`parse_expression`, `parse_assign_rhs`, ...) and the
+token utilities (`match`, `_starts_expression`, ...) that the composed class in
+`__init__.py` brings together.
+"""
+
+from typing import Any
+
+from src.core.nodes import (
+    Append,
+    ArrayLiteral,
+    Assignment,
+    Branch,
+    Call,
+    Function,
+    If,
+    Loop,
+    Print,
+    Return,
+    SetItem,
+    Skip,
+    Stop,
+)
+from src.core.parser._base import EOF, Parser
+from src.errors.errors import LynxInputError, LynxSyntaxError
+
+
+class StatementMixin(Parser):
+    def parse_statement(self) -> Any:
+        match self.type():
+            case "PRINT":
+                return self.parse_print()
+            case "RETURN":
+                return self.parse_return()
+            case "IF":
+                return self.parse_if()
+            case "LOOP":
+                return self.parse_loop()
+            case "STOP":
+                return self.parse_loop_control(Stop)
+            case "SKIP":
+                return self.parse_loop_control(Skip)
+            case "IDENTIFIER":
+                return self.parse_name_statement()
+        token = self.peek()
+        raise LynxSyntaxError(
+            f"unexpected {self.type()}", token.line if token else None
+        )
+
+    def parse_print(self) -> Print:
+        self.match("PRINT")
+        return Print(self.parse_assign_rhs())
+
+    def parse_return(self) -> Return:
+        token = self.match("RETURN")
+        # Comma-separated right-hand side, so `>>> a, b` returns an array.
+        return Return(self.parse_assign_rhs(), token.line)
+
+    def parse_name_statement(self) -> Any:
+        # After a leading identifier we could have an assignment (`x: 5`), a
+        # function declaration (`f: a, b` + indented body), a function call
+        # (`f a, b`) or an element mutation (`a 0: 5`). A colon means
+        # declaration-or-assignment, decided by whether the right-hand side is
+        # a parameter list followed by an indented block.
+        start = self.current
+        line = self.peek().line
+        name = self.advance().value
+        if self.type() == "RANGE":
+            # `a__2` as a bare statement is a range expression, not a call.
+            self.current = start
+            return self.parse_expression()
+        if self.type() in ("APPEND", "PREPEND"):
+            return self.parse_append(name, line)
+        if self.type() != "COLON":
+            if self._starts_expression(self.type()):
+                mutation = self.try_parse_mutation(name, line)
+                if mutation is not None:
+                    return mutation
+            return self.parse_call(name, line)
+        if self._is_function_declaration():
+            return self._parse_function(name)
+        self.current = start
+        return self.parse_assignment()
+
+    def _is_function_declaration(self) -> bool:
+        # At the COLON. True when the right-hand side is IDENTIFIER
+        # (, IDENTIFIER)* then an indented block — i.e. a parameter list rather
+        # than an assignment expression.
+        i = self.current + 1  # skip COLON
+        if self._type_at(i) != "IDENTIFIER":
+            return False
+        i += 1
+        while self._type_at(i) == "COMMA":
+            i += 1
+            if self._type_at(i) != "IDENTIFIER":
+                return False
+            i += 1
+        return (
+            self._type_at(i) == "NEWLINE"
+            and self._type_at(i + 1) == "INDENT"
+        )
+
+    def _type_at(self, i: int) -> str:
+        if i < len(self.tokens):
+            return self.tokens[i].type
+        return EOF
+
+    def _parse_function(self, name: str) -> Function:
+        self.match("COLON")
+        params = [self.match("IDENTIFIER").value]
+        while self.type() == "COMMA":
+            self.advance()
+            params.append(self.match("IDENTIFIER").value)
+        return Function(name, params, self.parse_body())
+
+    def parse_assignment(self) -> Assignment:
+        name = self.match("IDENTIFIER").value
+        self.match("COLON")
+        return Assignment(name, self.parse_assign_rhs())
+
+    def parse_assign_rhs(self) -> Any:
+        # The right-hand side of `name:` is one expression unless a top-level
+        # comma separates several, in which case it is an array literal.
+        # `,` consumed inside a call's args stays that call's args, never here.
+        items = [self.parse_expression()]
+        while self.type() == "COMMA":
+            self.advance()
+            items.append(self.parse_expression())
+        if len(items) == 1:
+            return items[0]
+        return ArrayLiteral(items)
+
+    def parse_call(self, name: str, line: int | None) -> Call:
+        args = [self.parse_expression(False)]
+        while self.type() == "COMMA":
+            self.advance()
+            args.append(self.parse_expression(False))
+        return Call(name, args, line)
+
+    def parse_append(self, name: str, line: int | None) -> Append:
+        token = self.advance()
+        return Append(name, self.parse_assign_rhs(), token.type == "PREPEND", line)
+
+    def try_parse_mutation(self, name: str, line: int | None) -> SetItem | None:
+        # `name <expr>... : value` is an element mutation (`a 0: 5`). The deref
+        # path is a run of expressions, comma-grouped or space-chained, both
+        # of which are sequential steps. If the run is followed by a colon we
+        # have a mutation; otherwise rewind and let the call machinery handle it.
+        save = self.current
+        steps: list[Any] = []
+        try:
+            steps.append(self.parse_expression(False))
+            while True:
+                if self.type() == "COMMA":
+                    self.advance()
+                    steps.append(self.parse_expression(False))
+                elif self._starts_expression(self.type()):
+                    steps.append(self.parse_expression(False))
+                else:
+                    break
+        except LynxSyntaxError:
+            self.current = save
+            return None
+        if self.type() != "COLON":
+            self.current = save
+            return None
+        self.match("COLON")
+        return SetItem(name, steps, self.parse_assign_rhs(), line)
+
+    def parse_if(self) -> If:
+        self.match("IF")
+        branches = [Branch(self.parse_expression(), self.parse_body())]
+        else_body = None
+        while self.type() == "ELSE":
+            self.advance()
+            if self.type() == "NEWLINE":  # bare else
+                else_body = self.parse_body()
+                break
+            branches.append(Branch(self.parse_expression(), self.parse_body()))
+        return If(branches, else_body)
+
+    def parse_loop(self) -> Loop:
+        token = self.match("LOOP")
+        targets = self._loop_targets()
+        if targets is not None:
+            # `loop <name>[, <name>]: <iterable>` — a for-loop. One name binds
+            # the element; two bind index + element like enumerate.
+            if len(targets) > 2:
+                raise LynxInputError(
+                    f"loop takes 1 or 2 loop variables, got {len(targets)}", token.line
+                )
+            iterable = self.parse_assign_rhs()
+            body = self.parse_body()
+            return Loop(None, body, targets, iterable)
+        condition = self.parse_expression()
+        body = self.parse_body()
+        return Loop(condition, body)
+
+    def _loop_targets(self) -> list[str] | None:
+        # Look ahead for a for-header: an IDENTIFIER [, IDENTIFIER]* run that
+        # ends in COLON. Expressions can't contain a top-level `,` or `:` in a
+        # loop header, so this is unambiguous with the while form. Consumes the
+        # header on a match, returns None (tokens untouched) otherwise.
+        i = self.current
+        if self._type_at(i) != "IDENTIFIER":
+            return None
+        i += 1
+        while self._type_at(i) == "COMMA":
+            i += 1
+            if self._type_at(i) != "IDENTIFIER":
+                return None
+            i += 1
+        if self._type_at(i) != "COLON":
+            return None
+        targets = [self.advance().value]
+        while self.type() == "COMMA":
+            self.advance()
+            targets.append(self.match("IDENTIFIER").value)
+        self.match("COLON")
+        return targets
+
+    def parse_loop_control(self, node_type) -> Any:
+        # `stop`/`skip` may take an optional condition: `stop x > 3` desugars
+        # to `if x > 3: stop`. With no trailing expression the control is
+        # unconditional.
+        token = self.advance()
+        condition = None
+        if self._starts_expression(self.type()):
+            condition = self.parse_expression()
+        return node_type(condition, token.line)
+
+    def parse_body(self) -> list[Any]:
+        self.match("NEWLINE")
+        self.match("INDENT")
+        statements: list[Any] = []
+        self.skip_newlines()
+        while self.type() not in ("DEDENT", EOF):
+            statements.append(self.parse_statement())
+            self.skip_newlines()
+        self.match("DEDENT")
+        return statements
