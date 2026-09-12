@@ -10,7 +10,7 @@ already-defined functions only.
 from typing import Any
 
 from src.core.interpreter._base import evaluate, is_range
-from src.core.interpreter.expressions import get_element, slice_assign
+from src.core.interpreter.expressions import get_element, slice_assign, table_cells
 from src.errors.errors import LynxError, LynxTypeError
 from src.runtime import values
 from src.runtime.environment import Environment
@@ -45,6 +45,18 @@ def assign_item(base: str, steps: list[Any], value_node: Any, line: int | None, 
         slice_assign(container, steps[-1], value_node, line, env)
         return
     key = evaluate(steps[-1], env)
+    if isinstance(container, values.Table):
+        # Column assignment only makes sense as a single step, whole-column.
+        if len(steps) != 1:
+            raise LynxTypeError(
+                f"table assignment sets a whole column, got {len(steps)} access steps", line
+            )
+        if not isinstance(key, values.Text):
+            raise LynxTypeError(
+                f"table column name must be text, got {key.type_name()}", line
+            )
+        container.set_column(key.value, table_cells(value_node, line, env))
+        return
     new_value = evaluate(value_node, env)
     if isinstance(container, values.Array):
         if not isinstance(key, values.Number):
@@ -87,4 +99,4 @@ def assign_item(base: str, steps: list[Any], value_node: Any, line: int | None, 
         chars[idx] = new_value.value
         container.value = "".join(chars)
         return
-    raise LynxTypeError("cannot index into a value that is not an array or map", line)
+    raise LynxTypeError(f"cannot assign into a {container.type_name()}", line)

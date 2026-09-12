@@ -169,7 +169,23 @@ class StatementMixin(Parser):
             self.current = save
             return None
         self.match("COLON")
-        return SetItem(name, steps, self.parse_assign_rhs(), line)
+        return SetItem(name, steps, self._parse_mutation_value(), line)
+
+    def _parse_mutation_value(self) -> Any:
+        # The right-hand side of a mutation. One expression, or a top-level
+        # comma-run grouped as an array (`a 0: 5, 6`). Each value parses
+        # through `parse_cell_value`, so a parenthesized run at the head is
+        # kept as one element (`a 0: (4, 5)` sets a single array) — the array
+        # still holds the whole run, but for a table column `t 'c': (4, 5)`
+        # writes one cell instead of spreading the array.
+        first = self.parse_cell_value()
+        if self.type() != "COMMA":
+            return first
+        items = [first]
+        while self.type() == "COMMA":
+            self.advance()
+            items.append(self.parse_cell_value())
+        return ArrayLiteral(items)
 
     def parse_if(self) -> If:
         self.match("IF")

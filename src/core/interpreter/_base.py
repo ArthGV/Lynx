@@ -20,6 +20,7 @@ from src.core.nodes import (
     BinaryExpression,
     Boolean,
     Call,
+    Cell,
     Function,
     Identifier,
     If,
@@ -148,9 +149,15 @@ def evaluate(node: Any, env: Environment) -> values.Type:
 
         case TableLiteral(columns, line):
             return values.Table([
-                (evaluate_table_key(k, env, line), [evaluate(v, env) for v in values_list])
-                for k, values_list in columns
-            ])
+                (
+                    evaluate_table_key(k, env, line),
+                    _expressions.column_cells_list(value_exprs, line, env),
+                )
+                for k, value_exprs in columns
+            ], line)
+
+        case Cell(inner):
+            return evaluate(inner, env)
 
         case Identifier(name, line):
             return env.get(name, line)

@@ -20,6 +20,7 @@ from src.core.nodes import (
     BinaryExpression,
     Boolean,
     Call,
+    Cell,
     Identifier,
     MapLiteral,
     Number,
@@ -32,6 +33,11 @@ from src.core.nodes import (
 )
 from src.core.parser._base import TABLE_QUERY, Parser
 from src.errors.errors import LynxSyntaxError
+
+# Tokens that continue a binary expression. A parenthesized run in a column
+# slot is an element cell *unless* one of these follows, in which case the
+# parens are plain grouping: `(number x) + 1`.
+_BINARY_OPERATOR_TOKENS = {token for level in BINARY_LEVELS for token in level}
 
 
 class ExpressionMixin(Parser):
@@ -172,6 +178,22 @@ class ExpressionMixin(Parser):
             self.match("RBRACE")
             return MapLiteral(pairs, opening.line)
 
+    def parse_cell_value(self, allow_chain: bool = True) -> Any:
+        # A value in a table column slot. A parenthesized run is a single
+        # element cell — `(4, 5)`, `(a)` and `(__7)` each store the array as
+        # one cell. Anything else parses normally; if it evaluates to an
+        # array, the interpreter spreads it into the column.
+        if self.type() == "LPAREN":
+            save = self.current
+            node = self.parse_parenthesized(False)
+            if self.type() in _BINARY_OPERATOR_TOKENS or self._starts_expression(self.type()):
+                # Grouping parens feeding a bigger expression: `(number x) + 1`
+                # — parse the whole thing, the parens are not an element cell.
+                self.current = save
+                return self.parse_expression(allow_chain)
+            return Cell(node)
+        return self.parse_expression(allow_chain)
+
     def parse_table_literal(self) -> TableLiteral:
         # `[ 'id': 1, 2, 3; 'price': 10, 20 ]` — `:` separates a column name
         # from its values, `;` separates columns. A column with no values is
@@ -192,10 +214,10 @@ class ExpressionMixin(Parser):
             if self.type() == "COLON":
                 self.advance()
                 if self._starts_expression(self.type()):
-                    values.append(self.parse_expression())
+                    values.append(self.parse_cell_value())
                     while self.type() == "COMMA":
                         self.advance()
-                        values.append(self.parse_expression())
+                        values.append(self.parse_cell_value())
             columns.append((name, values))
             if self.type() == "SEMICOLON":
                 self.advance()

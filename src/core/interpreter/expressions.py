@@ -17,7 +17,7 @@ from src.core.interpreter._base import (
     execute,
     is_range,
 )
-from src.core.nodes import BinaryExpression, Call, RangeExpression
+from src.core.nodes import ArrayLiteral, BinaryExpression, Call, Cell, RangeExpression
 from src.errors.errors import LynxError, LynxInputError, LynxSyntaxError, LynxTypeError
 from src.runtime import values
 from src.runtime.environment import Environment
@@ -337,3 +337,33 @@ def column_name(node: Any, line: int | None, env: Environment) -> str:
     if not isinstance(name, values.Text):
         raise LynxTypeError(f"table column name must be text, got {name.type_name()}", line)
     return name.value
+
+
+def cell_value(node: Any, line: int | None, env: Environment) -> list[values.Type]:
+    # One table column cell. A `Cell` (a parenthesized value like `(4, 5)`,
+    # `(a)` or `(__7)`) is kept as a single element; any other value that
+    # evaluates to an array is spread into the column.
+    if isinstance(node, Cell):
+        return [evaluate(node.inner, env)]
+    value = evaluate(node, env)
+    if isinstance(value, values.Array):
+        return list(value.value)
+    return [value]
+
+
+def column_cells_list(value_nodes: list[Any], line: int | None, env: Environment) -> list[values.Type]:
+    # The column values parsed from a table literal (`'id': 1, 2, a; ...`):
+    # one cell per value, arrays spreading as above.
+    cells: list[values.Type] = []
+    for node in value_nodes:
+        cells.extend(cell_value(node, line, env))
+    return cells
+
+
+def table_cells(value_node: Any, line: int | None, env: Environment) -> list[values.Type]:
+    # The right-hand side of a table column assignment. A comma-run is already
+    # an ArrayLiteral of per-cell values, so use them as-is; a single value
+    # (bare array, range, scalar, parenthesized Cell) goes through cell_value.
+    if isinstance(value_node, ArrayLiteral):
+        return column_cells_list(value_node.items, line, env)
+    return cell_value(value_node, line, env)

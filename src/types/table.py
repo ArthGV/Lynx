@@ -28,8 +28,10 @@ class Table(ComplexType):
     conversion = "table"
     default_value = {}
 
-    def __init__(self, columns=None) -> None:
+    def __init__(self, columns=None, line: int | None = None) -> None:
         self.columns: dict[str, list[Type]] = {}
+        seen: set[str] = set()
+        duplicates: list[str] = []
         if columns:
             for name, values in columns:
                 if isinstance(name, Text):
@@ -38,13 +40,33 @@ class Table(ComplexType):
                     key = name
                 else:
                     raise LynxTypeError(
-                        f"table column name must be text, got {type(name).__name__}"
+                        f"table column name must be text, got {type(name).__name__}", line
                     )
+                if key in seen:
+                    if key not in duplicates:
+                        duplicates.append(key)
+                seen.add(key)
                 self.columns[key] = list(values)
+        if duplicates:
+            rendered = ", ".join(f"'{name}'" for name in duplicates)
+            raise LynxTypeError(
+                f"table column names must be unique, got duplicates {rendered}", line
+            )
+        self._recompute_padding()
+
+    def _recompute_padding(self) -> None:
+        # Shorter columns are padded with Void up to the longest so every row
+        # spans all columns.
         self.nrows = max((len(col) for col in self.columns.values()), default=0)
         for col in self.columns.values():
             if len(col) < self.nrows:
                 col.extend(Void() for _ in range(self.nrows - len(col)))
+
+    def set_column(self, name: str, cells: list[Type]) -> None:
+        # Assigning a whole column, like `t 'price': 1__4`. Replaces the column
+        # (adding it if new) and re-pads every column to the new height.
+        self.columns[name] = list(cells)
+        self._recompute_padding()
 
     def __repr__(self) -> str:
         if not self.columns:
@@ -183,7 +205,7 @@ class Table(ComplexType):
         for name in names:
             if name not in self.columns:
                 return Void()
-        return Table([(name, list(self.columns[name])) for name in names])
+        return Table([(name, list(self.columns[name])) for name in names], line)
 
     def order_by(self, name: str, line: int | None = None) -> Table:
         if name not in self.columns:
