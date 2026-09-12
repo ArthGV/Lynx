@@ -1,0 +1,1 @@
+TypeError on line 1: table column names must be unique, got duplicates 'c1'
