@@ -104,7 +104,7 @@ class Table(ComplexType):
     def get_row(self, index: int) -> Map:
         return Map([(Text(name), column[index]) for name, column in self.columns.items()])
 
-    def lenght(self) -> Array:
+    def length(self) -> Array:
         return Array([Number(self.nrows), Number(len(self.columns))])
 
     def first(self) -> Type:

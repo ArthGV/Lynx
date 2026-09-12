@@ -43,7 +43,7 @@ class Map(ComplexType):
     def type_name(self) -> str:
         return "Map"
 
-    def lenght(self) -> Number:
+    def length(self) -> Number:
         return Number(len(self.value))
 
     def first(self) -> Type:

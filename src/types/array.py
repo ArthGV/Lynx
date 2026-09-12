@@ -27,7 +27,7 @@ class Array(ComplexType):
     def type_name(self) -> str:
         return "Array"
 
-    def lenght(self) -> Number:
+    def length(self) -> Number:
         return Number(len(self.value))
 
     def first(self) -> Type:

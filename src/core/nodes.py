@@ -165,6 +165,6 @@ class TableQuery:
 
 @dataclass
 class UnaryExpression:
-    operator: str  # a token type, e.g. "LENGHT" — never the spelling
+    operator: str  # a token type, e.g. "LENGTH" — never the spelling
     operand: Any
     line: int | None = None

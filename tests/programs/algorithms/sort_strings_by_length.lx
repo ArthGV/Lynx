@@ -1,4 +1,4 @@
-sort_string_by_lenght: stings, threshold
+sort_string_by_length: stings, threshold
  short_strings: array
  long_strings: array
  loop s: stings
@@ -9,5 +9,5 @@ sort_string_by_lenght: stings, threshold
  >>> short_strings, long_strings
 
 
->> sort_string_by_lenght ('1','22','333','4444', '55555'), 3
->> sort_string_by_lenght ('1','22','333','4444', '55555'), 2
+>> sort_string_by_length ('1','22','333','4444', '55555'), 3
+>> sort_string_by_length ('1','22','333','4444', '55555'), 2

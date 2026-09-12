@@ -65,7 +65,7 @@ class Number(SimpleType):
     def almost(self, other: Number) -> Boolean:
         return Boolean(abs(self.value - other.value) < 1)
 
-    def lenght(self) -> Number:
+    def length(self) -> Number:
         return Number(len(str(self.value).replace('.', '').replace('-', '')))
 
     def first(self) -> Number:
@@ -148,7 +148,7 @@ class Text(SimpleType):
     def void(self) -> Void:
         return Void()
 
-    def lenght(self) -> Number:
+    def length(self) -> Number:
         return Number(len(self.value))
 
     def first(self) -> Text:
@@ -275,7 +275,7 @@ class Boolean(SimpleType):
     def root(self, other: Boolean) -> Boolean:
         return Boolean(self.value)
 
-    def lenght(self) -> Number:
+    def length(self) -> Number:
         return Number(1)
 
     def first(self) -> Boolean:
@@ -336,7 +336,7 @@ class Void(SimpleType):
     def xor(self, other: Type) -> Boolean:
         return Boolean(False)
 
-    def lenght(self) -> Number:
+    def length(self) -> Number:
         return Number(0)
 
     def add(self, other: Type) -> Void: return Void()

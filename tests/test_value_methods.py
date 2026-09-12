@@ -27,9 +27,9 @@ def test_array_first_last():
     assert type(arr().last()) is Void
 
 
-def test_array_lenght():
-    assert print_(arr(Number(1), Text("x"), Boolean(True)).lenght()) == "3"
-    assert print_(arr().lenght()) == "0"
+def test_array_length():
+    assert print_(arr(Number(1), Text("x"), Boolean(True)).length()) == "3"
+    assert print_(arr().length()) == "0"
 
 
 def test_array_conversions():
@@ -82,9 +82,9 @@ def mp(*entries):
     return Map(list(entries))
 
 
-def test_map_lenght():
-    assert print_(mp((Text("a"), Number(1))).lenght()) == "1"
-    assert print_(mp().lenght()) == "0"
+def test_map_length():
+    assert print_(mp((Text("a"), Number(1))).length()) == "1"
+    assert print_(mp().length()) == "0"
 
 
 def test_map_first_last():
@@ -334,17 +334,17 @@ def test_table_empty():
     assert t.columns == {}
 
 
-def test_table_lenght():
+def test_table_length():
     t = tbl(('id', [1, 2, 3]), ('price', [10, 20, 30]))
-    result = t.lenght()
+    result = t.length()
     assert isinstance(result, Array)
     assert result.value[0].value == 3  # nrows
     assert result.value[1].value == 2  # ncols
 
 
-def test_table_lenght_empty():
+def test_table_length_empty():
     t = Table([])
-    result = t.lenght()
+    result = t.length()
     assert isinstance(result, Array)
     assert result.value[0].value == 0
     assert result.value[1].value == 0
@@ -621,7 +621,7 @@ def test_table_group_by():
     t = tbl(('dept', [Text('a'), Text('b'), Text('a')]), ('score', [1, 2, 3]))
     g = t.group_by('dept')
     assert isinstance(g, Map)
-    assert g.lenght().value == 2
+    assert g.length().value == 2
     group_a = g.get_item(Text('a'))
     assert isinstance(group_a, Table)
     assert group_a.nrows == 2
