@@ -658,7 +658,7 @@ def test_table_join_no_shared_columns_is_empty():
     assert isinstance(joined, Table)
     assert joined.nrows == 0
     assert joined.columns == {}
-    assert print_(joined) == "{}"
+    assert print_(joined) == "┌────┐\n└────┘"
 
 
 # --- iterate ------------------------------------------------------------

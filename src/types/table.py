@@ -70,7 +70,7 @@ class Table(ComplexType):
 
     def __repr__(self) -> str:
         if not self.columns:
-            return "{}"
+            return "┌────┐\n└────┘"
         names = list(self.columns)
         widths = [self._column_width(name) for name in names]
         top = "┌" + "┬".join("─" * width for width in widths) + "┐"
