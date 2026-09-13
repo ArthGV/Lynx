@@ -1,1 +1,3 @@
+// The right operand of `+` is missing, so the parser reaches the end of the
+// line where it needs a value.
 SyntaxError on line 4: unexpected NEWLINE

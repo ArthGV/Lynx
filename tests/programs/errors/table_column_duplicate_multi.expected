@@ -1,1 +1,2 @@
+// Several column pairs with the same names: error lists each duplicated name
 TypeError on line 2: table column names must be unique, got duplicates 'c1', 'c2'

@@ -1,10 +1,14 @@
+// a registered pair, both ways round
 hihi
 hihi
 ababab
+// no handler: `+` falls back to the left operand's type
 hi2
+// `=` never crosses types; `≈` promotes and then compares
 false
 true
 true
+// comparisons promote by rank, so position does not change the answer
 true
 true
 false

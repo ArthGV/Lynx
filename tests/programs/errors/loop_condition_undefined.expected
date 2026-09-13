@@ -1,1 +1,2 @@
+//condition references a name that is never defined
 NameError on line 2: 'unknown_name' is not defined

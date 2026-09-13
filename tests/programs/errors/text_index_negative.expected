@@ -1,1 +1,2 @@
+// negative text index is invalid
 Error on line 4: index -1 out of range for text of length 3

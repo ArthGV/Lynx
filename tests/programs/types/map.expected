@@ -1,19 +1,26 @@
+// Map literal: {k: v; k2: v2}, keys are simple types, values anything
 { a: 1; b: 2 }
 Map
 2
 1
 2
+// Missing keys return void, like a None-default dict
 void
 true
+// first / last over the entries' values
 1
 2
+// empty map is distinct from void
 {}
 0
 false
+// Values can be arrays, reached by chaining the access
 [ 10, 20 ]
 10
 20
+// Nested maps, reached by chained access
 hi
+// Different simple key types are distinct keys
 num
 text
 bool

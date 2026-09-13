@@ -1,10 +1,14 @@
+// multiplication before addition
 7
 5
 4
 26
+// addition before equality
 true
 false
+// addition before comparison
 false
 false
+// mixed: multiplication and equality
 true
 true

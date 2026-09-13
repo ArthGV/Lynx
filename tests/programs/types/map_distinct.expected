@@ -1,6 +1,8 @@
+// distinct on a map returns the map unchanged
 { a: 1; b: 2 }
 2
 {}
+// distinct on scalars and arrays
 5
 x
 5

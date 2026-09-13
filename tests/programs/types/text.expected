@@ -1,9 +1,11 @@
+// Text type: conversions
 42
 5
 0
 hello
 true
 false
+// Text type: arithmetic
 helloworld
 heo
 ba
@@ -12,6 +14,7 @@ ababab
 he
 void
 
+// Text type: comparisons
 true
 false
 false
@@ -21,6 +24,7 @@ true
 true
 false
 true
+// Text type: sequence access
 0
 5
 1

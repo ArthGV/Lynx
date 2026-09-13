@@ -1,3 +1,4 @@
+//a text condition: non-empty runs, empty text is falsy and never runs
 running
 stopped
 done

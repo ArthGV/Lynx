@@ -1,12 +1,21 @@
+// Void * Number (registered pair, commutative)
 0
 0
+// Void * Text (registered pair, commutative)
 
 
+// Void * Boolean (registered pair, commutative)
 false
 false
+// Void + Number (LEFT policy: coerce right to Void)
 void
+// Void - Number (LEFT policy)
 void
+// Void / Number (LEFT policy)
 void
+// Void + Text (LEFT policy)
 void
+// Void + Boolean (LEFT policy)
 void
+// Boolean * Void (registered pair)
 false

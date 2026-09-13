@@ -1,6 +1,9 @@
+// // stays a single-line comment
 2
 3
+// a `///` docstring sits at the top of a function body
 10
 3
+// a `//` inside a block does not close it
 42
 right

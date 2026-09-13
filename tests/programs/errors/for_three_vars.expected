@@ -1,1 +1,2 @@
+//loop accepts at most two loop variables
 InputError on line 2: loop takes 1 or 2 loop variables, got 3

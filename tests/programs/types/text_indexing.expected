@@ -1,15 +1,22 @@
+// text characters are indexed like arrays, 0-based
 l
 h
 o
+// a range step is a character slice (inclusive)
 el
 llo
 lle
+// chained access steps through the resulting characters
 e
+// element assignment replaces one character
 Hello
 ello
+// slice assignment replaces a covered run (same length)
 HELLO
 HELLO
+// mutating a character is visible to later reads
 HExLO
+// a text literal is indexed the same way as a text variable
 c
 pec
 p

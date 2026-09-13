@@ -1,3 +1,4 @@
+// every comparison operator `where` accepts on its right side
 ┌────┬─────┐
 │ id │price│
 ├────┼─────┤

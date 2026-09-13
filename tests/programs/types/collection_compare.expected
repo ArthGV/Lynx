@@ -1,3 +1,5 @@
+// comparison and approximate equality on collections
+// Array
 true
 false
 true
@@ -7,12 +9,14 @@ false
 true
 true
 false
+// Map
 true
 false
 true
 false
 true
 true
+// Table
 true
 false
 true

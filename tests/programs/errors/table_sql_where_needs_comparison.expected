@@ -1,1 +1,2 @@
+// where without a comparison errors
 SyntaxError on line 2: where needs a comparison, like: where t 'price' > 20

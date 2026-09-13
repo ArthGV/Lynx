@@ -1,14 +1,20 @@
+// array and map construct empty collections (zero-argument, do not swallow line)
 [  ]
 0
 false
 Array
+// fill a, then print
 [ 1, 2 ]
+// map: empty, fill via mutation, read back
 {}
 0
 false
 { k: 5 }
 5
+// usable anywhere a value is: call arguments and loop iterables
 0
 0
+// loop over a map counts keys
 1
+// embedded in an array literal
 Array

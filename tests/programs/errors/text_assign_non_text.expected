@@ -1,1 +1,2 @@
+// text index assignment needs a single-character text
 TypeError on line 3: text index assignment needs a text, got Number

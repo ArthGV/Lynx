@@ -1,17 +1,22 @@
+// Void type: conversions
 0
 
 false
+// Void type: arithmetic (all return void)
 void
 void
 0
 void
 false
+// Void type: comparisons
 true
 true
 false
 false
 true
+// Void type: sequence access
 0
 void
 void
+// Void type: xor
 false

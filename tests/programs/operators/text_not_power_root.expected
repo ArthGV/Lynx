@@ -1,10 +1,13 @@
+// Text power, root, and not — prefix keywords on text
 -4
 -2
 1
 -41
+// Text ^ Text : repeat by the other text's length
 ababab
 aa
 hello
+// Text root Text : first half by length
 he
 abc
 

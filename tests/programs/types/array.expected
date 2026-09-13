@@ -1,18 +1,24 @@
+// Array literal: comma-separated, any element types
 [ 10, 20, 30 ]
 Array
 3
 10
 30
+// Element access is 0-based, space-adjacent like a call
 10
 20
 30
+// Arrays hold variables and computed expressions
 [ 5, 7, 6 ]
 6
+// Nested arrays: an array can hold another array, reached by chaining
 [ a, [ 1, 2 ] ]
 1
 2
 1
+// type on comma-separated values returns Array
 Array
 Array
+// empty array is distinct from void
 true
 false

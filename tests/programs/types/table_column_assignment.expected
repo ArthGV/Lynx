@@ -1,20 +1,29 @@
+// Base table
 [ 1, 2, 3 ]
 [ 10, 20, 30 ]
 [ 3, 2 ]
+// New column from bare variable array (spreads, void-pads)
 [ 100, 200, void ]
 [ 3, 3 ]
+// New column from scalar → single cell, void-padded
 [ x, void, void ]
 [ 3, 4 ]
+// New column from bare range → spreads
 [ 1, 2, 3, 4 ]
 [ 4, 5 ]
+// New column from parenthesized array → single element cell
 [ [ 7, 8 ], void, void, void ]
 [ 7, 8 ]
 [ 4, 6 ]
+// New column from single parenthesized value → single cell
 [ 1, void, void, void ]
 [ 4, 7 ]
+// Overwrite existing column with shorter array → void-pad
 [ 99, 88, void, void ]
 [ 4, 7 ]
+// Overwrite existing column with a single scalar → shrinks
 [ 5, void, void, void ]
 [ 4, 7 ]
+// Row still spans all columns after assignment
 { id: 99; val: 5; newcol: 100; label: x; range: 1; tag: [ 7, 8 ]; mark: 1 }
 { id: 88; val: void; newcol: 200; label: void; range: 2; tag: void; mark: void }

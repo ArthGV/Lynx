@@ -1,1 +1,2 @@
+// reading a slice out of bounds
 Error on line 2: range end 5 out of bounds for an array of length 3

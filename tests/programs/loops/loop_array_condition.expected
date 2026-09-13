@@ -1,2 +1,3 @@
+//an array condition: a non-empty array is truthy and the loop runs
 has items
 after

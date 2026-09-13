@@ -1,7 +1,10 @@
+//for over an array binds each element
 10
 20
 30
+//void iterates nothing (empty iterable)
 after empty
+//a comma list in the header is an array iterable
 1
 2
 3

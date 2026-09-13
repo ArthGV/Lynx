@@ -1,3 +1,4 @@
+// Basic table literal
 ┌────┬─────┐
 │ id │price│
 ├────┼─────┤
@@ -7,20 +8,28 @@
 └────┴─────┘
 Table
 [ 3, 2 ]
+// Column access returns an Array
 [ 1, 2, 3 ]
 [ 10, 20, 30 ]
+// Missing column returns void
 void
+// Row access returns a Map
 { id: 1; price: 10 }
 { id: 3; price: 30 }
+// Chained access: column then index
 1
+// First / last row
 { id: 1; price: 10 }
 { id: 3; price: 30 }
+// Empty table (keyword constructor)
 ┌────┐
 └────┘
 [ 0, 0 ]
 false
+// Empty table (bracket constructor)
 ┌────┐
 └────┘
+// Mixed types in a column
 ┌───────┐
 │ a     │
 ├───────┤
@@ -29,6 +38,7 @@ false
 │'hello'│
 └───────┘
 [ 3, 1 ]
+// Single column
 ┌───────┐
 │ names │
 ├───────┤
@@ -36,6 +46,7 @@ false
 │'bob'  │
 └───────┘
 [ 2, 1 ]
+// Empty column, explicit colon
 ┌──────┬─────┐
 │ id   │price│
 ├──────┼─────┤
@@ -43,6 +54,7 @@ false
 │ void │   2 │
 └──────┴─────┘
 [ 2, 2 ]
+// Empty column, no colon
 ┌──────┬─────┐
 │ id   │price│
 ├──────┼─────┤
@@ -50,9 +62,11 @@ false
 │ void │   2 │
 └──────┴─────┘
 [ 2, 2 ]
+// All columns empty
 ┌────┬─────┐
 │ id │price│
 └────┴─────┘
 [ 0, 2 ]
 false
+// For-loop iterates over rows
 3

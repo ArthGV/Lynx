@@ -1,1 +1,2 @@
+//stop outside of any loop is an error
 InputError: stop/skip outside of a loop

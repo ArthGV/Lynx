@@ -1,1 +1,2 @@
+// indexing an array with a boolean is an error
 TypeError on line 3: array index must be a number, got Boolean

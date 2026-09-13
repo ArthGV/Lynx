@@ -1,3 +1,4 @@
+// A single-expression group is just that value, overriding operator priority
 7
 9
 9
@@ -7,13 +8,18 @@ true
 true
 true
 -1
+// in: grouped operand, and a grouped comma-run is an array so it can sit
+// right of the operator
 true
 false
 true
+// keyword results inside groups: the keyword swallows only its parens
 true
 false
 Array
+// a parenthesized comma-run is an array; arrays compare equal
 true
+// a grouped lookup is a value, so it can sit left of = : missing-key checks
 true
 missing is void
 missing is not 1

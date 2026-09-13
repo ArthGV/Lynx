@@ -1,8 +1,11 @@
+// basic reassignment
 5
 10
+// reassignment with expression
 1
 2
 6
+// reassignment changes type
 42
 hello
 true

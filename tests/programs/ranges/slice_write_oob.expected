@@ -1,1 +1,2 @@
+// slice write out of bounds
 Error on line 2: range end 3 out of bounds for an array of length 3

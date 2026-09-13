@@ -1,1 +1,3 @@
+// A statement is a print, an if, or an assignment. A bare expression on its
+// own line is none of the three.
 SyntaxError on line 4: unexpected NUMBER

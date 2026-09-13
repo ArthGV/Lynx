@@ -1,1 +1,3 @@
+// `@` is in no table in grammar.py. Nothing prints at all: the lexer fails
+// before a single statement runs.
 SyntaxError on line 4: unexpected character near '@ 2'

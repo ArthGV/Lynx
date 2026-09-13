@@ -1,9 +1,14 @@
+// LEFT policy: coerce right to left's type
+// Number LEFT of Text: coerce text to number
 8
 2
 33333
 0.5
+// Text LEFT of Number: coerce number to text
 hello3
 ababab
+// Boolean LEFT of Text: coerce text to boolean
 true
+// Number LEFT of Boolean: coerce boolean to number
 6
 0

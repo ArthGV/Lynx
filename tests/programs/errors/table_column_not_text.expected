@@ -1,1 +1,2 @@
+// a non-text table column name errors
 TypeError on line 1: table column name must be text, got Number

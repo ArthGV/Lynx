@@ -1,7 +1,9 @@
+//a map iterates over its keys in insertion order
 one
 two
 3
 --
+//two variables give index + key
 0
 one
 1

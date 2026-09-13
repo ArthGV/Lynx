@@ -1,26 +1,36 @@
+// Bare variable array → column (spreads)
 [ 1, 2 ]
 [ 1, void ]
 [ 2, 2 ]
+// Bare range → column
 [ 1, 2, 3, 4, 5 ]
 [ 5, 2 ]
+// Parenthesized array → single element cell
 [ [ 10, 20 ] ]
 [ 10, 20 ]
 [ 1, 2 ]
+// Parenthesized variable array → single element cell
 [ [ 1, 2 ] ]
 [ 1, 2 ]
+// Parenthesized range → single element cell
 [ [ 0, 1, 2, 3 ] ]
 [ 1, 2 ]
+// Mixed: bare array + parenthesized array + scalar in same table
 [ 1, 2 ]
 [ 100, void ]
 [ 7, void ]
 [ 2, 3 ]
+// Parenthesized array + scalars in same column (multi-cell)
 [ [ 4, 5 ], 6, 7 ]
 [ 3, 1 ]
+// Empty array column padded with void
 [ void ]
 [ 1, 2 ]
+// Two bare arrays of different lengths → void-pad the shorter
 [ 1, 2, void, void ]
 [ 1, 2, 3, 4 ]
 [ 4, 2 ]
+// Scalar only, no arrays (baseline — unchanged)
 [ 1, void ]
 [ 2, 3 ]
 [ 2, 2 ]

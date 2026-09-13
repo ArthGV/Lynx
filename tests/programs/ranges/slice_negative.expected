@@ -1,1 +1,2 @@
+// negative indices are not allowed in array slices
 Error on line 3: array slice end must be non-negative, got -2

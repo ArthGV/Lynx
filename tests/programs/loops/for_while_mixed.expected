@@ -1,3 +1,4 @@
+//for and while coexist; the for variable keeps its last value
 for 0
 for 1
 for 2

@@ -1,1 +1,2 @@
+// A bare colon after [ starts a column with no name
 SyntaxError on line 2: table column needs a name

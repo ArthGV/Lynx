@@ -1,1 +1,2 @@
+// text index assignment must be exactly one character
 Error on line 3: text index assignment needs exactly one character, got 2
