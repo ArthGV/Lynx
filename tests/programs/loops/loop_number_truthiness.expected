@@ -1,5 +1,7 @@
+//loop countdown by number truthiness (value > 0)
 3
 2
 1
 done
+//a zero or negative condition never runs the body
 zero no-run

@@ -1,0 +1,39 @@
+// comparison and approximate equality on collections
+// Array
+a1: array
+a1 <: 1
+a2: 1, 2
+a4: 1, 2, 3
+b1: 1, 2
+b2: 1, 3
+>> a1 = a1
+>> a1 = a2
+>> a2 = b1
+>> a2 = b2
+>> a2 > a1
+>> a2 > a4
+>> a2 < a4
+>> a2 ≈ b1
+>> a2 ≈ b2
+
+// Map
+m1: { 'a': 1; 'b': 2 }
+m2: { 'a': 1; 'b': 2 }
+m3: { 'a': 1 }
+m4: { 'a': 9 }
+>> m1 = m2
+>> m1 = m3
+>> m1 ≈ m2
+>> m1 ≈ m4
+>> m1 > m3
+>> m1 > m4
+
+// Table
+t1: ['x': 1, 2; 'y': 3, 4]
+t2: ['x': 1, 2; 'y': 3, 4]
+t3: ['x': 1; 'y': 3]
+>> t1 = t2
+>> t1 = t3
+>> t1 ≈ t2
+>> t1 ≈ t3
+>> t1 > t3

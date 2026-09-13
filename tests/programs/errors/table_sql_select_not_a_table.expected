@@ -1,1 +1,2 @@
+// select on a non-table errors
 TypeError on line 2: select needs a table, got Number

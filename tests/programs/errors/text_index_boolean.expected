@@ -1,1 +1,2 @@
+// a non-number text index is invalid
 TypeError on line 3: text index must be a number, got Boolean

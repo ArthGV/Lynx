@@ -1,1 +1,2 @@
+// unclosed parens are a SyntaxError
 SyntaxError on line 1: expected RPAREN, got NEWLINE

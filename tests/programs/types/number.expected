@@ -1,13 +1,16 @@
+// Number type: conversions (number, text, boolean)
 42
 42
 true
 false
 false
+// Number type: arithmetic
 7
 4
 15
 2.5
 void
+// Number type: comparisons
 true
 false
 true
@@ -15,9 +18,11 @@ false
 true
 true
 false
+// Number type: not_ (via subtraction from 1)
 -4
 1
 0
+// Number type: sequence access
 5
 1
 2
@@ -25,9 +30,11 @@ false
 4
 5
 2
+// Number type: xor
 -42
 0
 0
+// Number type: edge cases with floats
 5
 10.5
 6.28

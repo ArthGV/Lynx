@@ -1,10 +1,20 @@
+// multiple condition checks
 B
+// basic if/else
 right
+// if true, skip else
 yes
+// if false, take else
 no
+// nested if in if body
 inner-both
+// nested if in else body
 else-inner
+// truthy coercion: number
 truthy
+// falsy: zero
 falsy
+// falsy: empty string
 empty is falsy
+// truthy: non-empty string
 non-empty is truthy

@@ -1,0 +1,2 @@
+// Two columns with the same name must error, naming the duplicate
+TypeError on line 2: table column names must be unique, got duplicates 'c1'

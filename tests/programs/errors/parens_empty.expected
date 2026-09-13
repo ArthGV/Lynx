@@ -1,1 +1,2 @@
+// empty parens are a SyntaxError
 SyntaxError on line 1: unexpected RPAREN

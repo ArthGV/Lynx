@@ -1,11 +1,17 @@
+// inline array literals as call arguments: the parens run groups the arrays
 5
 3
+// parens around computed indices and keys
 10
 30
 40
+// parens in mutation steps and values
 [ 10, 99, 30 ]
 10
+// append/prepend with a grouped array splices it
 [ 10, 99, 30, 40, 50 ]
 [ 0, 1, 10, 99, 30, 40, 50 ]
+// chained access on a group
 8
+// loops over a grouped array
 6

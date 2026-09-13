@@ -1,1 +1,2 @@
+// element assignment with a bad index errors
 TypeError on line 2: array index must be a number, got Text

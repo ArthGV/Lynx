@@ -108,7 +108,7 @@ def read_token(rest: str, line_no: int, tokens: list[Token]) -> str:
     if match:
         word = match.group(0)
         # Literal keywords carry their Python value; everything else its text.
-        value = LITERALS[word] if word in LITERALS else word
+        value = LITERALS.get(word, word)
         tokens.append(Token(KEYWORDS.get(word, "IDENTIFIER"), value, line_no))
         return rest[match.end():].lstrip()
 

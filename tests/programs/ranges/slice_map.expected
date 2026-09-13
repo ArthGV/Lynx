@@ -1,1 +1,2 @@
+// slice of a map
 Error on line 2: range slicing is only supported for arrays

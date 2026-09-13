@@ -1,0 +1,2 @@
+// Several column pairs with the same names: error lists each duplicated name
+my_table: ['c1': 1; 'c1': 2; 'c2': 3; 'c2': 4]

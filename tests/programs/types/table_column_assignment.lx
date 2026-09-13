@@ -1,0 +1,46 @@
+// Base table
+t: ['id': 1, 2, 3; 'val': 10, 20, 30]
+>> t 'id'
+>> t 'val'
+>> len t
+
+// New column from bare variable array (spreads, void-pads)
+a: 100, 200
+t 'newcol': a
+>> t 'newcol'
+>> len t
+
+// New column from scalar → single cell, void-padded
+t 'label': 'x'
+>> t 'label'
+>> len t
+
+// New column from bare range → spreads
+t 'range': 1__4
+>> t 'range'
+>> len t
+
+// New column from parenthesized array → single element cell
+t 'tag': (7, 8)
+>> t 'tag'
+>> t 'tag' 0
+>> len t
+
+// New column from single parenthesized value → single cell
+t 'mark': (1)
+>> t 'mark'
+>> len t
+
+// Overwrite existing column with shorter array → void-pad
+t 'id': 99, 88
+>> t 'id'
+>> len t
+
+// Overwrite existing column with a single scalar → shrinks
+t 'val': 5
+>> t 'val'
+>> len t
+
+// Row still spans all columns after assignment
+>> t 0
+>> t 1

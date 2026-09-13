@@ -38,6 +38,18 @@ class TableLiteral:
 
 
 @dataclass
+class Cell:
+    """A parenthesized value written in a column slot: kept as one element.
+
+    `(4, 5)`, `(a)` and `(__7)` in a table column each store the array as a
+    single cell, while a bare array value (`a`, `1__5`) becomes the whole
+    column. `evaluate` unwraps a Cell to its inner value everywhere else.
+    """
+
+    inner: Any  # the parenthesized expression
+
+
+@dataclass
 class SetItem:
     base: str  # variable name holding the container being mutated
     steps: list[Any]  # index/key expressions, applied in order
@@ -165,6 +177,6 @@ class TableQuery:
 
 @dataclass
 class UnaryExpression:
-    operator: str  # a token type, e.g. "LENGHT" — never the spelling
+    operator: str  # a token type, e.g. "LENGTH" — never the spelling
     operand: Any
     line: int | None = None

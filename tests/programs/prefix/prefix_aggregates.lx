@@ -1,0 +1,29 @@
+// SQL-style prefix keywords on scalars and arrays
+>> sum 5
+>> avg 5
+>> min 5
+>> max 5
+>> count 5
+>> distinct 5
+
+>> sum 7.5
+>> count true
+>> count void
+>> sum void
+>> avg void
+>> min void
+>> max void
+
+// aggregates over an array
+nums: 1, 2, 3, 4
+>> sum nums
+>> avg nums
+>> min nums
+>> max nums
+>> count nums
+>> distinct nums
+
+// array of non-numbers: aggregates are void, count still counts
+words: 'a', 'b', 'c'
+>> count words
+>> sum words

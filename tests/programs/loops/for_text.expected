@@ -1,4 +1,6 @@
+//text iterates one character per iteration
 h
 i
 !
+//empty text iterates nothing
 after

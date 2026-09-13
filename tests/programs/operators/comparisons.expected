@@ -1,14 +1,18 @@
+// >= and <= : standard comparisons
 true
 false
 true
 true
 true
 false
+// >~ and <~ : greater-or-almost / lesser-or-almost
+// true when the left is strictly greater/less, OR when they are within 1 of each other
 true
 true
 false
 true
 true
 false
+// same precedence as > and <
 true
 true

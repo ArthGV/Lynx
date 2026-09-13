@@ -1,17 +1,23 @@
+// SQL-style operations on tables
+// aggregates over a column
 60
 20
 10
 30
 6
 2
+// padded short column: void cells are skipped
 10
 10
 10
 3
+// mixed column: only numbers contribute
 1
+// count rows, column length, characters
 3
 3
 5
+// distinct drops duplicate rows
 ┌────┬────┐
 │ id │ v  │
 ├────┼────┤
@@ -19,6 +25,7 @@
 │  2 │  9 │
 └────┴────┘
 2
+// select keyword and all-text indexing both project columns
 ┌────┐
 │ id │
 ├────┤
@@ -33,6 +40,7 @@
 │  2 │  20 │
 │  3 │  30 │
 └────┴─────┘
+// order sorts rows ascending by a column
 ┌────┬────┐
 │ id │ v  │
 ├────┼────┤
@@ -40,6 +48,7 @@
 │  2 │'b' │
 │  3 │'c' │
 └────┴────┘
+// where filters rows by a single comparison
 ┌────┬─────┬────┐
 │ id │price│dept│
 ├────┼─────┼────┤
@@ -52,6 +61,7 @@
 │  2 │  20 │'b' │
 └────┴─────┴────┘
 2
+// group maps each column value to a sub-table of its rows
 2
 ┌────┬─────┐
 │dept│score│
@@ -64,12 +74,16 @@
 ├────┼─────┤
 │'b' │   2 │
 └────┴─────┘
+// join on shared columns
 ┌────┬────┬─────┐
 │ id │name│score│
 ├────┼────┼─────┤
 │  2 │'b' │   7 │
 └────┴────┴─────┘
 1
-{}
+// no shared columns: join is the empty table
+┌────┐
+└────┘
 0
+// missing column: select is void
 void

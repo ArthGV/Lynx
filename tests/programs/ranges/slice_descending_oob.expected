@@ -1,1 +1,2 @@
+// a descending slice past the end reports its high bound
 Error on line 3: range start 5 out of bounds for an array of length 3

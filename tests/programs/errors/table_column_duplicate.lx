@@ -1,0 +1,2 @@
+// Two columns with the same name must error, naming the duplicate
+my_table: ['c1': 1; 'c1': 2]

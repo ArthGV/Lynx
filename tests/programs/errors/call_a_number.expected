@@ -1,0 +1,2 @@
+// calling a Number is an error
+TypeError on line 1: cannot call a Number

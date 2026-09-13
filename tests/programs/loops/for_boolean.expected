@@ -1,3 +1,4 @@
+//booleans iterate over a single value: themselves
 true
 --
 false

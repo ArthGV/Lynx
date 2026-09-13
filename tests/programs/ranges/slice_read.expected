@@ -1,3 +1,4 @@
+// slice reads with a start__end range
 [ 6, 21, 6, 9 ]
 [ void, true, hello ]
 [ hello ]

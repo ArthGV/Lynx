@@ -1,0 +1,57 @@
+// Bare variable array → column (spreads)
+a: 1, 2
+t1: ['c1': a; 'c2': 1]
+>> t1 'c1'
+>> t1 'c2'
+>> len t1
+
+// Bare range → column
+t2: ['nums': 1__5; 'label': 'x']
+>> t2 'nums'
+>> len t2
+
+// Parenthesized array → single element cell
+t3: ['c1': (10, 20); 'c2': 1]
+>> t3 'c1'
+>> t3 'c1' 0
+>> len t3
+
+// Parenthesized variable array → single element cell
+t4: ['c1': (a); 'c2': 1]
+>> t4 'c1'
+>> len t4
+
+// Parenthesized range → single element cell
+t5: ['c1': (__3); 'c2': 1]
+>> t5 'c1'
+>> len t5
+
+// Mixed: bare array + parenthesized array + scalar in same table
+t6: ['a': a; 'b': (100); 'c': 7]
+>> t6 'a'
+>> t6 'b'
+>> t6 'c'
+>> len t6
+
+// Parenthesized array + scalars in same column (multi-cell)
+t7: ['c1': (4, 5), 6, 7]
+>> t7 'c1'
+>> len t7
+
+// Empty array column padded with void
+e: array
+t8: ['c1': e; 'c2': 1]
+>> t8 'c1'
+>> len t8
+
+// Two bare arrays of different lengths → void-pad the shorter
+t9: ['a': a; 'b': 1__4]
+>> t9 'a'
+>> t9 'b'
+>> len t9
+
+// Scalar only, no arrays (baseline — unchanged)
+t10: ['a': 1; 'b': 2, 3]
+>> t10 'a'
+>> t10 'b'
+>> len t10

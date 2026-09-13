@@ -1,1 +1,2 @@
+// an unterminated multiline comment is a SyntaxError
 SyntaxError on line 1: unterminated multiline comment starting on line 1

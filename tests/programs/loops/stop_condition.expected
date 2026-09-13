@@ -1,2 +1,3 @@
+//stop with an inline condition desugars to if cond: stop
 1
 2

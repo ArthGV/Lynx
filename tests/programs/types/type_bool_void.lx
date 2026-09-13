@@ -1,0 +1,12 @@
+// type keyword on Boolean and Void
+>> type true
+>> type false
+>> type void
+
+// type keyword on collections
+a: 1, 2, 3
+m: { 'a': 1 }
+t: ['x': 1, 2]
+>> type a
+>> type m
+>> type t

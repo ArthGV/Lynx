@@ -1,3 +1,4 @@
+//skip with an inline condition desugars to if cond: skip
 1
 2
 4

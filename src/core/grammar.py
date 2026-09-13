@@ -42,7 +42,7 @@ KEYWORDS = {
     "skip": "SKIP",
     "type": "TYPE",
     "xor": "XOR",
-    "len": "LENGHT",
+    "len": "LENGTH",
     "first": "FIRST",
     "last": "LAST",
     "in": "IN",
@@ -111,6 +111,16 @@ SYMBOLS = {
     ";": "SEMICOLON",
 }
 
+# The two comparison tiers, factored out so `where` (WHERE_OPERATORS below)
+# accepts exactly the same operators as these precedence tiers. EQUALITY sits
+# one tier looser than IN; ordering one tier tighter.
+EQUALITY_LEVEL = {"EQUAL": "equals", "NOT_EQUAL": "not_equal", "ALMOST": "almost"}
+ORDERING_LEVEL = {
+    "GREATER": "greater", "LESS": "less",
+    "GREATER_OR_EQUAL": "greater_or_equal", "LESSER_OR_EQUAL": "lesser_or_equal",
+    "GREATER_OR_ALMOST": "greater_or_almost", "LESSER_OR_ALMOST": "lesser_or_almost",
+}
+
 # Binary operators grouped by precedence, lowest first. Each maps a token
 # type to the Value method that implements it. Adding an operator is one line.
 # RANGE is listed at the tightest tier for precedence, but it parses into its
@@ -118,11 +128,9 @@ SYMBOLS = {
 # it never dispatches to a Value method.
 BINARY_LEVELS = [
     {"JOIN": "join"},
-    {"EQUAL": "equals", "NOT_EQUAL": "not_equal", "ALMOST": "almost"},
+    EQUALITY_LEVEL,
     {"IN": "in_"},
-    {"GREATER": "greater", "LESS": "less",
-     "GREATER_OR_EQUAL": "greater_or_equal", "LESSER_OR_EQUAL": "lesser_or_equal",
-     "GREATER_OR_ALMOST": "greater_or_almost", "LESSER_OR_ALMOST": "lesser_or_almost"},
+    ORDERING_LEVEL,
     {"PLUS": "add", "MINUS": "subtract", "XOR": "xor"},
     {"STAR": "multiply", "SLASH": "divide"},
     {"POWER": "power", "ROOT": "root"},
@@ -137,7 +145,7 @@ UNARY_METHOD = {
     "TO_TEXT": "text",
     "TO_NUMBER": "number",
     "TO_BOOLEAN": "boolean",
-    "LENGHT": "lenght",
+    "LENGTH": "length",
     "FIRST": "first",
     "LAST": "last",
     "NOT": "not_",
@@ -157,13 +165,9 @@ UNARY_METHOD = {
 # Raise it to 2 to stop before comparisons, making `len n > 3` mean `(len n) > 3`.
 UNARY_OPERAND_LEVEL = 0
 
-# The comparison tokens `where t 'col' <op> value` accepts on its right side.
-WHERE_OPERATORS = {
-    "EQUAL", "NOT_EQUAL", "ALMOST",
-    "GREATER", "LESS",
-    "GREATER_OR_EQUAL", "LESSER_OR_EQUAL",
-    "GREATER_OR_ALMOST", "LESSER_OR_ALMOST",
-}
+# The comparison tokens `where t 'col' <op> value` accepts on its right side:
+# exactly the two comparison tiers above.
+WHERE_OPERATORS = EQUALITY_LEVEL.keys() | ORDERING_LEVEL.keys()
 
 # Reverse lookups derived from the tables above.
 SYMBOL_FOR = {token: symbol for symbol, token in SYMBOLS.items()}

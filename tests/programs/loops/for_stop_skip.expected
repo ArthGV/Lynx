@@ -1,6 +1,8 @@
+//skip and stop work inside a for loop
 0
 1
 3
+//stop in an inner for only exits the inner loop
 0
 1
 outer continues

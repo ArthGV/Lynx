@@ -1,9 +1,11 @@
+// Boolean type: conversions
 1
 0
 true
 false
 true
 false
+// Boolean type: arithmetic
 true
 true
 false
@@ -15,6 +17,7 @@ true
 true
 false
 void
+// Boolean type: comparisons
 true
 false
 true
@@ -22,12 +25,14 @@ false
 false
 true
 true
+// Boolean type: sequence access
 1
 1
 true
 false
 true
 false
+// Boolean type: xor
 false
 true
 true

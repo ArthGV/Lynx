@@ -1,8 +1,11 @@
+//exiting loop when condition is false
 1
 2
 3
 exited loop
+//void does not enter loop
 outside loop
+//loop with logic in condition
 1
 2
 3

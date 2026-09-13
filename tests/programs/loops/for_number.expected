@@ -1,15 +1,20 @@
+//a number counts up from 0 inclusive
 0
 1
 2
 3
 --
+//a negative number counts down from 0
 0
 -1
 -2
 --
+//zero is a single iteration
 0
 --
+//void iterates nothing
 after void
+//fractions round to the nearest integer
 0
 1
 2

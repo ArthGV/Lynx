@@ -1,16 +1,23 @@
+// `in` checks membership: elements of an array, keys of a map
 true
 false
-false
-true
-true
-true
-false
-false
-false
+// Cross-type: 4 is not the same as '4'
 false
 true
 true
+// Maps: membership is about keys, not values
 true
 false
+false
+// Empty containers contain nothing
+false
+false
+// Nested arrays: an array is a single element, matched whole
+true
+// Scalars iterate too: 3 in 5 counts 0..5, 'h' in 'hello' is a character
+true
+true
+false
+// Binds tighter than =, so a flag reads left to right
 true
 true

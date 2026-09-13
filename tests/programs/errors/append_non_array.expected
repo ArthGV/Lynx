@@ -1,1 +1,2 @@
+// appending to a non-array errors
 TypeError on line 2: cannot append onto a Number

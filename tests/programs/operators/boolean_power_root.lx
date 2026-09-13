@@ -1,0 +1,9 @@
+// Boolean power and root
+>> true ^ true
+>> true ^ false
+>> false ^ true
+>> false ^ false
+>> true root true
+>> true root false
+>> false root true
+>> false root false

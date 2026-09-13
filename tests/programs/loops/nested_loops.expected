@@ -1,3 +1,4 @@
+//stop in an inner loop only exits the inner loop
 outer 1
  inner1
 outer 2

@@ -1,0 +1,2 @@
+// order/group on a missing column errors
+Error on line 2: table has no column 'nope'

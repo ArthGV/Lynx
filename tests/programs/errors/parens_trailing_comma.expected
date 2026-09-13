@@ -1,1 +1,2 @@
+// a trailing comma in parens is a SyntaxError
 SyntaxError on line 1: unexpected RPAREN

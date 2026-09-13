@@ -1,12 +1,18 @@
+// Element mutation reuses `:` on an indexed target
 [ 99, 2, 3 ]
 99
+// Nested arrays: comma and chained forms both work
 [ x, [ 7, 20 ] ]
 [ 7, 20 ]
 8
+// Map values: set, overwrite, and add a new key
 { a: 100; b: 2; c: 3 }
 100
 3
+// Nested maps via chained access
 42
+// Setting an element to an array value
 [ [ 5, 6 ], 2, 3 ]
 5
+// Mutating a computed index
 -1

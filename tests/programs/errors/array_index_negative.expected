@@ -1,1 +1,2 @@
+// a negative index is written with '-', which parses as subtraction
 NotImplemented on line 3: 'subtract' is not implemented yet between Array and Number

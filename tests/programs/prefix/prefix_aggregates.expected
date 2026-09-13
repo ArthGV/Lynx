@@ -1,0 +1,24 @@
+// SQL-style prefix keywords on scalars and arrays
+5
+5
+5
+5
+1
+5
+7.5
+1
+0
+void
+void
+void
+void
+// aggregates over an array
+10
+2.5
+1
+4
+4
+[ 1, 2, 3, 4 ]
+// array of non-numbers: aggregates are void, count still counts
+3
+void

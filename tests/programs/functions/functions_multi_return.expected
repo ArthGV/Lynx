@@ -1,5 +1,7 @@
+// a comma after >>> returns an array of the values
 [ 7, 9 ]
 7
 9
+// three values, and the returned value is really an array
 3
 Array

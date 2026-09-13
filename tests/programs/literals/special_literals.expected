@@ -1,9 +1,14 @@
+// pi literal
 3.14
 4.140000000000001
 6.28
+// void literal
 void
+// comments: this line is a comment
+// another comment
 42
 hello
+// float literals
 3.14
 0.5
 100

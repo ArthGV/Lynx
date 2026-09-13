@@ -1,1 +1,2 @@
+// text bounds and clamped ranges
 TypeError on line 1: range end must be an integer, got 'hi'

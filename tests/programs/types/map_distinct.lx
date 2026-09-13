@@ -1,0 +1,12 @@
+// distinct on a map returns the map unchanged
+m: { 'a': 1; 'b': 2 }
+>> distinct m
+>> len (distinct m)
+empty: {}
+>> distinct empty
+
+// distinct on scalars and arrays
+>> distinct 5
+>> distinct 'x'
+>> count (distinct 'hello')
+>> distinct (1, 1, 2, 3, 3)
