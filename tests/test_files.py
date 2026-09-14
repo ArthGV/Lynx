@@ -190,7 +190,7 @@ def test_csv_table_read_typed_columns(tmp_path):
     assert out == (
         "[ 36, hidden,  ]\n"
         "{ name: ada; age: 36; city: london }\n"
-        "{ name: bob; age: hidden; city: }\n"
+        "{ name: bob; age: hidden; city:  }\n"
         "Number\nText\n"
     )
 
@@ -266,7 +266,7 @@ def test_csv_write_complex_array_element_is_error(tmp_path):
 def test_csv_write_complex_table_cell_is_error(tmp_path):
     p = tmp_path / "c.csv"
     assert run_err(f"t: ['a': (1, 2)]\nwrite t, '{p}'") == (
-        "TypeError on line 1: cannot write Array values in a .csv; "
+        "TypeError on line 2: cannot write Array values in a .csv; "
         "only scalars (number, text, boolean, void) are supported"
     )
 
@@ -281,8 +281,8 @@ def test_csv_write_empty_table_is_error(tmp_path):
 def test_csv_write_newline_text_is_error(tmp_path):
     t = write_file(tmp_path / "multi.txt", "line one\nline two")
     p = tmp_path / "nl.csv"
-    assert run_err(f"write (read '{t}'), '{p}'") == (
-        "Error on line 1: cannot write a text containing a newline to a .csv"
+    assert run_err(f"a: ((read '{t}'), 'x')\nwrite a, '{p}'") == (
+        "Error on line 2: cannot write a text containing a newline to a .csv"
     )
 
 
@@ -463,7 +463,7 @@ def test_write_type_mismatches(tmp_path):
         "TypeError on line 1: a value of type Array writes to .csv, not .txt"
     )
     assert run_err(f"t: table\nwrite t, '{tmp_path / 'x.yaml'}'") == (
-        "TypeError on line 1: a value of type Table writes to .csv, not .yaml"
+        "TypeError on line 2: a value of type Table writes to .csv, not .yaml"
     )
 
 
@@ -540,10 +540,14 @@ def test_roundtrip_all_types(tmp_path):
         f"write 3.5, '{f}'\n"
         f"write 'lynx', '{s}'\n"
         f"write true, '{t}'\n"
-        f">> (number (read '{n}') = 42)\n"
-        f">> (number (read '{f}') = 3.5)\n"
-        f">> ((read '{s}') = 'lynx')\n"
-        f">> (boolean (read '{t}') = true)\n"
+        f"n1: number (read '{n}')\n"
+        f"n2: number (read '{f}')\n"
+        f"n3: (read '{s}')\n"
+        f"n4: boolean (read '{t}')\n"
+        f">> n1 = 42\n"
+        f">> n2 = 3.5\n"
+        f">> n3 = 'lynx'\n"
+        f">> n4 = true\n"
         f"a: (1, true, false, void, '42')\n"
         f"write a, '{cells}'\n"
         f"b: read '{cells}'\n"

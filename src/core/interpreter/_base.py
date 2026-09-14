@@ -39,6 +39,7 @@ from src.core.nodes import (
     Text,
     UnaryExpression,
     Void,
+    Write,
 )
 from src.errors.errors import LynxTypeError
 from src.runtime import values
@@ -55,6 +56,9 @@ def execute(node: Any, env: Environment) -> None:
     match node:
         case Program(statements):
             execute(statements, env)
+
+        case Write(value, path, line):
+            _files.write(evaluate(value, env), evaluate(path, env), line)
 
         case Print(value):
             print(evaluate(value, env))
@@ -225,6 +229,7 @@ def _int_bound(value: values.Type, which: str, line: int | None) -> int:
 
 # Imported last: these modules call back into the functions above, so this
 # module must be fully populated before they load.
+from src.core import files as _files  # noqa: E402
 from src.core.interpreter import expressions as _expressions  # noqa: E402
 from src.core.interpreter import operators as _operators  # noqa: E402
 from src.core.interpreter import statements as _statements  # noqa: E402  # fmt: skip

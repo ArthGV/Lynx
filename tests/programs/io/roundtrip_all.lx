@@ -4,10 +4,14 @@ write 42, 'tests/programs/io/out/n.txt'
 write 3.5, 'tests/programs/io/out/f.txt'
 write 'lynx', 'tests/programs/io/out/s.txt'
 write true, 'tests/programs/io/out/t.txt'
->> (number (read 'tests/programs/io/out/n.txt') = 42)
->> (number (read 'tests/programs/io/out/f.txt') = 3.5)
->> ((read 'tests/programs/io/out/s.txt') = 'lynx')
->> (boolean (read 'tests/programs/io/out/t.txt') = true)
+n1: number (read 'tests/programs/io/out/n.txt')
+n2: number (read 'tests/programs/io/out/f.txt')
+n3: (read 'tests/programs/io/out/s.txt')
+n4: boolean (read 'tests/programs/io/out/t.txt')
+>> n1 = 42
+>> n2 = 3.5
+>> n3 = 'lynx'
+>> n4 = true
 
 // boolean false and void cannot be recovered from .txt casts
 // (boolean 'false' is true, and there is no void cast), so they

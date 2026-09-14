@@ -118,6 +118,9 @@ class Number(SimpleType):
             return [Number(i) for i in range(0, n + 1)]
         return [Number(i) for i in range(0, n - 1, -1)]
 
+    def read(self) -> Type:
+        self.todo("read")
+
 
 class Text(SimpleType):
     rank = 2
@@ -216,6 +219,10 @@ class Text(SimpleType):
     def max(self) -> Type: self.todo("max")
     def join(self, other: Text) -> Type: self.todo("join")
 
+    def read(self) -> Type:
+        from src.core.files import read as _read
+        return _read(self.value)
+
 
 class Boolean(SimpleType):
     rank = 1
@@ -304,6 +311,9 @@ class Boolean(SimpleType):
     def max(self) -> Type: self.todo("max")
     def join(self, other: Boolean) -> Type: self.todo("join")
 
+    def read(self) -> Type:
+        self.todo("read")
+
 
 class Void(SimpleType):
     """The absence of a value, like Python's None."""
@@ -358,3 +368,6 @@ class Void(SimpleType):
     def max(self) -> Type: return Void()
 
     def join(self, other: Type) -> Type: self.todo("join")
+
+    def read(self) -> Type:
+        self.todo("read")
