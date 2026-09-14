@@ -1,0 +1,5 @@
+x: 'hello from the writer'
+write x, 'tests/programs/io/out/txt.txt'
+y: read 'tests/programs/io/out/txt.txt'
+>> y
+>> y = x

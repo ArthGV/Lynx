@@ -1,0 +1,6 @@
+t: ['id': 1, 2; 'name': 'ada', 'bob']
+write t, 'tests/programs/io/out/table.csv'
+u: read 'tests/programs/io/out/table.csv'
+>> t = u
+>> u 'name' 1
+>> u 'id'

@@ -1,0 +1,3 @@
+[ 36, hidden,  ]
+{ name: ada; age: 36; city: london }
+{ name: bob; age: hidden; city: }

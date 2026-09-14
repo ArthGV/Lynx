@@ -1,0 +1,6 @@
+a: (1, 'hello', true, void, '', '42')
+write a, 'tests/programs/io/out/mixed.csv'
+b: read 'tests/programs/io/out/mixed.csv'
+>> a = b
+>> type b 3
+>> type b 5

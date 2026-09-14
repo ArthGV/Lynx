@@ -1,0 +1,3 @@
+t: read 'tests/programs/io/data/emptytitle.csv'
+>> t '' 0
+>> t 'b' 0

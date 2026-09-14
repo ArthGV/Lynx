@@ -1,0 +1,4 @@
+t: read 'tests/programs/io/data/people.csv'
+>> t 'age'
+>> t 0
+>> t 1

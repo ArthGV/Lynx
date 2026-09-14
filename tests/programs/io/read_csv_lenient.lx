@@ -1,0 +1,3 @@
+t: read 'tests/programs/io/data/lenient.csv'
+>> t 'b' 0
+>> t 'c' 1

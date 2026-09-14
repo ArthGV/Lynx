@@ -1,0 +1,6 @@
+a: (1, 2, 3)
+write a, 'tests/programs/io/out/arr.csv'
+b: read 'tests/programs/io/out/arr.csv'
+>> b
+>> a = b
+>> b 1

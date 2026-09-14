@@ -1,0 +1,6 @@
+m: { 'name': 'lynx'; 'count': 3; 'tags': ('read', 'write'); 'nested': { 'ok': true; 'none': void } }
+write m, 'tests/programs/io/out/map.yaml'
+n: read 'tests/programs/io/out/map.yaml'
+>> m = n
+>> n 'tags' 1
+>> n 'nested' 'none'
