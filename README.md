@@ -1,45 +1,119 @@
 # lynx
 
-A small interpreted programming language, implemented as a tree-walking interpreter in Python.
+A **data-native scripting language**. Tables, maps, and arrays are first-class values that you
+query with the language itself — no ORM, no `groupby` chain, no `pd` import.
 
-Lynx has one guiding rule: **everything works with everything.** Every operation is defined for
-every type, so there is no such thing as an "unsupported operand" error — only operations nobody
-has written yet, which say so and point at the line.
+`lynx` is a small interpreted language, implemented as a tree-walking interpreter in Python. It
+is early and opinionated: the grammar fits on one screen, the feature set is deliberate, and
+everything about the surface syntax lives in a single file.
 
 ```lynx
-// a first program
-name: 'world'
->> 'hello ' + name        // hello world
+orders: ['id': 1, 2, 3, 4; 'customer': 'ada', 'bob', 'ada', 'cynthia'; 'amount': 40.0, 10.0, 35.0, 25.0]
+>> where orders 'amount' > 15
+```
 
-/// a comment can span several lines,
-like a docstring. It ends on the first
-line whose text ends with ///, done///
->> 1 + 1                   // 2
+```
+┌────┬─────────┬──────┐
+│ id │ customer│amount│
+├────┼─────────┼──────┤
+│  1 │'ada'    │   40 │
+│  3 │'ada'    │   35 │
+│  4 │'cynthia'│   25 │
+└────┴─────────┴──────┘
+```
 
-age: 20
-if age > 18
- >> 'adult'
-else
- >> 'minor'
+## Why lynx?
+
+SQL is where data already lives,  but it is a query language, not a programming one. Python is a
+programming language, but data is a visitor: it has to be imported, converted, and wrangled out
+of a library. `lynx` is one language for both.
+
+- `where sales 'amount' > 100` — in place of `sales[sales['amount'] > 100]`
+- `group orders 'customer'` — in place of a `groupby(...)` chain
+- `users join orders` — in place of a `merge` call
+- `sum sales 'amount'` — in place of a column then `.sum()`
+
+This is what **everything works with everything** means. Every operation is defined for every
+type, so the interpreter never answers "unsupported operand" — only "not implemented yet,"
+pointing at the line. No casts, no type juggling, no `None` special-casing: data stays native.
+
+## A real program
+
+Tables are values. Columns are arrays, rows are maps, and the query keywords read like English.
+
+```lynx
+orders: ['id': 1, 2, 3, 4; 'customer': 'ada', 'bob', 'ada', 'cynthia'; 'amount': 40.0, 10.0, 35.0, 25.0]
+>> orders                         // prints the whole table
+
+>> sum orders 'amount'            // 110
+>> avg orders 'amount'            // 27.5
+
+// filter rows, then sort them
+>> order (where orders 'customer' = 'ada') 'amount'
+
+// split a table into per-key sub-tables
+g: group orders 'customer'
+>> len g                          // 3 distinct customers
+>> sum (g 'ada') 'amount'         // 75
+
+// join two tables on a shared column
+users: ['id': 1, 2, 3; 'name': 'ada', 'bob', 'cynthia']
+>> users join orders
+
+// rows are maps, columns are arrays
+>> orders 'id' 0                  // 1
+>> first orders                   // { id: 1; customer: ada; amount: 40 }
+>> count orders                   // 4
+```
+
+Output:
+
+```text
+┌────┬─────────┬──────┐
+│ id │ customer│amount│
+├────┼─────────┼──────┤
+│  1 │'ada'    │   40 │
+│  2 │'bob'    │   10 │
+│  3 │'ada'    │   35 │
+│  4 │'cynthia'│   25 │
+└────┴─────────┴──────┘
+110
+27.5
+┌────┬────────┬──────┐
+│ id │customer│amount│
+├────┼────────┼──────┤
+│  3 │'ada'   │   35 │
+│  1 │'ada'   │   40 │
+└────┴────────┴──────┘
+3
+75
+┌────┬─────────┬────────┬──────┐
+│ id │ name    │customer│amount│
+├────┼─────────┼────────┼──────┤
+│  1 │'ada'    │'ada'   │   40 │
+│  2 │'bob'    │'bob'   │   10 │
+│  3 │'cynthia'│'ada'   │   35 │
+└────┴─────────┴────────┴──────┘
+1
+{ id: 1; customer: ada; amount: 40 }
+4
 ```
 
 ## Install and run
 
 ```bash
 pip install -e .
-lynx example.lx
+lynx program.lx
 ```
 
 Source files use the `.lx` extension. `lynx` warns if a file doesn't end in `.lx`, but runs it
-anyway. Without installing, `python -m src.main example.lx` does the same thing.
+anyway. Without installing, `python -m src.main program.lx` does the same thing.
 
-## The language
+## A tour of the language
 
-**Comments** start with `//` and run to the end of the line.
-
-**Values.** Four types: `Number`, `Text`, `Boolean`, `Void`. Numbers are written `42` or `3.5`
-and print without a trailing `.0`. Text is single-quoted: `'hi'`. The literal keywords are
-`true`, `false`, `void`, and `pi` (3.14).
+**Values.** Four types: `Number`, `Text`, `Boolean`, and `Void`. Numbers print without a
+trailing `.0`. Text is single-quoted: `'hi'`. The literal keywords are `true`, `false`, `void`,
+and `pi`.
 
 **Variables** are assigned with `:` — there is no declaration keyword.
 
@@ -52,7 +126,7 @@ age: age + 5    // reassignment is the same syntax
 
 ```lynx
 >> 1 + 2        // 3
->> 3, 4         // [ 3, 4 ] — a comma-run prints as an array, like `x: 3, 4`
+>> 3, 4         // [ 3, 4 ] — a comma-run prints as an array
 ```
 
 **Operators**, loosest-binding level first:
@@ -65,98 +139,122 @@ age: age + 5    // reassignment is the same syntax
 | 4 | `+` `-` `xor` | add, subtract, exclusive or |
 | 5 | `*` `/` | multiply, divide |
 | 6 | `^` `root` | power, nth root (`2 ^ 3` = 8, `8 root 3` = 2) |
+| 7 | `__` | inclusive range (`3__7` = `[ 3, 4, 5, 6, 7 ]`) |
 
 Note that `=` is **equality**, not assignment (assignment is `:`), and `!=` is its negation —
-there is no `==`. So
-`>> 5 > 3 = true` prints `true`. For numbers, `≈` is true when the two are less than 1 apart.
-The `-or-almost` variants (`>≈`, `<≈`, or the ASCII equivalents `>~`, `<~`) combine comparison
-with approximation: `5 >~ 5.3` is true because 5.3 is within 1 of 5.
+there is no `==`. So `>> 5 > 3 = true` prints `true`. For numbers, `≈` is true when the two are
+less than 1 apart. The `-or-almost` variants (`>≈`, `<≈`, or the ASCII forms `>~`, `<~`) combine
+comparison with approximation: `5 >~ 5.3` is true because 5.3 is within 1 of 5 and bigger than it.
 
-**Keyword functions**: `type` gives a value's type name as text, `text` converts to text,
-`len` gives a length — for a number, its digit count, `not` negates (logical NOT / `1 - x`),
-`middle` returns the middle element, and `sqrt` is square root. A keyword function takes the
-**whole rest of the line** as its argument:
+**Keyword functions** read like English sentences and take the **whole rest of the line** as
+their argument:
 
 ```lynx
->> type 'hi'     // Text
->> text 42       // 42
->> len 12345     // 5
->> not true      // false
->> not 5         // -4
->> middle 12345  // 3
->> sqrt 9        // 3
->> sqrt 4        // 2
+>> type 'hi'      // Text
+>> text 42        // 42
+>> number '3.5'   // 3.5
+>> boolean 1      // true
+>> len 12345      // 5
+>> first (1, 2, 3) // 1
+>> last (1, 2, 3)  // 3
+>> not true       // false
+>> middle 12345   // 3
+>> sqrt 9         // 3
 ```
 
-**Parentheses group and override priority** — a `( … )` is a value at any spot, so a keyword
-function's result can go on the left of an operator, and a parenthesized comma-run is an array literal:
+**Parentheses group and override priority** — a `( … )` is a value at any spot, and a
+parenthesized comma-run is an array literal:
 
 ```lynx
->> (len 12345) > 3                // true
->> (1 + 2) * 3                    // 9
->> 2 in (1, 2, 3)                 // true
->> f (1, 2, 3), 4                 // one array arg and one number arg
+>> (len 12345) > 3              // true
+>> (1 + 2) * 3                  // 9
+>> 2 in (1, 2, 3)               // true
+>> f (1, 2, 3), 4               // one array arg and one number arg
 ```
 
-**Constructors** `array` and `map` create empty collections. Unlike `len`/`type`, they take no
-argument (they do not swallow the rest of the line), so they work anywhere a value works — in
-literals, as call arguments, or as loop iterables:
+**Arrays.** A comma-separated list of anything, or built empty with `array`. Element access
+reuses the call machinery (`my_array 0`, chained for nesting). Appending is `<:` (end) and `>:`
+(front) — the right-hand side is parsed like an assignment, so an array splices its elements in
+and anything else appends as a single element.
 
 ```lynx
-a: array      // []
-m: map        // {}
-a <: 1, 2     // [ 1, 2 ]
+nums: 1, 2, 3
+nums <: 4            // [ 1, 2, 3, 4 ]
+nums >: 0            // [ 0, 1, 2, 3, 4 ]
+>> nums <: 7         // [ 0, 1, 2, 3, 4, 5, 6, 7 ]
+```
+
+**Maps.** `{ 'a': 1; 'b': 2 }` — `;` separates entries so values can be arrays. Reading a missing
+key returns `void`. `in` checks keys.
+
+```lynx
+m: { 'a': 1; 'b': 2 }
+>> m 'nope'       // void
+>> 'a' in m       // true
+```
+
+**Tables** are column-oriented. A table literal lists columns, each with a name and values; the
+`table` keyword builds an empty one. Columns and rows are both accessible, and loops iterate rows.
+
+```lynx
+t: ['id': 1, 2, 3; 'price': 10.0, 20.0, 30.0]
+>> len t               // [ 3, 2 ] — rows, columns
+>> t 'id'              // [ 1, 2, 3 ] — a whole column is an array
+>> t 'id' 0            // 1 — chained access picks one cell
+>> t 0                 // { id: 1; price: 10 } — a row is a map
+>> first t             // { id: 1; price: 10 }
+>> last t              // { id: 3; price: 30 }
+```
+
+**SQL-style queries** are part of the language, not a library layer:
+
+```lynx
+>> select t 'id'            // project a column
+>> where t 'price' > 15     // filter rows by a comparison
+>> order t 'id'             // sort rows
+>> group t 'dept'           // split into a map of sub-tables
+>> t1 join t2               // join on shared columns
+>> sum t 'price'            // aggregates: sum avg min max count distinct
+>> count t                  // number of rows
+```
+
+**Ranges** `start__end` build inclusive integer sequences, and work for slicing:
+
+```lynx
+>> 3__7             // [ 3, 4, 5, 6, 7 ]
+>> __7              // [ 0, 1, 2, 3, 4, 5, 6, 7 ] — the lower bound defaults
+>> len 3__7         // 5
 ```
 
 **Conditionals** take a condition on the `if` line and an indented body. A second condition on an
 `else` makes it an else-if; a bare `else` is the fallback.
 
 ```lynx
-if 1 > 2
- >> 'a'
-else 2 > 1
- >> 'b'
+if temperature > 25
+ >> 'warm'
 else
- >> 'c'
+ >> 'cold'
 ```
 
-**Cross-type operations** follow the everything-works-with-everything rule rather than raising.
-Booleans add as *or* and multiply as *and*, so `true + false` is `true` and `true * false` is
-`false`. Where an operation hasn't been filled in yet you get a clear message:
-
-```
-NotImplemented on line 1: 'multiply' is not implemented yet for Text
-```
-
-**Complex values.** An array is a comma-separated list (`1, true, 'hi'`), or built empty with
-`array`; element access reuses the call machinery (`my_array 0`, chained for nesting). A map uses
-`{ 'a': 1; 'b': 2 }` or is built empty with `map` — `;` separates entries so values can be
-arrays. Reading a missing key returns `void`, like a `None`-default dictionary.
+**Loops.** `loop` iterates anything — arrays, maps, tables, ranges, text — and binds an index too
+when you declare two variables. With a condition instead of an iterable, it is a `while` loop.
+`stop` breaks, `skip` continues; both take an optional condition.
 
 ```lynx
-m: { 'a': 1; 'b': 2 }
->> m 'nope'       // void
->> 'a' in m       // true — checks the keys
+loop val: 1, 2, 3
+ >> val
+
+loop ind, val: 1, 2, 3
+ >> ind            // 0, 1, 2
+
+counter: 0
+loop counter < 3
+ counter: counter + 1
+ >> counter
 ```
 
-`in` also works on arrays, and on scalars (which iterate, so `3 in 5` is true and `'h' in 'hello'`
-is character membership).
-
-**Appending to an array** is `<:` (end) and `>: ` (front). The right-hand side is parsed like an
-assignment, so an array splices its elements in and anything else appends as a single element.
-The operation returns the array, so you can print it or chain it.
-
-```lynx
-nums: 1, 2, 3
-nums <: 4            // [ 1, 2, 3, 4 ]
-nums >: 0            // [ 0, 1, 2, 3, 4 ]
-nums <: 5, 6         // [ 0, 1, 2, 3, 4, 5, 6 ]
->> nums <: 7         // [ 0, 1, 2, 3, 4, 5, 6, 7 ]
-```
-
-**Functions** are declared like variables, with `:` and an indented body; parameters are listed
-after the colon. `>>>` returns, and a comma after it returns an array of the values — so functions
-can hand back several things at once:
+**Functions** are declared like variables, with `:` and an indented body. `>>>` returns, and a
+comma after it returns an array — so functions hand back several things at once:
 
 ```lynx
 pair: a, b
@@ -166,31 +264,81 @@ r: pair 7, 9
 >> r 1               // 9
 ```
 
-## Tests
+**File I/O** speaks the formats data lives in: `read` and `write` handle `.txt`, `.csv`, and
+`.yaml`, with typed-cell inference (numbers stay numbers, text stays text, nothing is lost in a
+round-trip).
 
-Golden tests live in `tests/programs/`, grouped into subfolders by subject. Each `*.lx` program is paired with a `*.expected`
-file holding its exact stdout. Add a case by dropping in a new pair in the fitting subfolder —
-no code change needed.
-
-```bash
-pip install -e ".[dev]"
-python -m pytest
+```lynx
+t: read 'sales.csv'      // a CSV becomes a table, headers and all
+>> sum t 'amount'
+write 'report.yaml', t
 ```
 
-## Status
-
-Working today: arithmetic, text, booleans, comparisons (including `>=`, `<=`, `>≈`/`<≈`, `!=`),
-`not`, `middle`, `sqrt`, `type`, `text`, `len`, variables, `if`/`else`, functions, the complex
-types (arrays, maps) with `in` and `<:`/`>:`, `^`/`root` for power, parentheses for grouping,
-and `array`/`map` constructors.
-Planned next: tables, matrices, graphs, and notebooks.
-
-## Layout
+**Cross-type operations** follow the everything-works-with-everything rule rather than raising.
+Booleans add as *or* and multiply as *and*, so `true + false` is `true` and `true * false` is
+`false`. Where an operation hasn't been filled in yet, you get a clear message instead of a
+traceback:
 
 ```
-source text → tokenize() → Parser.parse() → execute()/evaluate()
-              lexer.py      parser.py         interpreter.py
+NotImplemented on line 1: 'multiply' is not implemented yet for Text
 ```
 
-`grammar.py` is the single source of truth for the surface syntax — keywords, symbols, and
-operator precedence all live there, and the lexer, parser, and error messages follow from it.
+## Roadmap
+
+The direction is more of the same: data stays native, and the heavy lifting happens in the
+language rather than in glue code.
+
+- **Graphs** — relationships a table can't express (nodes, edges, traversal), replacing
+  an adjacency-map workaround with a first-class value.
+- **Tensors** — n-dimensional arrays for working on data in bulk, with the same operator coverage
+  every other type gets.
+- **Full SQL commands** — the rest of the query layer: `limit`, `offset`, joins that take
+  conditions, update and delete on tables.
+- **Native machine learning** — training and running models in the language itself, with syntax
+  that reads like the rest of lynx instead of a model-serving wrapper.
+- **Imports / multi-file modules** — real projects and shared libraries beyond a single file.
+- **Error handling (`try`/`expect`)** — programs that catch and recover instead of aborting
+  on the first runtime error.
+
+Nothing here is set in stone. If you build one of them (or decide a planned one is the wrong
+direction), your voice carries — this is early software.
+
+## Contributing
+
+`lynx` is at pre 1.0 and deliberately small. Contributions, reviews, and opinions are very
+welcome — open a pull request or an issue.
+
+A few things that make the codebase easy to work with:
+
+- **Golden tests.** Every program in `tests/programs/` is a `.lx` file paired with a `.expected`
+  file of its exact stdout. Add a case by dropping in a new pair under the fitting subject folder
+  — no code changes. Full suite: `python -m pytest`.
+- **One source of truth.** The whole surface syntax — keywords, symbols, operator precedence —
+  lives in `src/core/grammar.py`. Change nothing else by hand.
+- **Everything works with everything.** A new type must carry a stub for every interface method,
+  even unimplemented ones. Covered in the layout notes below.
+
+If you are unsure where a feature starts, the grammar table in `src/core/grammar.py` and the
+golden test folders answer most questions.
+
+## Project layout
+
+```
+source text → tokenize()  → Parser(tokens).parse()  → execute()/evaluate()
+               lexer.py      core/parser/                core/interpreter/
+```
+
+- `src/core/grammar.py` — the single source of truth: keywords, symbols, literals, and operator
+  precedence. The lexer, parser, and error messages all follow from it.
+- `src/core/parser/` and `src/core/interpreter/` — syntax and semantics, split into statements and
+  expressions.
+- `src/types/` — the value types: `Number`, `Text`, `Boolean`, `Void`, plus `Array` (`array.py`),
+  `Map` (`map.py`), and `Table` (`table.py`).
+- `src/runtime/` — how pairs of values resolve (including cross-type operations) and function
+  values.
+- `src/core/files.py` — `read`/`write` for `.txt`, `.csv`, and `.yaml`.
+- `editors/vscode/` — syntax highlighting, generated from `grammar.py`.
+
+## License
+
+MIT — see `LICENSE`.
