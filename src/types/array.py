@@ -132,3 +132,4 @@ class Array(ComplexType):
     def xor(self, other: Array) -> Type: self.todo("xor")
     def not_(self) -> Type: self.todo("not_")
     def join(self, other: Array) -> Type: self.todo("join")
+    def read(self) -> Type: self.todo("read")

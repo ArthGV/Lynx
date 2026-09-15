@@ -24,6 +24,7 @@ from src.core.nodes import (
     SetItem,
     Skip,
     Stop,
+    Write,
 )
 from src.core.parser._base import EOF, Parser
 from src.errors.errors import LynxInputError, LynxSyntaxError
@@ -44,12 +45,21 @@ class StatementMixin(Parser):
                 return self.parse_loop_control(Stop)
             case "SKIP":
                 return self.parse_loop_control(Skip)
+            case "WRITE":
+                return self.parse_write()
             case "IDENTIFIER":
                 return self.parse_name_statement()
         token = self.peek()
         raise LynxSyntaxError(
             f"unexpected {self.type()}", token.line if token else None
         )
+
+    def parse_write(self) -> Write:
+        token = self.match("WRITE")
+        value = self.parse_expression()
+        self.match("COMMA")
+        path = self.parse_expression()
+        return Write(value, path, token.line)
 
     def parse_print(self) -> Print:
         self.match("PRINT")

@@ -1,0 +1,36 @@
+// every type round-trips through write -> read -> (cast) -> equal
+// .txt reads back as Text, so the scalars are recovered by casting
+write 42, 'tests/programs/io/out/n.txt'
+write 3.5, 'tests/programs/io/out/f.txt'
+write 'lynx', 'tests/programs/io/out/s.txt'
+write true, 'tests/programs/io/out/t.txt'
+n1: number (read 'tests/programs/io/out/n.txt')
+n2: number (read 'tests/programs/io/out/f.txt')
+n3: (read 'tests/programs/io/out/s.txt')
+n4: boolean (read 'tests/programs/io/out/t.txt')
+>> n1 = 42
+>> n2 = 3.5
+>> n3 = 'lynx'
+>> n4 = true
+
+// boolean false and void cannot be recovered from .txt casts
+// (boolean 'false' is true, and there is no void cast), so they
+// round-trip through the typed .csv/.yaml formats instead
+a: (1, true, false, void, '42')
+write a, 'tests/programs/io/out/cells.csv'
+b: read 'tests/programs/io/out/cells.csv'
+>> a = b
+>> b 2
+>> type b 3
+
+m: { 'v': void; 'f': false; 'num': 3.5 }
+write m, 'tests/programs/io/out/m.yaml'
+n: read 'tests/programs/io/out/m.yaml'
+>> m = n
+>> n 'f'
+>> n 'v'
+
+t: ['id': 1; 'name': 'ada']
+write t, 'tests/programs/io/out/t.csv'
+u: read 'tests/programs/io/out/t.csv'
+>> t = u

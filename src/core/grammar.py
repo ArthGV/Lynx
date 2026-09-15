@@ -70,6 +70,9 @@ KEYWORDS = {
     "group": "GROUP",
     "where": "WHERE",
     "join": "JOIN",
+    # file I/O
+    "read": "READ",
+    "write": "WRITE",
     **{word: _literal_token(value) for word, value in LITERALS.items()},
 }
 
@@ -157,6 +160,7 @@ UNARY_METHOD = {
     "MAX": "max",
     "COUNT": "count",
     "DISTINCT": "distinct",
+    "READ": "read",
 }
 
 # How much of the line a keyword function swallows: its operand is parsed at

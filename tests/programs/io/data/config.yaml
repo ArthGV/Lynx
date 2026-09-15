@@ -1,0 +1,11 @@
+'name': 'lynx'
+'version': 0.2
+'tags':
+  - 'read'
+  - 'write'
+'deep':
+  'nested':
+    'flag': true
+    'nothing': void
+'empty_text': ''
+'empty_list': []

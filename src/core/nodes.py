@@ -86,6 +86,13 @@ class Return:
 
 
 @dataclass
+class Write:
+    value: Any
+    path: Any
+    line: int | None = None
+
+
+@dataclass
 class Print:
     value: Any
 

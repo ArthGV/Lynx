@@ -1,0 +1,8 @@
+m: read 'tests/programs/io/data/config.yaml'
+>> m 'name'
+>> m 'version'
+>> m 'tags' 1
+>> m 'deep' 'nested' 'flag'
+>> m 'deep' 'nested' 'nothing'
+>> type m 'empty_text'
+>> type m 'empty_list'

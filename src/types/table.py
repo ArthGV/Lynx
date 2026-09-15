@@ -288,3 +288,4 @@ class Table(ComplexType):
     def avg(self) -> Type: self.todo("avg")
     def min(self) -> Type: self.todo("min")
     def max(self) -> Type: self.todo("max")
+    def read(self) -> Type: self.todo("read")

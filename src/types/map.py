@@ -126,3 +126,4 @@ class Map(ComplexType):
     def min(self) -> Type: self.todo("min")
     def max(self) -> Type: self.todo("max")
     def join(self, other: Map) -> Type: self.todo("join")
+    def read(self) -> Type: self.todo("read")

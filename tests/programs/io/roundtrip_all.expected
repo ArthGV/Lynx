@@ -1,0 +1,27 @@
+// // every type round-trips through write -> read -> (cast) -> equal
+// // .txt reads back as Text, so the scalars are recovered by casting
+// 42 -> number (read) -> 42
+true
+// 3.5 -> number (read) -> 3.5
+true
+// 'lynx' -> read -> 'lynx'
+true
+// true -> boolean (read) -> true
+true
+// // boolean false and void cannot be recovered from .txt casts
+// // (boolean 'false' is true, and there is no void cast), so they
+// // round-trip through the typed .csv/.yaml formats instead
+// [1, true, false, void, '42'] -> csv -> read
+true
+// false survives in a typed cell
+false
+// and void does too
+Void
+// {'v': void; 'f': false; 'num': 3.5} -> yaml -> read
+true
+// false in a yaml value
+false
+// void in a yaml value
+void
+// ['id': 1; 'name': 'ada'] -> csv -> read
+true

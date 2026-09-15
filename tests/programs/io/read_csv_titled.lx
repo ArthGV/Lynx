@@ -1,0 +1,6 @@
+t: read 'tests/programs/io/data/smarttitles.csv'
+>> t '42' 0
+>> t 'true' 0
+>> t 'name' 0
+>> t 0
+>> type t

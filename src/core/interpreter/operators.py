@@ -7,7 +7,7 @@ error to its line.
 """
 
 from src.core.grammar import BINARY_METHOD, UNARY_METHOD
-from src.errors.errors import LynxError, LynxNotImplemented
+from src.errors.errors import LynxError
 from src.runtime import operations, values
 
 
@@ -29,7 +29,7 @@ def apply_unary(operator: str, value: values.Type, line: int | None) -> values.T
     # to `line`.
     try:
         return getattr(value, UNARY_METHOD[operator])()
-    except LynxNotImplemented as error:
+    except LynxError as error:
         if error.line is None:
             error.line = line
         raise
