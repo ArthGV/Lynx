@@ -1,0 +1,24 @@
+// a trailing comma makes a comma-run an array, even with one element
+[ 2 ]
+Array
+1
+2
+// multi-element run keeps working; trailing comma changes nothing
+[ 3, 4 ]
+2
+// parenthesized one-element array: a call arg, then more args
+5
+// a parenthesized run alone
+[ 1 ]
+1
+// unary keyword groups a trailing comma run too
+1
+// map value from a trailing comma
+{ a: [ 2 ] }
+[ 2 ]
+// mutation value from a trailing comma
+[ [ 7 ], 1, 2 ]
+// table column with a trailing comma
+2
+2
+10

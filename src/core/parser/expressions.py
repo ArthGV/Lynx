@@ -78,6 +78,8 @@ class ExpressionMixin(Parser):
                     items = [first]
                     while self.type() == "COMMA":
                         self.advance()
+                        if not self._starts_comma_item(self.type()):
+                            break
                         items.append(
                             self.parse_binary(UNARY_OPERAND_LEVEL, allow_chain)
                         )
@@ -144,15 +146,20 @@ class ExpressionMixin(Parser):
     def parse_parenthesized(self, allow_chain: bool) -> Any:
         """A `( … )` group is a primary: it overrides precedence at its spot,
         and a comma-run inside it is an array literal, so `(1, 2)` is an array
-        and `(1 + 2) * 3` binds inside the parens. Like any value, a group may
-        be chained — `(f x) 0`, `(m 'k') 0`."""
+        and `(1 + 2) * 3` binds inside the parens. A trailing comma closes a
+        one-element array: `(1,)` is `[1]`. Like any value, a group may be
+        chained — `(f x) 0`, `(m 'k') 0`."""
         opening = self.match("LPAREN")
         items = [self.parse_expression()]
+        trailing = False
         while self.type() == "COMMA":
             self.advance()
+            if not self._starts_comma_item(self.type()):
+                trailing = True
+                break
             items.append(self.parse_expression())
         self.match("RPAREN")
-        node: Any = items[0] if len(items) == 1 else ArrayLiteral(items, opening.line)
+        node: Any = items[0] if (len(items) == 1 and not trailing) else ArrayLiteral(items, opening.line)
         if allow_chain and self._starts_expression(self.type()):
             return self.parse_chain(node)
         return node
@@ -167,10 +174,14 @@ class ExpressionMixin(Parser):
             key = self.parse_expression()
             self.match("COLON")
             items = [self.parse_expression()]
+            trailing = False
             while self.type() == "COMMA":
                 self.advance()
+                if not self._starts_comma_item(self.type()):
+                    trailing = True
+                    break
                 items.append(self.parse_expression())
-            value: Any = items[0] if len(items) == 1 else ArrayLiteral(items)
+            value: Any = items[0] if (len(items) == 1 and not trailing) else ArrayLiteral(items)
             pairs.append((key, value))
             if self.type() == "SEMICOLON":
                 self.advance()
@@ -217,6 +228,8 @@ class ExpressionMixin(Parser):
                     values.append(self.parse_cell_value())
                     while self.type() == "COMMA":
                         self.advance()
+                        if not self._starts_comma_item(self.type()):
+                            break
                         values.append(self.parse_cell_value())
             columns.append((name, values))
             if self.type() == "SEMICOLON":

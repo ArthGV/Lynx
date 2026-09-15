@@ -1,0 +1,39 @@
+// a trailing comma makes a comma-run an array, even with one element
+my_array: 2,
+>> my_array
+>> type my_array
+>> len my_array
+>> my_array 0
+
+// multi-element run keeps working; trailing comma changes nothing
+b: 3, 4,
+>> b
+>> len b
+
+// parenthesized one-element array: a call arg, then more args
+first_plus: items, n
+ >>> (first items) + n
+>> first_plus (1,), 4
+
+// a parenthesized run alone
+>> (1,)
+>> len (7,)
+
+// unary keyword groups a trailing comma run too
+>> len 5,
+
+// map value from a trailing comma
+m: { 'a': 2, }
+>> m
+>> m 'a'
+
+// mutation value from a trailing comma
+a: 0, 1, 2
+a 0: 7,
+>> a
+
+// table column with a trailing comma
+t: ['id': 1, 2,; 'price': 10]
+>> len t 'id'
+>> t 'id' 1
+>> t 'price' 0

@@ -74,5 +74,11 @@ class Parser:
             return True
         return token_type in UNARY_METHOD
 
+    def _starts_comma_item(self, token_type: str) -> bool:
+        # What a comma-run element may begin with: any expression, plus MINUS
+        # for a negative literal. Used to spot a trailing comma, which closes
+        # the run as an array literal instead of waiting for an expression.
+        return token_type == "MINUS" or self._starts_expression(token_type)
+
     def _can_start_bound(self, token_type: str) -> bool:
         return token_type == "MINUS" or self._starts_expression(token_type)

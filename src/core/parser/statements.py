@@ -134,13 +134,18 @@ class StatementMixin(Parser):
 
     def parse_assign_rhs(self) -> Any:
         # The right-hand side of `name:` is one expression unless a top-level
-        # comma separates several, in which case it is an array literal.
+        # comma separates several, in which case it is an array literal. A
+        # trailing comma closes a one-element array: `name: 2,` is `[2]`.
         # `,` consumed inside a call's args stays that call's args, never here.
         items = [self.parse_expression()]
+        trailing = False
         while self.type() == "COMMA":
             self.advance()
+            if not self._starts_comma_item(self.type()):
+                trailing = True
+                break
             items.append(self.parse_expression())
-        if len(items) == 1:
+        if len(items) == 1 and not trailing:
             return items[0]
         return ArrayLiteral(items)
 
@@ -183,7 +188,8 @@ class StatementMixin(Parser):
 
     def _parse_mutation_value(self) -> Any:
         # The right-hand side of a mutation. One expression, or a top-level
-        # comma-run grouped as an array (`a 0: 5, 6`). Each value parses
+        # comma-run grouped as an array (`a 0: 5, 6` — a trailing comma closes
+        # a one-element array, `a 0: 5,`). Each value parses
         # through `parse_cell_value`, so a parenthesized run at the head is
         # kept as one element (`a 0: (4, 5)` sets a single array) — the array
         # still holds the whole run, but for a table column `t 'c': (4, 5)`
@@ -194,6 +200,8 @@ class StatementMixin(Parser):
         items = [first]
         while self.type() == "COMMA":
             self.advance()
+            if not self._starts_comma_item(self.type()):
+                break
             items.append(self.parse_cell_value())
         return ArrayLiteral(items)
 

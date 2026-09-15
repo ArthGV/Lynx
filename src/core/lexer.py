@@ -13,13 +13,40 @@ from src.core.grammar import BLOCK_COMMENT, COMMENT, KEYWORDS, LITERALS, SYMBOLS
 from src.errors.errors import LynxSyntaxError
 
 NUMBER = re.compile(r"\d+(\.\d+)?")
-TEXT = re.compile(r"'([^']*)'")
+# A backslash escapes the next character, so an escaped quote (`\'`) doesn't
+# end the literal and an escaped backslash (`\\`) stays one backslash.
+TEXT = re.compile(r"'((?:[^'\\]|\\.)*)'")
 # An identifier stops before `__`, which is reserved for ranges — so `l__n`
 # lexes as `l`, `__`, `n`, while `a_b` and trailing underscores stay a name.
 IDENTIFIER = re.compile(r"[a-zA-Z_](?:[a-zA-Z0-9]|_(?!_))*")
 
 # Longest symbols first so ">>" wins over ">" and "//" over "/".
 ORDERED_SYMBOLS = sorted(SYMBOLS, key=len, reverse=True)
+
+# Escapes in text literals. An unknown sequence is kept literally, so `'C:\q'`
+# stays `C:\q` and `'a\b'` is `\b`. Deliberately no `\"`: the language only
+# uses single quotes.
+ESCAPES = {
+    "n": "\n",
+    "t": "\t",
+    "r": "\r",
+    "\\": "\\",
+    "'": "'",
+}
+
+
+def _unescape(raw: str) -> str:
+    out: list[str] = []
+    i = 0
+    while i < len(raw):
+        if raw[i] == "\\" and i + 1 < len(raw):
+            nxt = raw[i + 1]
+            out.append(ESCAPES.get(nxt, raw[i] + nxt))
+            i += 2
+        else:
+            out.append(raw[i])
+            i += 1
+    return "".join(out)
 
 
 @dataclass
@@ -85,7 +112,7 @@ def read_token(rest: str, line_no: int, tokens: list[Token]) -> str:
     """Read one token from the front of `rest` and return what's left."""
     match = TEXT.match(rest)
     if match:
-        tokens.append(Token("TEXT", match.group(1), line_no))
+        tokens.append(Token("TEXT", _unescape(match.group(1)), line_no))
         return rest[match.end():].lstrip()
 
     match = NUMBER.match(rest)

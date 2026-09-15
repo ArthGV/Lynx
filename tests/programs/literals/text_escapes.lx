@@ -1,0 +1,14 @@
+// \n is a real newline
+>> 'a\nb'
+// \t is a real tab
+>> 'tab\there'
+// an escaped quote doesn't end the literal
+>> 'it\'s'
+// an escaped backslash stays one backslash
+>> 'a\\b'
+// unknown escapes are kept literally
+>> 'C:\q'
+// escapes work in operations
+>> len 'a\nb'
+>> first 'a\nb'
+>> 'line\n' + 'end'
