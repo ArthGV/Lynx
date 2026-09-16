@@ -7,17 +7,16 @@ This module imports its shared helpers (`evaluate`, `execute`, `is_range`,
 module only at the bottom of its file, after those functions exist.
 """
 
-from typing import Any
+from typing import Any, cast
 
 from src.core.grammar import WHERE_OPERATORS
 from src.core.interpreter._base import (
-    _describe,
     _int_bound,
     evaluate,
     execute,
     is_range,
 )
-from src.core.nodes import ArrayLiteral, BinaryExpression, Call, Cell, RangeExpression
+from src.core.nodes import ArrayLiteral, BinaryExpression, Call, Cell
 from src.errors.errors import LynxError, LynxInputError, LynxSyntaxError, LynxTypeError
 from src.runtime import values
 from src.runtime.environment import Environment
@@ -31,10 +30,7 @@ _WHERE_OPERATORS = WHERE_OPERATORS
 def call(callee: Any, args: list[Any], line: int | None, env: Environment) -> values.Type:
     # `callee` is either a name (a plain function/index call) or an expression
     # (the result of an earlier chained call), so resolve it to a value first.
-    if isinstance(callee, str):
-        fn = env.get(callee, line)
-    else:
-        fn = evaluate(callee, env)
+    fn = env.get(callee, line) if isinstance(callee, str) else evaluate(callee, env)
 
     if isinstance(fn, values.Array):
         return index_array(fn, args, line, env)
@@ -50,21 +46,17 @@ def call(callee: Any, args: list[Any], line: int | None, env: Environment) -> va
 
     if not isinstance(fn, FunctionValue):
         if isinstance(callee, str):
-            raise LynxTypeError(
-                f"'{callee}' is not a function, it is a {fn.type_name()}", line
-            )
+            raise LynxTypeError(f"'{callee}' is not a function, it is a {fn.type_name()}", line)
         raise LynxTypeError(f"cannot call a {fn.type_name()}", line)
     if len(args) != len(fn.params):
-        raise LynxInputError(
-            f"{callee} expected {len(fn.params)} input but got {len(args)}", line
-        )
+        raise LynxInputError(f"{callee} expected {len(fn.params)} input but got {len(args)}", line)
     scope = fn.env.child()
     for param, arg in zip(fn.params, args):
         scope.set(param, evaluate(arg, env))
     try:
         execute(fn.body, scope)
     except _Return as returned:
-        return returned.value
+        return cast(values.Type, returned.value)
     return values.Void()
 
 
@@ -72,18 +64,19 @@ def index_array(array: values.Array, args: list[Any], line: int | None, env: Env
     # `,` groups several indices into one access step: `a 1, 0` lowers through
     # each nesting level in order. Indices are 0-based. A range step (`a 3__7`)
     # is a slice of that level instead of a single element.
-    current = array
+    current: values.Type = array
     for arg in args:
-        if is_range(arg):
-            current = slice_array(current, arg, line, env)
-        else:
-            current = get_element(current, arg, line, env)
+        current = (
+            slice_array(cast(values.Array, current), arg, line, env)
+            if is_range(arg)
+            else get_element(current, arg, line, env)
+        )
     return current
 
 
 def index_map(map_value: values.Map, args: list[Any], line: int | None, env: Environment) -> values.Type:
     # Each arg is one key lookup; a run of args descends through nested maps.
-    current = map_value
+    current: values.Type = map_value
     for arg in args:
         if is_range(arg):
             raise LynxError("range slicing is only supported for arrays", line)
@@ -108,7 +101,7 @@ def index_table(table: values.Table, args: list[Any], line: int | None, env: Env
             return table.select(columns, line)
     # Each arg is one access step: a text key picks a column, a number picks a
     # row. A run of args descends through the returned value (`t 'id' 0`).
-    current = table
+    current: values.Type = table
     for arg in args:
         if is_range(arg):
             raise LynxError("range slicing is only supported for arrays", line)
@@ -119,35 +112,30 @@ def index_table(table: values.Table, args: list[Any], line: int | None, env: Env
 def index_text(text_value: values.Text, args: list[Any], line: int | None, env: Environment) -> values.Type:
     # Same stepping as index_array: a range step is a characters slice, a plain
     # step is one character lookup.
-    current = text_value
+    current: values.Type = text_value
     for arg in args:
-        if is_range(arg):
-            current = slice_text(current, arg, line, env)
-        else:
-            current = get_element(current, arg, line, env)
+        current = (
+            slice_text(cast(values.Text, current), arg, line, env)
+            if is_range(arg)
+            else get_element(current, arg, line, env)
+        )
     return current
 
 
-def get_element(container, step: Any, line: int | None, env: Environment) -> values.Type:
+def get_element(container: values.Type, step: Any, line: int | None, env: Environment) -> values.Type:
     """Fetch one index/key lookup into `container`. Shared by read access and
     mutation so both validate and report the same way."""
     key = evaluate(step, env)
     if isinstance(container, values.Array):
         if not isinstance(key, values.Number):
-            raise LynxTypeError(
-                f"array index must be a number, got {key.type_name()}", line
-            )
+            raise LynxTypeError(f"array index must be a number, got {key.type_name()}", line)
         idx = key.value
         if not isinstance(idx, int) or idx < 0 or idx >= len(container.value):
-            raise LynxError(
-                f"index {idx} out of range for an array of length {len(container.value)}", line
-            )
+            raise LynxError(f"index {idx} out of range for an array of length {len(container.value)}", line)
         return container.value[idx]
     if isinstance(container, values.Map):
         if not isinstance(key, values.SimpleType):
-            raise LynxTypeError(
-                f"map key must be a simple type, got {key.type_name()}", line
-            )
+            raise LynxTypeError(f"map key must be a simple type, got {key.type_name()}", line)
         return container.get_item(key)
     if isinstance(container, values.Table):
         if isinstance(key, values.Text):
@@ -155,23 +143,15 @@ def get_element(container, step: Any, line: int | None, env: Environment) -> val
         if isinstance(key, values.Number):
             idx = key.value
             if not isinstance(idx, int) or idx < 0 or idx >= container.nrows:
-                raise LynxError(
-                    f"index {idx} out of range for a table with {container.nrows} rows", line
-                )
+                raise LynxError(f"index {idx} out of range for a table with {container.nrows} rows", line)
             return container.get_row(idx)
-        raise LynxTypeError(
-            f"table access needs a column name or a row index, got {key.type_name()}", line
-        )
+        raise LynxTypeError(f"table access needs a column name or a row index, got {key.type_name()}", line)
     if isinstance(container, values.Text):
         if not isinstance(key, values.Number):
-            raise LynxTypeError(
-                f"text index must be a number, got {key.type_name()}", line
-            )
+            raise LynxTypeError(f"text index must be a number, got {key.type_name()}", line)
         idx = key.value
         if not isinstance(idx, int) or idx < 0 or idx >= len(container.value):
-            raise LynxError(
-                f"index {idx} out of range for text of length {len(container.value)}", line
-            )
+            raise LynxError(f"index {idx} out of range for text of length {len(container.value)}", line)
         return values.Text(container.value[idx])
     raise LynxTypeError("cannot index into a value that is not an array or map", line)
 
@@ -217,9 +197,7 @@ def slice_array(array: values.Array, node: Any, line: int | None, env: Environme
     worst = max(start, end)
     if worst >= len(array.value):
         which = "start" if start > end else "end"
-        raise LynxError(
-            f"range {which} {worst} out of bounds for an array of length {len(array.value)}", line
-        )
+        raise LynxError(f"range {which} {worst} out of bounds for an array of length {len(array.value)}", line)
     return values.Array([array.value[i] for i in _sliced_indices(start, end)])
 
 
@@ -228,9 +206,7 @@ def slice_text(text_value: values.Text, node: Any, line: int | None, env: Enviro
     worst = max(start, end)
     if worst >= len(text_value.value):
         which = "start" if start > end else "end"
-        raise LynxError(
-            f"range {which} {worst} out of bounds for text of length {len(text_value.value)}", line
-        )
+        raise LynxError(f"range {which} {worst} out of bounds for text of length {len(text_value.value)}", line)
     return values.Text("".join(text_value.value[i] for i in _sliced_indices(start, end)))
 
 
@@ -245,9 +221,7 @@ def slice_assign(container: values.Type, node: Any, value_node: Any, line: int |
     worst = max(start, end)
     if worst >= len(container.value):
         which = "start" if start > end else "end"
-        raise LynxError(
-            f"range {which} {worst} out of bounds for an array of length {len(container.value)}", line
-        )
+        raise LynxError(f"range {which} {worst} out of bounds for an array of length {len(container.value)}", line)
     new_value = evaluate(value_node, env)
     if not isinstance(new_value, values.Array):
         new_value = values.Array([new_value])
@@ -267,14 +241,10 @@ def _slice_assign_text(container: values.Text, node: Any, value_node: Any, line:
     worst = max(start, end)
     if worst >= len(container.value):
         which = "start" if start > end else "end"
-        raise LynxError(
-            f"range {which} {worst} out of bounds for text of length {len(container.value)}", line
-        )
+        raise LynxError(f"range {which} {worst} out of bounds for text of length {len(container.value)}", line)
     new_value = evaluate(value_node, env)
     if not isinstance(new_value, values.Text):
-        raise LynxTypeError(
-            f"text slice assignment needs a text, got {new_value.type_name()}", line
-        )
+        raise LynxTypeError(f"text slice assignment needs a text, got {new_value.type_name()}", line)
     if len(new_value.value) != len(indices):
         raise LynxInputError(
             f"range {start}__{end} covers {len(indices)} characters but got {len(new_value.value)}", line
@@ -296,9 +266,7 @@ def evaluate_table_query(kind: str, expression: Any, line: int | None, env: Envi
     if kind == "WHERE":
         return evaluate_where(expression, line, env)
     if not isinstance(expression, Call) or not expression.args:
-        raise LynxSyntaxError(
-            f"{kind.lower()} needs a table and a column, like: {kind.lower()} t 'price'", line
-        )
+        raise LynxSyntaxError(f"{kind.lower()} needs a table and a column, like: {kind.lower()} t 'price'", line)
     table = table_base(expression, kind, line, env)
     if kind == "SELECT":
         return table.select([column_name(arg, line, env) for arg in expression.args], line)

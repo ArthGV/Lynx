@@ -113,14 +113,14 @@ def read_token(rest: str, line_no: int, tokens: list[Token]) -> str:
     match = TEXT.match(rest)
     if match:
         tokens.append(Token("TEXT", _unescape(match.group(1)), line_no))
-        return rest[match.end():].lstrip()
+        return rest[match.end() :].lstrip()
 
     match = NUMBER.match(rest)
     if match:
-        after = rest[match.end():]
+        after = rest[match.end() :]
         if after.startswith("_") and not after.startswith("__"):
             raise LynxSyntaxError(
-                f"use '__' for ranges, not '_': {rest[:match.end()]}{after}",
+                f"use '__' for ranges, not '_': {rest[: match.end()]}{after}",
                 line_no,
             )
         tokens.append(Token("NUMBER", match.group(0), line_no))
@@ -129,7 +129,7 @@ def read_token(rest: str, line_no: int, tokens: list[Token]) -> str:
     for symbol in ORDERED_SYMBOLS:
         if rest.startswith(symbol):
             tokens.append(Token(SYMBOLS[symbol], symbol, line_no))
-            return rest[len(symbol):].lstrip()
+            return rest[len(symbol) :].lstrip()
 
     match = IDENTIFIER.match(rest)
     if match:
@@ -137,6 +137,6 @@ def read_token(rest: str, line_no: int, tokens: list[Token]) -> str:
         # Literal keywords carry their Python value; everything else its text.
         value = LITERALS.get(word, word)
         tokens.append(Token(KEYWORDS.get(word, "IDENTIFIER"), value, line_no))
-        return rest[match.end():].lstrip()
+        return rest[match.end() :].lstrip()
 
     raise LynxSyntaxError(f"unexpected character near {rest!r}", line_no)

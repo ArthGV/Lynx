@@ -22,9 +22,7 @@ def append_to(base: str, value_node: Any, front: bool, line: int | None, env: En
     # the (same, now mutated) array so it can be printed or assigned.
     container = env.get(base, line)
     if not isinstance(container, values.Array):
-        raise LynxTypeError(
-            f"cannot {'prepend' if front else 'append'} onto a {container.type_name()}", line
-        )
+        raise LynxTypeError(f"cannot {'prepend' if front else 'append'} onto a {container.type_name()}", line)
     added = evaluate(value_node, env)
     items = added.value if isinstance(added, values.Array) else [added]
     if front:
@@ -48,53 +46,35 @@ def assign_item(base: str, steps: list[Any], value_node: Any, line: int | None, 
     if isinstance(container, values.Table):
         # Column assignment only makes sense as a single step, whole-column.
         if len(steps) != 1:
-            raise LynxTypeError(
-                f"table assignment sets a whole column, got {len(steps)} access steps", line
-            )
+            raise LynxTypeError(f"table assignment sets a whole column, got {len(steps)} access steps", line)
         if not isinstance(key, values.Text):
-            raise LynxTypeError(
-                f"table column name must be text, got {key.type_name()}", line
-            )
+            raise LynxTypeError(f"table column name must be text, got {key.type_name()}", line)
         container.set_column(key.value, table_cells(value_node, line, env))
         return
     new_value = evaluate(value_node, env)
     if isinstance(container, values.Array):
         if not isinstance(key, values.Number):
-            raise LynxTypeError(
-                f"array index must be a number, got {key.type_name()}", line
-            )
+            raise LynxTypeError(f"array index must be a number, got {key.type_name()}", line)
         idx = key.value
         if not isinstance(idx, int) or idx < 0 or idx >= len(container.value):
-            raise LynxError(
-                f"index {idx} out of range for an array of length {len(container.value)}", line
-            )
+            raise LynxError(f"index {idx} out of range for an array of length {len(container.value)}", line)
         container.value[idx] = new_value
         return
     if isinstance(container, values.Map):
         if not isinstance(key, values.SimpleType):
-            raise LynxTypeError(
-                f"map key must be a simple type, got {key.type_name()}", line
-            )
+            raise LynxTypeError(f"map key must be a simple type, got {key.type_name()}", line)
         container.set_item(key, new_value)
         return
     if isinstance(container, values.Text):
         if not isinstance(key, values.Number):
-            raise LynxTypeError(
-                f"text index must be a number, got {key.type_name()}", line
-            )
+            raise LynxTypeError(f"text index must be a number, got {key.type_name()}", line)
         idx = key.value
         if not isinstance(idx, int) or idx < 0 or idx >= len(container.value):
-            raise LynxError(
-                f"index {idx} out of range for text of length {len(container.value)}", line
-            )
+            raise LynxError(f"index {idx} out of range for text of length {len(container.value)}", line)
         if not isinstance(new_value, values.Text):
-            raise LynxTypeError(
-                f"text index assignment needs a text, got {new_value.type_name()}", line
-            )
+            raise LynxTypeError(f"text index assignment needs a text, got {new_value.type_name()}", line)
         if len(new_value.value) != 1:
-            raise LynxError(
-                f"text index assignment needs exactly one character, got {len(new_value.value)}", line
-            )
+            raise LynxError(f"text index assignment needs exactly one character, got {len(new_value.value)}", line)
         chars = list(container.value)
         chars[idx] = new_value.value
         container.value = "".join(chars)

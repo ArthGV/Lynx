@@ -5,13 +5,13 @@ from __future__ import annotations
 from functools import cmp_to_key
 from typing import Any
 
+from src.errors.errors import LynxError, LynxTypeError
 from src.types.array import Array
 from src.types.base_type import ComplexType, Type
 from src.types.map import Map
 from src.types.simple_type import Boolean, Number, Text, Void
 from src.utils.keys import cells_equal, map_key
 from src.utils.text import compare_raw
-from src.errors.errors import LynxError, LynxTypeError
 
 
 class Table(ComplexType):
@@ -28,7 +28,7 @@ class Table(ComplexType):
     conversion = "table"
     default_value = {}
 
-    def __init__(self, columns=None, line: int | None = None) -> None:
+    def __init__(self, columns: list[tuple[str | Text, list[Type]]] | None = None, line: int | None = None) -> None:
         self.columns: dict[str, list[Type]] = {}
         seen: set[str] = set()
         duplicates: list[str] = []
@@ -39,19 +39,14 @@ class Table(ComplexType):
                 elif isinstance(name, str):
                     key = name
                 else:
-                    raise LynxTypeError(
-                        f"table column name must be text, got {type(name).__name__}", line
-                    )
-                if key in seen:
-                    if key not in duplicates:
-                        duplicates.append(key)
+                    raise LynxTypeError(f"table column name must be text, got {type(name).__name__}", line)
+                if key in seen and key not in duplicates:
+                    duplicates.append(key)
                 seen.add(key)
                 self.columns[key] = list(values)
         if duplicates:
             rendered = ", ".join(f"'{name}'" for name in duplicates)
-            raise LynxTypeError(
-                f"table column names must be unique, got duplicates {rendered}", line
-            )
+            raise LynxTypeError(f"table column names must be unique, got duplicates {rendered}", line)
         self._recompute_padding()
 
     def _recompute_padding(self) -> None:
@@ -85,7 +80,7 @@ class Table(ComplexType):
         return "\n".join(lines)
 
     @staticmethod
-    def _display(value) -> str:
+    def _display(value: Any) -> str:
         if isinstance(value, Text):
             return repr(value.value)
         return str(value)
@@ -99,7 +94,7 @@ class Table(ComplexType):
             widths.append(len(s) + 2 if isinstance(value, (Boolean, Void)) else len(s))
         return max(4, *widths)
 
-    def _render(self, value, width: int) -> str:
+    def _render(self, value: Any, width: int) -> str:
         if isinstance(value, Number):
             s = str(value)
             if len(s) >= width:
@@ -213,7 +208,7 @@ class Table(ComplexType):
         column = self.columns[name]
         ordered = sorted(
             range(self.nrows),
-            key=cmp_to_key(lambda i, j: self._compare_cells(column[i], column[j])),
+            key=cmp_to_key(lambda i, j: self._compare_cells(column[i], column[j])),  # type: ignore[call-overload]
         )
         return self._from_row_indices(ordered)
 
@@ -276,16 +271,41 @@ class Table(ComplexType):
         return Number(self.nrows)
 
     # --- not implemented yet ---
-    def add(self, other: Table) -> Type: self.todo("add")
-    def subtract(self, other: Table) -> Type: self.todo("subtract")
-    def multiply(self, other: Table) -> Type: self.todo("multiply")
-    def divide(self, other: Table) -> Type: self.todo("divide")
-    def power(self, other: Table) -> Type: self.todo("power")
-    def root(self, other: Table) -> Type: self.todo("root")
-    def xor(self, other: Table) -> Type: self.todo("xor")
-    def not_(self) -> Type: self.todo("not_")
-    def sum(self) -> Type: self.todo("sum")
-    def avg(self) -> Type: self.todo("avg")
-    def min(self) -> Type: self.todo("min")
-    def max(self) -> Type: self.todo("max")
-    def read(self) -> Type: self.todo("read")
+    def add(self, other: Table) -> Type:
+        self.todo("add")
+
+    def subtract(self, other: Table) -> Type:
+        self.todo("subtract")
+
+    def multiply(self, other: Table) -> Type:
+        self.todo("multiply")
+
+    def divide(self, other: Table) -> Type:
+        self.todo("divide")
+
+    def power(self, other: Table) -> Type:
+        self.todo("power")
+
+    def root(self, other: Table) -> Type:
+        self.todo("root")
+
+    def xor(self, other: Table) -> Type:
+        self.todo("xor")
+
+    def not_(self) -> Type:
+        self.todo("not_")
+
+    def sum(self) -> Type:
+        self.todo("sum")
+
+    def avg(self) -> Type:
+        self.todo("avg")
+
+    def min(self) -> Type:
+        self.todo("min")
+
+    def max(self) -> Type:
+        self.todo("max")
+
+    def read(self) -> Type:
+        self.todo("read")

@@ -22,7 +22,7 @@ class Number(SimpleType):
     conversion = "number"
     default_value = 0
 
-    def __init__(self, value: int | float | str) -> None:
+    def __init__(self, value: float | str) -> None:
         self.value = float(value)
         if self.value % 1 == 0:
             self.value = int(self.value)
@@ -66,20 +66,20 @@ class Number(SimpleType):
         return Boolean(abs(self.value - other.value) < 1)
 
     def length(self) -> Number:
-        return Number(len(str(self.value).replace('.', '').replace('-', '')))
+        return Number(len(str(self.value).replace(".", "").replace("-", "")))
 
     def first(self) -> Number:
-        return Number(str(self.value).replace('.', '').replace('-', '')[0])
+        return Number(str(self.value).replace(".", "").replace("-", "")[0])
 
     def last(self) -> Number:
         return Number(str(self.value)[-1])
 
     def middle(self) -> Number:
-        digits = str(self.value).replace('.', '').replace('-', '')
+        digits = str(self.value).replace(".", "").replace("-", "")
         return Number(digits[len(digits) // 2])
 
     def power(self, other: Number) -> Number:
-        return Number(self.value ** other.value)
+        return Number(self.value**other.value)
 
     def root(self, other: Number) -> Number | Void:
         if other.value == 0:
@@ -115,7 +115,7 @@ class Number(SimpleType):
         # Closest integer, then counts 0..n (n >= 0) or 0..n (n < 0, descending).
         n = round(self.value)
         if n >= 0:
-            return [Number(i) for i in range(0, n + 1)]
+            return [Number(i) for i in range(n + 1)]
         return [Number(i) for i in range(0, n - 1, -1)]
 
     def read(self) -> Type:
@@ -125,7 +125,7 @@ class Number(SimpleType):
 class Text(SimpleType):
     rank = 2
     conversion = "text"
-    default_value = ''
+    default_value = ""
 
     def __init__(self, value: str) -> None:
         self.value = value
@@ -157,26 +157,26 @@ class Text(SimpleType):
     def first(self) -> Text:
         if len(self.value) > 0:
             return Text(self.value[0])
-        return Text('')
+        return Text("")
 
     def last(self) -> Text:
         if len(self.value) > 0:
             return Text(self.value[-1])
-        return Text('')
+        return Text("")
 
     def middle(self) -> Text:
         if len(self.value) == 0:
-            return Text('')
+            return Text("")
         return Text(self.value[len(self.value) // 2])
 
     def boolean(self) -> Boolean:
-        return Boolean(self.value != '')
+        return Boolean(self.value != "")
 
     def not_(self) -> Text:
         return Text(str(1 - self.number().value))
 
     def subtract(self, other: Text) -> Text:
-        return Text(self.value.replace(other.value, ''))
+        return Text(self.value.replace(other.value, ""))
 
     def multiply(self, other: Text) -> Text:
         return Text(self.value * len(other.value))
@@ -185,15 +185,15 @@ class Text(SimpleType):
         return Text(self.value * len(other.value))
 
     def divide(self, other: Text) -> Text | Void:
-        if other.value == '':
+        if other.value == "":
             return Void()
-        if self.value == '':
-            return Text('')
+        if self.value == "":
+            return Text("")
         part = len(self.value) // (len(other.value) + 1)
-        return Text(self.value[:max(part, 1)])
+        return Text(self.value[: max(part, 1)])
 
     def root(self, other: Text) -> Text:
-        return Text(self.value[:len(self.value) // 2])
+        return Text(self.value[: len(self.value) // 2])
 
     def almost(self, other: Text) -> Boolean:
         return Boolean(edit_distance(self.value, other.value) <= 1)
@@ -213,14 +213,24 @@ class Text(SimpleType):
     def distinct(self) -> Text:
         return self
 
-    def sum(self) -> Type: self.todo("sum")
-    def avg(self) -> Type: self.todo("avg")
-    def min(self) -> Type: self.todo("min")
-    def max(self) -> Type: self.todo("max")
-    def join(self, other: Text) -> Type: self.todo("join")
+    def sum(self) -> Type:
+        self.todo("sum")
+
+    def avg(self) -> Type:
+        self.todo("avg")
+
+    def min(self) -> Type:
+        self.todo("min")
+
+    def max(self) -> Type:
+        self.todo("max")
+
+    def join(self, other: Text) -> Type:
+        self.todo("join")
 
     def read(self) -> Type:
         from src.core.files import read as _read
+
         return _read(self.value)
 
 
@@ -305,11 +315,20 @@ class Boolean(SimpleType):
     def distinct(self) -> Boolean:
         return self
 
-    def sum(self) -> Type: self.todo("sum")
-    def avg(self) -> Type: self.todo("avg")
-    def min(self) -> Type: self.todo("min")
-    def max(self) -> Type: self.todo("max")
-    def join(self, other: Boolean) -> Type: self.todo("join")
+    def sum(self) -> Type:
+        self.todo("sum")
+
+    def avg(self) -> Type:
+        self.todo("avg")
+
+    def min(self) -> Type:
+        self.todo("min")
+
+    def max(self) -> Type:
+        self.todo("max")
+
+    def join(self, other: Boolean) -> Type:
+        self.todo("join")
 
     def read(self) -> Type:
         self.todo("read")
@@ -329,7 +348,7 @@ class Void(SimpleType):
         return Number(0)
 
     def text(self) -> Text:
-        return Text('')
+        return Text("")
 
     def boolean(self) -> Boolean:
         return Boolean(False)
@@ -349,25 +368,59 @@ class Void(SimpleType):
     def length(self) -> Number:
         return Number(0)
 
-    def add(self, other: Type) -> Void: return Void()
-    def subtract(self, other: Type) -> Void: return Void()
-    def multiply(self, other: Type) -> Void: return Void()
-    def divide(self, other: Type) -> Void: return Void()
-    def power(self, other: Type) -> Void: return Void()
-    def root(self, other: Type) -> Void: return Void()
-    def not_(self) -> Void: return Void()
-    def first(self) -> Void: return Void()
-    def last(self) -> Void: return Void()
-    def middle(self) -> Void: return Void()
-    def iterate(self) -> list[Type]: return []
-    def count(self) -> Number: return Number(0)
-    def distinct(self) -> Void: return Void()
-    def sum(self) -> Type: return Void()
-    def avg(self) -> Type: return Void()
-    def min(self) -> Type: return Void()
-    def max(self) -> Type: return Void()
+    def add(self, other: Type) -> Void:
+        return Void()
 
-    def join(self, other: Type) -> Type: self.todo("join")
+    def subtract(self, other: Type) -> Void:
+        return Void()
+
+    def multiply(self, other: Type) -> Void:
+        return Void()
+
+    def divide(self, other: Type) -> Void:
+        return Void()
+
+    def power(self, other: Type) -> Void:
+        return Void()
+
+    def root(self, other: Type) -> Void:
+        return Void()
+
+    def not_(self) -> Void:
+        return Void()
+
+    def first(self) -> Void:
+        return Void()
+
+    def last(self) -> Void:
+        return Void()
+
+    def middle(self) -> Void:
+        return Void()
+
+    def iterate(self) -> list[Type]:
+        return []
+
+    def count(self) -> Number:
+        return Number(0)
+
+    def distinct(self) -> Void:
+        return Void()
+
+    def sum(self) -> Type:
+        return Void()
+
+    def avg(self) -> Type:
+        return Void()
+
+    def min(self) -> Type:
+        return Void()
+
+    def max(self) -> Type:
+        return Void()
+
+    def join(self, other: Type) -> Type:
+        self.todo("join")
 
     def read(self) -> Type:
         self.todo("read")

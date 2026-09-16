@@ -50,9 +50,7 @@ class StatementMixin(Parser):
             case "IDENTIFIER":
                 return self.parse_name_statement()
         token = self.peek()
-        raise LynxSyntaxError(
-            f"unexpected {self.type()}", token.line if token else None
-        )
+        raise LynxSyntaxError(f"unexpected {self.type()}", token.line if token else None)
 
     def parse_write(self) -> Write:
         token = self.match("WRITE")
@@ -109,10 +107,7 @@ class StatementMixin(Parser):
             if self._type_at(i) != "IDENTIFIER":
                 return False
             i += 1
-        return (
-            self._type_at(i) == "NEWLINE"
-            and self._type_at(i + 1) == "INDENT"
-        )
+        return self._type_at(i) == "NEWLINE" and self._type_at(i + 1) == "INDENT"
 
     def _type_at(self, i: int) -> str:
         if i < len(self.tokens):
@@ -224,9 +219,7 @@ class StatementMixin(Parser):
             # `loop <name>[, <name>]: <iterable>` — a for-loop. One name binds
             # the element; two bind index + element like enumerate.
             if len(targets) > 2:
-                raise LynxInputError(
-                    f"loop takes 1 or 2 loop variables, got {len(targets)}", token.line
-                )
+                raise LynxInputError(f"loop takes 1 or 2 loop variables, got {len(targets)}", token.line)
             iterable = self.parse_assign_rhs()
             body = self.parse_body()
             return Loop(None, body, targets, iterable)
@@ -257,7 +250,7 @@ class StatementMixin(Parser):
         self.match("COLON")
         return targets
 
-    def parse_loop_control(self, node_type) -> Any:
+    def parse_loop_control(self, node_type: type[Any]) -> Any:
         # `stop`/`skip` may take an optional condition: `stop x > 3` desugars
         # to `if x > 3: stop`. With no trailing expression the control is
         # unconditional.

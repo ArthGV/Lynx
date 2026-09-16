@@ -49,10 +49,7 @@ class Array(ComplexType):
         if len(self.value) != len(other.value):
             return compare_raw(len(self.value), len(other.value))
         for a, b in zip(self.value, other.value):
-            if type(a) is type(b):
-                c = a.compare(b)
-            else:
-                c = compare_raw(a.rank, b.rank)
+            c = a.compare(b) if type(a) is type(b) else compare_raw(a.rank, b.rank)
             if c != 0:
                 return c
         return 0
@@ -123,13 +120,32 @@ class Array(ComplexType):
         return Array(seen)
 
     # --- not implemented yet ---
-    def add(self, other: Array) -> Type: self.todo("add")
-    def subtract(self, other: Array) -> Type: self.todo("subtract")
-    def multiply(self, other: Array) -> Type: self.todo("multiply")
-    def divide(self, other: Array) -> Type: self.todo("divide")
-    def power(self, other: Array) -> Type: self.todo("power")
-    def root(self, other: Array) -> Type: self.todo("root")
-    def xor(self, other: Array) -> Type: self.todo("xor")
-    def not_(self) -> Type: self.todo("not_")
-    def join(self, other: Array) -> Type: self.todo("join")
-    def read(self) -> Type: self.todo("read")
+    def add(self, other: Array) -> Type:
+        self.todo("add")
+
+    def subtract(self, other: Array) -> Type:
+        self.todo("subtract")
+
+    def multiply(self, other: Array) -> Type:
+        self.todo("multiply")
+
+    def divide(self, other: Array) -> Type:
+        self.todo("divide")
+
+    def power(self, other: Array) -> Type:
+        self.todo("power")
+
+    def root(self, other: Array) -> Type:
+        self.todo("root")
+
+    def xor(self, other: Array) -> Type:
+        self.todo("xor")
+
+    def not_(self) -> Type:
+        self.todo("not_")
+
+    def join(self, other: Array) -> Type:
+        self.todo("join")
+
+    def read(self) -> Type:
+        self.todo("read")

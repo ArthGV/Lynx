@@ -68,7 +68,20 @@ class Parser:
         return token.line if token else None
 
     def _starts_expression(self, token_type: str) -> bool:
-        if token_type in ("NUMBER", "TEXT", "BOOLEAN", "VOID", "IDENTIFIER", "LBRACE", "LPAREN", "LBRACK", "RANGE", "ARRAY", "MAP", "TABLE"):
+        if token_type in (
+            "NUMBER",
+            "TEXT",
+            "BOOLEAN",
+            "VOID",
+            "IDENTIFIER",
+            "LBRACE",
+            "LPAREN",
+            "LBRACK",
+            "RANGE",
+            "ARRAY",
+            "MAP",
+            "TABLE",
+        ):
             return True
         if token_type in TABLE_QUERY:
             return True

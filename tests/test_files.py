@@ -101,10 +101,7 @@ def test_csv_array_write_bytes_and_roundtrip(tmp_path):
     p = tmp_path / "arr.csv"
     assert run_lx(f"a: (1, 2, 3)\nwrite a, '{p}'") == ""
     assert p.read_text() == "1,2,3"
-    out = run_lx(
-        f"a: (1, 2, 3)\nwrite a, '{p}'\n"
-        f"b: read '{p}'\n>> b\n>> type b\n>> a = b\n>> b 1\n"
-    )
+    out = run_lx(f"a: (1, 2, 3)\nwrite a, '{p}'\nb: read '{p}'\n>> b\n>> type b\n>> a = b\n>> b 1\n")
     assert out == "[ 1, 2, 3 ]\nArray\ntrue\n2\n"
 
 
@@ -112,10 +109,7 @@ def test_csv_array_mixed_cells_keep_types(tmp_path):
     p = tmp_path / "mixed.csv"
     run_lx(f"a: (1, 'hello', true, void, '', '42')\nwrite a, '{p}'\n")
     assert p.read_text() == '1,hello,true,void,,"42"'
-    out = run_lx(
-        f"b: read '{p}'\n"
-        f">> type b 0\n>> type b 1\n>> type b 2\n>> type b 3\n>> type b 4\n>> type b 5\n"
-    )
+    out = run_lx(f"b: read '{p}'\n>> type b 0\n>> type b 1\n>> type b 2\n>> type b 3\n>> type b 4\n>> type b 5\n")
     assert out == "Number\nText\nBoolean\nVoid\nText\nText\n"
 
 
@@ -131,23 +125,16 @@ def test_csv_cells_quote_when_ambiguous_and_escape(tmp_path):
     out = run_lx(src)
     assert p.read_text() == '"42","true","void",,"hello, world","say ""hi"""'
     assert out == 'true\nsay "hi"\n'
-    assert run_lx(
-        f"b: read '{p}'\n"
-        f">> type b 0\n>> type b 1\n>> type b 2\n>> type b 3\n>> type b 4\n>> type b 5\n"
-    ) == "Text\nText\nText\nText\nText\nText\n"
+    assert (
+        run_lx(f"b: read '{p}'\n>> type b 0\n>> type b 1\n>> type b 2\n>> type b 3\n>> type b 4\n>> type b 5\n")
+        == "Text\nText\nText\nText\nText\nText\n"
+    )
 
 
 def test_csv_number_inference_is_roundtrip_exact(tmp_path):
     p = write_file(tmp_path / "exact.csv", "007,3.0,0.50,42,3.5,-1")
-    out = run_lx(
-        f"a: read '{p}'\n"
-        f">> a\n>> type a 0\n>> type a 1\n>> type a 2\n"
-        f">> type a 3\n>> type a 4\n>> type a 5\n"
-    )
-    assert out == (
-        "[ 007, 3.0, 0.50, 42, 3.5, -1 ]\n"
-        "Text\nText\nText\nNumber\nNumber\nNumber\n"
-    )
+    out = run_lx(f"a: read '{p}'\n>> a\n>> type a 0\n>> type a 1\n>> type a 2\n>> type a 3\n>> type a 4\n>> type a 5\n")
+    assert out == ("[ 007, 3.0, 0.50, 42, 3.5, -1 ]\nText\nText\nText\nNumber\nNumber\nNumber\n")
 
 
 def test_csv_empty_file_reads_as_empty_array(tmp_path):
@@ -183,15 +170,9 @@ def test_csv_trailing_newline_is_one_line(tmp_path):
 def test_csv_table_read_typed_columns(tmp_path):
     p = tmp_path / "people.csv"
     p.write_text("name,age,city\nada,36,london\nbob,hidden,\ncharlie,,")
-    out = run_lx(
-        f"t: read '{p}'\n"
-        f">> t 'age'\n>> t 0\n>> t 1\n>> type t 'age' 0\n>> type t 'age' 1\n"
-    )
+    out = run_lx(f"t: read '{p}'\n>> t 'age'\n>> t 0\n>> t 1\n>> type t 'age' 0\n>> type t 'age' 1\n")
     assert out == (
-        "[ 36, hidden,  ]\n"
-        "{ name: ada; age: 36; city: london }\n"
-        "{ name: bob; age: hidden; city:  }\n"
-        "Number\nText\n"
+        "[ 36, hidden,  ]\n{ name: ada; age: 36; city: london }\n{ name: bob; age: hidden; city:  }\nNumber\nText\n"
     )
 
 
@@ -200,36 +181,26 @@ def test_csv_table_write_bytes_and_roundtrip(tmp_path):
     run_lx(f"t: ['id': 1, 2; 'name': 'ada', 'bob']\nwrite t, '{p}'")
     assert p.read_text() == "id,name\n1,ada\n2,bob\n"
     out = run_lx(
-        f"t: ['id': 1, 2; 'name': 'ada', 'bob']\nwrite t, '{p}'\n"
-        f"u: read '{p}'\n>> t = u\n>> u 'name' 1\n>> u 'id'\n"
+        f"t: ['id': 1, 2; 'name': 'ada', 'bob']\nwrite t, '{p}'\nu: read '{p}'\n>> t = u\n>> u 'name' 1\n>> u 'id'\n"
     )
     assert out == "true\nbob\n[ 1, 2 ]\n"
 
 
 def test_csv_table_short_rows_padded_with_void_and_rewrite(tmp_path):
     p = write_file(tmp_path / "pad.csv", "a,b,c\n1\n2,3")
-    out = run_lx(
-        f"t: read '{p}'\n"
-        f">> t 'a'\n>> t 'b'\n>> t 'c'\n"
-        f"write t, '{tmp_path / 'rewrite.csv'}'\n"
-    )
+    out = run_lx(f"t: read '{p}'\n>> t 'a'\n>> t 'b'\n>> t 'c'\nwrite t, '{tmp_path / 'rewrite.csv'}'\n")
     assert out == "[ 1, 2 ]\n[ void, 3 ]\n[ void, void ]\n"
     assert (tmp_path / "rewrite.csv").read_text() == "a,b,c\n1,void,void\n2,3,void\n"
 
 
 def test_csv_table_row_too_long_is_error(tmp_path):
     p = write_file(tmp_path / "ragged.csv", "a,b,c\n1,2\n1,2,3,4")
-    assert run_err(f">> read '{p}'") == (
-        "Error on line 1: row 3 has 4 values but the header declares 3 columns"
-    )
+    assert run_err(f">> read '{p}'") == ("Error on line 1: row 3 has 4 values but the header declares 3 columns")
 
 
 def test_csv_table_non_text_spellings_are_valid_titles(tmp_path):
     p = write_file(tmp_path / "smart.csv", "42,true,name\n42,1,1")
-    out = run_lx(
-        f"t: read '{p}'\n"
-        f">> t '42' 0\n>> t 'true' 0\n>> t 'name' 0\n>> t 0\n"
-    )
+    out = run_lx(f"t: read '{p}'\n>> t '42' 0\n>> t 'true' 0\n>> t 'name' 0\n>> t 0\n")
     assert out == "42\n1\n1\n{ 42: 42; true: 1; name: 1 }\n"
 
 
@@ -245,9 +216,7 @@ def test_csv_table_empty_title_allowed_once(tmp_path):
 
 def test_csv_table_two_empty_titles_is_duplicate_error(tmp_path):
     p = write_file(tmp_path / "ee.csv", ",,a\n1,2,3")
-    assert run_err(f">> read '{p}'") == (
-        "TypeError on line 1: duplicate column title ''"
-    )
+    assert run_err(f">> read '{p}'") == ("TypeError on line 1: duplicate column title ''")
 
 
 def test_csv_blank_lines_inside_table_are_skipped(tmp_path):
@@ -273,9 +242,7 @@ def test_csv_write_complex_table_cell_is_error(tmp_path):
 
 def test_csv_write_empty_table_is_error(tmp_path):
     p = tmp_path / "e.csv"
-    assert run_err(f"write table, '{p}'") == (
-        "Error on line 1: cannot write a table with no columns to .csv"
-    )
+    assert run_err(f"write table, '{p}'") == ("Error on line 1: cannot write a table with no columns to .csv")
 
 
 def test_csv_write_newline_text_is_error(tmp_path):
@@ -353,27 +320,15 @@ def test_yaml_empty_root_mapping(tmp_path):
 
 def test_yaml_list_of_maps_roundtrip(tmp_path):
     p = tmp_path / "l.yaml"
-    run_lx(
-        "m: { 'people': ( { 'name': 'ada'; 'age': 36 }, { 'name': 'bob' } ) }\n"
-        f"write m, '{p}'\n"
-    )
-    assert p.read_text() == (
-        "'people':\n"
-        "  - 'name': 'ada'\n"
-        "    'age': 36\n"
-        "  - 'name': 'bob'\n"
-    )
-    out = run_lx(
-        f"n: read '{p}'\n>> n 'people' 0 'name'\n>> n 'people' 0 'age'\n>> n 'people' 1 'name'\n"
-    )
+    run_lx(f"m: {{ 'people': ( {{ 'name': 'ada'; 'age': 36 }}, {{ 'name': 'bob' }} ) }}\nwrite m, '{p}'\n")
+    assert p.read_text() == ("'people':\n  - 'name': 'ada'\n    'age': 36\n  - 'name': 'bob'\n")
+    out = run_lx(f"n: read '{p}'\n>> n 'people' 0 'name'\n>> n 'people' 0 'age'\n>> n 'people' 1 'name'\n")
     assert out == "ada\n36\nbob\n"
 
 
 def test_yaml_keys_keep_number_vs_text_type(tmp_path):
     p = write_file(tmp_path / "k.yaml", "1: 'one'\n'2': 'two'\n")
-    out = run_lx(
-        f"m: read '{p}'\n>> m 1\n>> m '2'\n>> type m 1\n>> m '1'\n"
-    )
+    out = run_lx(f"m: read '{p}'\n>> m 1\n>> m '2'\n>> type m 1\n>> m '1'\n")
     assert out == "one\ntwo\nText\nvoid\n"
 
 
@@ -400,8 +355,7 @@ def test_yaml_root_sequence_or_scalar_is_error(tmp_path):
     for content in ("- a\n- b\n", "42\n", "[]\n"):
         p = write_file(tmp_path / "s.yaml", content)
         assert run_err(f">> read '{p}'") == (
-            "Error on line 1: "
-            "a .yaml file must be a mapping at the top level to read into a Map"
+            "Error on line 1: a .yaml file must be a mapping at the top level to read into a Map"
         ), content
 
 
@@ -420,16 +374,13 @@ def test_yaml_root_sequence_or_scalar_is_error(tmp_path):
 )
 def test_yaml_unsupported_features_error(tmp_path, content, token):
     p = write_file(tmp_path / "f.yaml", content)
-    assert run_err(f">> read '{p}'") == (
-        f"Error on line 1: yaml feature '{token}' is not supported by lynx"
-    )
+    assert run_err(f">> read '{p}'") == (f"Error on line 1: yaml feature '{token}' is not supported by lynx")
 
 
 def test_yaml_write_nested_table_is_error(tmp_path):
     p = tmp_path / "t.yaml"
     assert run_err(f"write {{ 't': ['a': 1] }}, '{p}'\n") == (
-        "TypeError on line 1: cannot write Table values in a .yaml; "
-        "only scalars, maps and arrays are supported"
+        "TypeError on line 1: cannot write Table values in a .yaml; only scalars, maps and arrays are supported"
     )
 
 
@@ -470,9 +421,7 @@ def test_write_type_mismatches(tmp_path):
 def test_unsupported_extensions(tmp_path):
     p = tmp_path / "x.yml"
     p.write_text("a: 1\n")
-    assert run_err(f">> read '{p}'") == (
-        "Error on line 1: unsupported file format '.yml', use .txt, .csv or .yaml"
-    )
+    assert run_err(f">> read '{p}'") == ("Error on line 1: unsupported file format '.yml', use .txt, .csv or .yaml")
     assert run_err(f"write 42, '{tmp_path / 'x.docx'}'") == (
         "Error on line 1: unsupported file format '.docx', use .txt, .csv or .yaml"
     )
@@ -483,25 +432,19 @@ def test_unsupported_extensions(tmp_path):
 
 def test_read_missing_file(tmp_path):
     p = tmp_path / "missing.txt"
-    assert run_err(f">> read '{p}'") == (
-        f"Error on line 1: cannot read '{p}': file not found"
-    )
+    assert run_err(f">> read '{p}'") == (f"Error on line 1: cannot read '{p}': file not found")
 
 
 def test_read_a_directory(tmp_path):
     d = tmp_path / "dir.txt"
     d.mkdir()
-    assert run_err(f">> read '{d}'") == (
-        f"Error on line 1: cannot read '{d}': Is a directory"
-    )
+    assert run_err(f">> read '{d}'") == (f"Error on line 1: cannot read '{d}': Is a directory")
 
 
 def test_write_a_directory(tmp_path):
     d = tmp_path / "dir.csv"
     d.mkdir()
-    assert run_err(f"write 42, '{d}'") == (
-        f"Error on line 1: cannot write '{d}': Is a directory"
-    )
+    assert run_err(f"write 42, '{d}'") == (f"Error on line 1: cannot write '{d}': Is a directory")
 
 
 def test_write_creates_parent_directories(tmp_path):
@@ -511,15 +454,11 @@ def test_write_creates_parent_directories(tmp_path):
 
 
 def test_write_path_must_be_text(tmp_path):
-    assert run_err(f"write 42, 5") == (
-        "TypeError on line 1: write needs a text path, got Number"
-    )
+    assert run_err("write 42, 5") == ("TypeError on line 1: write needs a text path, got Number")
 
 
 def test_read_non_text_operand(tmp_path):
-    assert run_err(f">> read 5") == (
-        "NotImplemented on line 1: 'read' is not implemented yet for Number"
-    )
+    assert run_err(">> read 5") == ("NotImplemented on line 1: 'read' is not implemented yet for Number")
 
 
 # ---------------------------------------------------------------------------

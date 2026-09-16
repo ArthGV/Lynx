@@ -8,12 +8,12 @@ instead of a Python traceback.
 class LynxError(Exception):
     kind = "Error"
 
-    def __init__(self, message, line=None):
+    def __init__(self, message: str, line: int | None = None) -> None:
         super().__init__(message)
         self.message = message
         self.line = line
 
-    def __str__(self):
+    def __str__(self) -> str:
         where = f" on line {self.line}" if self.line is not None else ""
         return f"{self.kind}{where}: {self.message}"
 
@@ -32,10 +32,12 @@ class LynxTypeError(LynxError):
 
 class LynxInputError(LynxError):
     """A function was called with the wrong number of arguments."""
+
     kind = "InputError"
 
 
 class LynxNotImplemented(LynxError):
     """An operation that the language intends to support but nobody has
     written the logic for yet — a hole to fill, not a user mistake."""
+
     kind = "NotImplemented"

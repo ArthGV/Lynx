@@ -16,8 +16,12 @@ from __future__ import annotations
 
 import inspect
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Any, ClassVar, NoReturn, cast
 
-from src.errors.errors import LynxError, LynxNotImplemented, LynxTypeError
+from src.errors.errors import LynxNotImplemented
+
+if TYPE_CHECKING:
+    from src.types.simple_type import Boolean, Number, Text, Void
 
 
 class Type(ABC):
@@ -25,10 +29,11 @@ class Type(ABC):
     Boolean, Void) and ComplexType (Array). `rank` and `conversion` let
     operations.py reconcile pairs of different types."""
 
-    rank: int | None = None
-    conversion: str | None = None
+    rank: ClassVar[int | None] = None
+    conversion: ClassVar[str | None] = None
+    default_value: ClassVar[Any]
 
-    def __init_subclass__(cls, **kwargs):
+    def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
         # Abstract scaffolds (SimpleType, ComplexType) need no rank/conversion;
         # only concrete leaf types that can be instantiated must declare them.
@@ -37,59 +42,70 @@ class Type(ABC):
         for declaration in ("rank", "conversion"):
             if getattr(cls, declaration, None) is None:
                 raise TypeError(f"{cls.__name__} must declare `{declaration}`")
+        if not hasattr(cls, "default_value"):
+            raise TypeError(f"{cls.__name__} must declare `default_value`")
 
     def type_name(self) -> str:
         return type(self).__name__
 
     def type_of(self) -> Text:
         from src.types.simple_type import Text
+
         return Text(self.type_name())
 
     def coerce(self, other: Type) -> Type:
+        if self.conversion is None:
+            raise LynxNotImplemented(f"cannot coerce {other.type_name()} into {self.type_name()}")
         method = getattr(other, self.conversion, None)
         if method is None:
-            raise LynxNotImplemented(
-                f"cannot coerce {other.type_name()} into {self.type_name()}"
-            )
-        return method()
+            raise LynxNotImplemented(f"cannot coerce {other.type_name()} into {self.type_name()}")
+        return cast(Type, method())
 
-    def todo(self, operation: str) -> None:
+    def todo(self, operation: str) -> NoReturn:
         raise LynxNotImplemented(f"'{operation}' is not implemented yet for {self.type_name()}")
 
     # --- comparisons, derived ------------------------------------------
 
-    def equals(self, other: Type) -> Boolean:
+    def equals(self, other: Any) -> Boolean:
         from src.types.simple_type import Boolean
+
         return Boolean(self.compare(other) == 0)
 
-    def greater(self, other: Type) -> Boolean:
+    def greater(self, other: Any) -> Boolean:
         from src.types.simple_type import Boolean
+
         return Boolean(self.compare(other) > 0)
 
-    def less(self, other: Type) -> Boolean:
+    def less(self, other: Any) -> Boolean:
         from src.types.simple_type import Boolean
+
         return Boolean(self.compare(other) < 0)
 
-    def greater_or_equal(self, other: Type) -> Boolean:
+    def greater_or_equal(self, other: Any) -> Boolean:
         from src.types.simple_type import Boolean
+
         return Boolean(self.compare(other) >= 0)
 
-    def lesser_or_equal(self, other: Type) -> Boolean:
+    def lesser_or_equal(self, other: Any) -> Boolean:
         from src.types.simple_type import Boolean
+
         return Boolean(self.compare(other) <= 0)
 
-    def greater_or_almost(self, other: Type) -> Boolean:
+    def greater_or_almost(self, other: Any) -> Boolean:
         from src.types.simple_type import Boolean
+
         return Boolean(self.compare(other) > 0 or self.almost(other).is_true())
 
-    def lesser_or_almost(self, other: Type) -> Boolean:
+    def lesser_or_almost(self, other: Any) -> Boolean:
         from src.types.simple_type import Boolean
+
         return Boolean(self.compare(other) < 0 or self.almost(other).is_true())
 
-    def in_(self, other: Type) -> Boolean:
+    def in_(self, other: Any) -> Boolean:
         """True when this value appears among `other`'s iterated elements —
         an element of an array, a key of a map, and so on."""
         from src.types.simple_type import Boolean
+
         for item in other.iterate():
             if type(item) is type(self) and self.equals(item).is_true():
                 return Boolean(True)
@@ -97,61 +113,59 @@ class Type(ABC):
 
     # Every value must define all of these.
 
-    @abstractmethod
-    def default_value(self): ...
-
     @classmethod
-    def default(cls):
+    def default(cls) -> Type:
         from src.types.simple_type import Void
+
         if cls is Void:
             return Void()
-        return cls(cls.default_value)
+        return cls(cls.default_value)  # type: ignore[call-arg]
 
     # conversions
     @abstractmethod
-    def number(self): ...
+    def number(self) -> Number: ...
     @abstractmethod
-    def text(self): ...
+    def text(self) -> Text: ...
     @abstractmethod
-    def boolean(self): ...
+    def boolean(self) -> Boolean: ...
     @abstractmethod
-    def void(self): ...
+    def void(self) -> Void: ...
     @abstractmethod
-    def read(self): ...
+    def read(self) -> Type: ...
 
     # arithmetic
     @abstractmethod
-    def add(self, other): ...
+    def add(self, other: Any) -> Type: ...
     @abstractmethod
-    def subtract(self, other): ...
+    def subtract(self, other: Any) -> Type: ...
     @abstractmethod
-    def multiply(self, other): ...
+    def multiply(self, other: Any) -> Type: ...
     @abstractmethod
-    def divide(self, other): ...
+    def divide(self, other: Any) -> Type: ...
     @abstractmethod
-    def power(self, other): ...
+    def power(self, other: Any) -> Type: ...
     @abstractmethod
-    def not_(self): ...
+    def not_(self) -> Type: ...
     @abstractmethod
-    def root(self, other): ...
+    def root(self, other: Any) -> Type: ...
     @abstractmethod
-    def xor(self, other): ...
+    def xor(self, other: Any) -> Type: ...
 
     # ordering
     @abstractmethod
-    def compare(self, other): ...
+    def compare(self, other: Any) -> int: ...
     @abstractmethod
-    def almost(self, other): ...
+    def almost(self, other: Any) -> Boolean: ...
 
     # sequence access
     @abstractmethod
-    def length(self): ...
+    def length(self) -> Type: ...
     @abstractmethod
-    def first(self): ...
+    def first(self) -> Type: ...
     @abstractmethod
-    def last(self): ...
+    def last(self) -> Type: ...
     @abstractmethod
-    def middle(self): ...
+    def middle(self) -> Type: ...
 
     # iteration
     @abstractmethod
@@ -179,16 +193,16 @@ class Type(ABC):
     @abstractmethod
     def distinct(self) -> Type: ...
     @abstractmethod
-    def join(self, other: Type) -> Type: ...
+    def join(self, other: Any) -> Type: ...
 
     # --- convenience (concrete, not abstract) ---
 
     def sqrt(self) -> Type:
         from src.types.simple_type import Number
+
         return self.root(Number(2))
 
-    def not_equal(self, other: Type) -> Boolean:
-        from src.types.simple_type import Boolean
+    def not_equal(self, other: Any) -> Boolean:
         return self.equals(other).not_()
 
 

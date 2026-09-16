@@ -78,6 +78,7 @@ def test_empty_array_is_not_void():
 
 # --- Map ---------------------------------------------------------------
 
+
 def mp(*entries):
     return Map(list(entries))
 
@@ -181,10 +182,10 @@ def test_map_almost():
 
 def test_map_distinct_is_identity():
     assert mp().distinct() is not None
-    m = mp((Text('a'), Number(1)), (Text('b'), Number(2)))
+    m = mp((Text("a"), Number(1)), (Text("b"), Number(2)))
     d = m.distinct()
-    assert d.get_item(Text('a')).value == 1
-    assert d.get_item(Text('b')).value == 2
+    assert d.get_item(Text("a")).value == 1
+    assert d.get_item(Text("b")).value == 2
 
 
 def test_map_arithmetic_not_implemented():
@@ -202,12 +203,12 @@ def test_map_arithmetic_not_implemented():
         pass
 
 
-
 def print_(v):
     return str(v)
 
 
 # --- Number -------------------------------------------------------------
+
 
 def test_number_middle():
     assert print_(Number(12345).middle()) == "3"
@@ -241,6 +242,7 @@ def test_number_not_():
 
 # --- Text ---------------------------------------------------------------
 
+
 def test_text_middle():
     assert print_(Text("hello").middle()) == "l"
     assert print_(Text("hi").middle()) == "i"
@@ -270,6 +272,7 @@ def test_text_not_():
 
 # --- Boolean ------------------------------------------------------------
 
+
 def test_boolean_middle():
     assert print_(Boolean(True).middle()) == "true"
     assert print_(Boolean(False).middle()) == "false"
@@ -296,6 +299,7 @@ def test_boolean_not_():
 
 # --- Void ---------------------------------------------------------------
 
+
 def test_void_middle():
     assert type(Void().middle()) is Void
 
@@ -316,16 +320,16 @@ def test_void_not_():
 
 # --- Table ---------------------------------------------------------------
 
+
 def tbl(*columns):
     """Helper: tbl(('id', [1, 2, 3]), ('price', [10, 20])) → Table"""
-    return Table([(name, [Number(v) if isinstance(v, (int, float)) else v for v in vals])
-                  for name, vals in columns])
+    return Table([(name, [Number(v) if isinstance(v, (int, float)) else v for v in vals]) for name, vals in columns])
 
 
 def test_table_construction():
-    t = tbl(('id', [1, 2, 3]), ('price', [10, 20, 30]))
+    t = tbl(("id", [1, 2, 3]), ("price", [10, 20, 30]))
     assert t.nrows == 3
-    assert list(t.columns.keys()) == ['id', 'price']
+    assert list(t.columns.keys()) == ["id", "price"]
 
 
 def test_table_empty():
@@ -335,7 +339,7 @@ def test_table_empty():
 
 
 def test_table_length():
-    t = tbl(('id', [1, 2, 3]), ('price', [10, 20, 30]))
+    t = tbl(("id", [1, 2, 3]), ("price", [10, 20, 30]))
     result = t.length()
     assert isinstance(result, Array)
     assert result.value[0].value == 3  # nrows
@@ -351,14 +355,14 @@ def test_table_length_empty():
 
 
 def test_table_first_last():
-    t = tbl(('id', [1, 2, 3]), ('price', [10, 20, 30]))
+    t = tbl(("id", [1, 2, 3]), ("price", [10, 20, 30]))
     first = t.first()
     assert isinstance(first, Map)
-    assert first.get_item(Text('id')).value == 1
-    assert first.get_item(Text('price')).value == 10
+    assert first.get_item(Text("id")).value == 1
+    assert first.get_item(Text("price")).value == 10
     last = t.last()
-    assert last.get_item(Text('id')).value == 3
-    assert last.get_item(Text('price')).value == 30
+    assert last.get_item(Text("id")).value == 3
+    assert last.get_item(Text("price")).value == 30
 
 
 def test_table_first_last_empty():
@@ -368,14 +372,14 @@ def test_table_first_last_empty():
 
 
 def test_table_middle():
-    t = tbl(('a', [1, 2, 3, 4, 5]))
+    t = tbl(("a", [1, 2, 3, 4, 5]))
     mid = t.middle()
     assert isinstance(mid, Map)
-    assert mid.get_item(Text('a')).value == 3
+    assert mid.get_item(Text("a")).value == 3
 
 
 def test_table_conversions():
-    t = tbl(('id', [1, 2]))
+    t = tbl(("id", [1, 2]))
     assert t.number().value == 2  # nrows
     assert t.boolean().is_true() is True
     assert Table([]).boolean().is_true() is False
@@ -383,27 +387,27 @@ def test_table_conversions():
 
 
 def test_table_text_repr():
-    t = tbl(('id', [1, 2]), ('name', [Text('a'), Text('b')]))
+    t = tbl(("id", [1, 2]), ("name", [Text("a"), Text("b")]))
     text_val = t.text().value
-    assert 'id' in text_val
-    assert 'name' in text_val
+    assert "id" in text_val
+    assert "name" in text_val
 
 
 def test_table_equals():
-    a = tbl(('x', [1, 2]))
-    b = tbl(('x', [1, 2]))
-    c = tbl(('x', [1, 3]))
-    d = tbl(('y', [1, 2]))
+    a = tbl(("x", [1, 2]))
+    b = tbl(("x", [1, 2]))
+    c = tbl(("x", [1, 3]))
+    d = tbl(("y", [1, 2]))
     assert a.equals(b).is_true()
     assert a.equals(c).is_true() is False
     assert a.equals(d).is_true() is False
 
 
 def test_table_compare():
-    a = tbl(('x', [1, 2]))
-    b = tbl(('x', [1, 2]))
-    c = tbl(('x', [1]))
-    d = tbl(('y', [1, 2]))
+    a = tbl(("x", [1, 2]))
+    b = tbl(("x", [1, 2]))
+    c = tbl(("x", [1]))
+    d = tbl(("y", [1, 2]))
     assert a.compare(b) == 0
     assert a.greater(c).is_true()
     assert c.less(a).is_true()
@@ -412,41 +416,41 @@ def test_table_compare():
 
 
 def test_table_almost():
-    a = tbl(('x', [1, 2]))
-    b = tbl(('x', [1, 2]))
-    c = tbl(('x', [1, 3]))
+    a = tbl(("x", [1, 2]))
+    b = tbl(("x", [1, 2]))
+    c = tbl(("x", [1, 3]))
     assert a.almost(b).is_true()
     assert a.almost(c).is_true() is False
 
 
 def test_table_get_column():
-    t = tbl(('id', [1, 2, 3]), ('price', [10, 20, 30]))
-    col = t.get_column('id')
+    t = tbl(("id", [1, 2, 3]), ("price", [10, 20, 30]))
+    col = t.get_column("id")
     assert isinstance(col, Array)
     assert len(col.value) == 3
     assert col.value[0].value == 1
 
 
 def test_table_missing_column_returns_void():
-    t = tbl(('id', [1, 2]))
-    assert type(t.get_column('nope')) is Void
+    t = tbl(("id", [1, 2]))
+    assert type(t.get_column("nope")) is Void
 
 
 def test_table_get_row():
-    t = tbl(('id', [1, 2, 3]), ('price', [10, 20, 30]))
+    t = tbl(("id", [1, 2, 3]), ("price", [10, 20, 30]))
     row = t.get_row(0)
     assert isinstance(row, Map)
-    assert row.get_item(Text('id')).value == 1
-    assert row.get_item(Text('price')).value == 10
+    assert row.get_item(Text("id")).value == 1
+    assert row.get_item(Text("price")).value == 10
 
 
 def test_table_iterate():
-    t = tbl(('x', [1, 2, 3]))
+    t = tbl(("x", [1, 2, 3]))
     rows = list(t.iterate())
     assert len(rows) == 3
     assert isinstance(rows[0], Map)
-    assert rows[0].get_item(Text('x')).value == 1
-    assert rows[2].get_item(Text('x')).value == 3
+    assert rows[0].get_item(Text("x")).value == 1
+    assert rows[2].get_item(Text("x")).value == 3
 
 
 def test_table_column_name_must_be_text():
@@ -458,30 +462,30 @@ def test_table_column_name_must_be_text():
 
 
 def test_table_pads_short_columns():
-    t = Table([('a', [Number(1), Number(2)]), ('b', [Number(3)])])
+    t = Table([("a", [Number(1), Number(2)]), ("b", [Number(3)])])
     assert t.nrows == 2
-    assert len(t.columns['a']) == 2
-    assert len(t.columns['b']) == 2
-    assert type(t.columns['b'][1]) is Void
+    assert len(t.columns["a"]) == 2
+    assert len(t.columns["b"]) == 2
+    assert type(t.columns["b"][1]) is Void
 
 
 def test_table_empty_column_is_padded():
-    t = Table([('id', []), ('price', [Number(1), Number(2)])])
+    t = Table([("id", []), ("price", [Number(1), Number(2)])])
     assert t.nrows == 2
-    assert len(t.columns['id']) == 2
-    assert type(t.columns['id'][0]) is Void
-    assert type(t.columns['id'][1]) is Void
+    assert len(t.columns["id"]) == 2
+    assert type(t.columns["id"][0]) is Void
+    assert type(t.columns["id"][1]) is Void
 
 
 def test_table_get_row_pads_short_column():
-    t = Table([('id', [Number(1), Number(2)]), ('price', [Number(3)])])
+    t = Table([("id", [Number(1), Number(2)]), ("price", [Number(3)])])
     row = t.get_row(1)
-    assert row.get_item(Text('id')).value == 2
-    assert type(row.get_item(Text('price'))) is Void
+    assert row.get_item(Text("id")).value == 2
+    assert type(row.get_item(Text("price"))) is Void
 
 
 def test_table_arithmetic_not_implemented():
-    t = tbl(('x', [1]))
+    t = tbl(("x", [1]))
     for method in ("add", "subtract", "multiply", "divide", "power", "root", "xor"):
         try:
             getattr(t, method)(t)
@@ -503,16 +507,17 @@ def test_table_default_is_not_void():
 
 # --- SQL-style operations ----------------------------------------------
 
+
 def test_array_sum():
     assert arr(Number(1), Number(2), Number(3)).sum().value == 6
     # non-numbers are skipped
-    assert arr(Number(1), Boolean(True), Text('hi'), Number(4)).sum().value == 5
+    assert arr(Number(1), Boolean(True), Text("hi"), Number(4)).sum().value == 5
     assert type(arr().sum()) is Void
 
 
 def test_array_avg():
     assert arr(Number(1), Number(2), Number(3)).avg().value == 2
-    assert arr(Number(1), Number(8), Text('x')).avg().value == 4.5
+    assert arr(Number(1), Number(8), Text("x")).avg().value == 4.5
     assert type(arr().avg()) is Void
 
 
@@ -533,10 +538,10 @@ def test_number_aggregates_are_identity():
 def test_count_defaults():
     assert arr(Number(1), Number(2)).count().value == 2
     assert arr().count().value == 0
-    assert Text('hello').count().value == 5
-    assert Text('').count().value == 0
+    assert Text("hello").count().value == 5
+    assert Text("").count().value == 0
     assert Void().count().value == 0
-    m = mp((Text('a'), Number(1)), (Text('b'), Number(2)))
+    m = mp((Text("a"), Number(1)), (Text("b"), Number(2)))
     assert m.count().value == 2
     assert Boolean(True).count().value == 1
     # a single scalar counts as one, whatever its digits
@@ -545,7 +550,7 @@ def test_count_defaults():
 
 
 def test_join_is_tables_only():
-    for value in (Number(1), Text('a'), Boolean(True), Void(), arr(Number(1)), mp((Text('a'), Number(1)))):
+    for value in (Number(1), Text("a"), Boolean(True), Void(), arr(Number(1)), mp((Text("a"), Number(1)))):
         try:
             value.join(value)
             assert False, "join should not be implemented for non-tables"
@@ -554,7 +559,7 @@ def test_join_is_tables_only():
 
 
 def test_aggregates_stub_on_non_numbers():
-    for value in (Text('a'), Boolean(True), mp((Text('a'), Number(1))), tbl(('x', [1]))):
+    for value in (Text("a"), Boolean(True), mp((Text("a"), Number(1))), tbl(("x", [1]))):
         for method in ("sum", "avg", "min", "max"):
             try:
                 getattr(value, method)()
@@ -569,91 +574,91 @@ def test_void_aggregates_return_void():
 
 
 def test_table_count_is_rows():
-    t = tbl(('id', [1, 2, 3]))
+    t = tbl(("id", [1, 2, 3]))
     assert t.count().value == 3
     assert Table([]).count().value == 0
 
 
 def test_distinct_default_is_identity():
     assert Number(5).distinct().value == 5
-    assert Text('x').distinct().value == 'x'
+    assert Text("x").distinct().value == "x"
     assert type(Void().distinct()) is Void
 
 
 def test_array_distinct():
     a = arr(Number(1), Number(1), Number(2), Number(3), Number(2))
     assert [v.value for v in a.distinct().value] == [1, 2, 3]
-    b = arr(Text('a'), Text('a'), Boolean(True), Boolean(True))
+    b = arr(Text("a"), Text("a"), Boolean(True), Boolean(True))
     assert [print_(v) for v in b.distinct().value] == ["a", "true"]
 
 
 def test_table_distinct_rows():
-    t = tbl(('id', [1, 1, 2]), ('v', [5, 5, 9]))
+    t = tbl(("id", [1, 1, 2]), ("v", [5, 5, 9]))
     d = t.distinct()
     assert d.nrows == 2
-    assert [c.value for c in d.columns['id']] == [1, 2]
-    assert [c.value for c in d.columns['v']] == [5, 9]
+    assert [c.value for c in d.columns["id"]] == [1, 2]
+    assert [c.value for c in d.columns["v"]] == [5, 9]
 
 
 def test_table_select():
-    t = tbl(('id', [1, 2, 3]), ('price', [10, 20, 30]))
-    s = t.select(['id', 'price'])
-    assert list(s.columns.keys()) == ['id', 'price']
+    t = tbl(("id", [1, 2, 3]), ("price", [10, 20, 30]))
+    s = t.select(["id", "price"])
+    assert list(s.columns.keys()) == ["id", "price"]
     assert s.nrows == 3
-    only = t.select(['price'])
-    assert list(only.columns.keys()) == ['price']
-    assert only.columns['price'][0].value == 10
+    only = t.select(["price"])
+    assert list(only.columns.keys()) == ["price"]
+    assert only.columns["price"][0].value == 10
 
 
 def test_table_select_missing_column_returns_void():
-    t = tbl(('id', [1, 2]))
-    assert type(t.select(['nope'])) is Void
+    t = tbl(("id", [1, 2]))
+    assert type(t.select(["nope"])) is Void
 
 
 def test_table_order_by():
-    t = tbl(('id', [3, 1, 2]), ('v', [Text('c'), Text('a'), Text('b')]))
-    o = t.order_by('v')
-    assert [c.value for c in o.columns['id']] == [1, 2, 3]
-    assert [c.value for c in o.columns['v']] == ['a', 'b', 'c']
+    t = tbl(("id", [3, 1, 2]), ("v", [Text("c"), Text("a"), Text("b")]))
+    o = t.order_by("v")
+    assert [c.value for c in o.columns["id"]] == [1, 2, 3]
+    assert [c.value for c in o.columns["v"]] == ["a", "b", "c"]
 
 
 def test_table_group_by():
-    t = tbl(('dept', [Text('a'), Text('b'), Text('a')]), ('score', [1, 2, 3]))
-    g = t.group_by('dept')
+    t = tbl(("dept", [Text("a"), Text("b"), Text("a")]), ("score", [1, 2, 3]))
+    g = t.group_by("dept")
     assert isinstance(g, Map)
     assert g.length().value == 2
-    group_a = g.get_item(Text('a'))
+    group_a = g.get_item(Text("a"))
     assert isinstance(group_a, Table)
     assert group_a.nrows == 2
-    assert [c.value for c in group_a.columns['score']] == [1, 3]
-    group_b = g.get_item(Text('b'))
-    assert [c.value for c in group_b.columns['score']] == [2]
+    assert [c.value for c in group_a.columns["score"]] == [1, 3]
+    group_b = g.get_item(Text("b"))
+    assert [c.value for c in group_b.columns["score"]] == [2]
 
 
 def test_table_rows_where():
-    t = tbl(('id', [1, 2, 3]), ('price', [10, 20, 30]))
-    big = t.rows_where('price', 'GREATER', Number(15))
-    assert [c.value for c in big.columns['id']] == [2, 3]
-    exact = t.rows_where('price', 'ALMOST', Number(20))
-    assert [c.value for c in exact.columns['id']] == [2]
-    none = t.rows_where('price', 'GREATER', Number(100))
+    t = tbl(("id", [1, 2, 3]), ("price", [10, 20, 30]))
+    big = t.rows_where("price", "GREATER", Number(15))
+    assert [c.value for c in big.columns["id"]] == [2, 3]
+    exact = t.rows_where("price", "ALMOST", Number(20))
+    assert [c.value for c in exact.columns["id"]] == [2]
+    none = t.rows_where("price", "GREATER", Number(100))
     assert none.nrows == 0
 
 
 def test_table_join():
-    j1 = tbl(('id', [1, 2]), ('name', [Text('a'), Text('b')]))
-    j2 = tbl(('id', [2, 3]), ('score', [7, 8]))
+    j1 = tbl(("id", [1, 2]), ("name", [Text("a"), Text("b")]))
+    j2 = tbl(("id", [2, 3]), ("score", [7, 8]))
     joined = j1.join(j2)
-    assert list(joined.columns.keys()) == ['id', 'name', 'score']
+    assert list(joined.columns.keys()) == ["id", "name", "score"]
     assert joined.nrows == 1
-    assert joined.columns['id'][0].value == 2
-    assert joined.columns['name'][0].value == 'b'
-    assert joined.columns['score'][0].value == 7
+    assert joined.columns["id"][0].value == 2
+    assert joined.columns["name"][0].value == "b"
+    assert joined.columns["score"][0].value == 7
 
 
 def test_table_join_no_shared_columns_is_empty():
-    a = tbl(('x', [1]))
-    b = tbl(('y', [2]))
+    a = tbl(("x", [1]))
+    b = tbl(("y", [2]))
     joined = a.join(b)
     assert isinstance(joined, Table)
     assert joined.nrows == 0
@@ -662,6 +667,7 @@ def test_table_join_no_shared_columns_is_empty():
 
 
 # --- iterate ------------------------------------------------------------
+
 
 def iter_str(value):
     return [print_(v) for v in value.iterate()]
