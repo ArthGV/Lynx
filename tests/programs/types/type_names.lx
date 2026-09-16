@@ -1,0 +1,17 @@
+// Type-name keywords are the value `type` returns, so they compare equal
+>> (type 3) = Number
+>> (type 3) = Text
+>> (type 'x') = Text
+>> (type true) = Boolean
+>> (type void) = Void
+a: 1, 2
+m: { 'a': 1 }
+t: ['x': 1]
+>> (type a) = Array
+>> (type m) = Map
+>> (type t) = Table
+
+// A type-name keyword is a text value like 'Number'
+>> Number
+>> Number = 'Number'
+>> len Text

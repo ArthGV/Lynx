@@ -157,7 +157,7 @@ def evaluate(node: Any, env: Environment) -> values.Type:
             return _statements.append_to(base, value, front, line, env)
 
         case MapLiteral(pairs, line):
-            return values.Map([(evaluate_key(k, env, line), evaluate(v, env)) for k, v in pairs])
+            return values.Map([(evaluate_key(k, env, line), evaluate(v, env)) for k, v in pairs], line)
 
         case TableLiteral(columns, line):
             return values.Table(

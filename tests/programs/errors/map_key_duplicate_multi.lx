@@ -1,0 +1,2 @@
+// Several pairs with the same keys: error lists each duplicated key
+my_map: { 'a': 1; 'a': 2; 'b': 3; 'b': 4 }

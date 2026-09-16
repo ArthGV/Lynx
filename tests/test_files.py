@@ -346,9 +346,21 @@ def test_yaml_lenient_scalar_reading(tmp_path):
     assert out == "lynx\n3\ntrue\nvoid\nvoid\nvoid\nvoid\n"
 
 
-def test_yaml_duplicate_key_last_wins(tmp_path):
+def test_yaml_duplicate_key_is_error(tmp_path):
     p = write_file(tmp_path / "d.yaml", "a: 1\na: 2\n")
-    assert run_lx(f"m: read '{p}'\n>> m 'a'") == "2\n"
+    assert run_err(f"m: read '{p}'") == "TypeError on line 1: map keys must be unique, got duplicates a"
+
+
+def test_yaml_duplicate_keys_multi_error_named(tmp_path):
+    p = write_file(tmp_path / "d.yaml", "a: 1\nb: 2\na: 3\nb: 4\n")
+    assert run_err(f"m: read '{p}'") == (
+        "TypeError on line 1: map keys must be unique, got duplicates a, b"
+    )
+
+
+def test_yaml_nested_duplicate_key_is_error(tmp_path):
+    p = write_file(tmp_path / "d.yaml", "outer:\n  a: 1\n  a: 2\n")
+    assert run_err(f"m: read '{p}'") == "TypeError on line 1: map keys must be unique, got duplicates a"
 
 
 def test_yaml_root_sequence_or_scalar_is_error(tmp_path):

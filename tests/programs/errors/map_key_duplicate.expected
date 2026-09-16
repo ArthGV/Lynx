@@ -1,0 +1,2 @@
+// Two entries with the same key must error, naming the duplicate
+TypeError on line 2: map keys must be unique, got duplicates a

@@ -1,0 +1,2 @@
+// Several pairs with the same keys: error lists each duplicated key
+TypeError on line 2: map keys must be unique, got duplicates a, b

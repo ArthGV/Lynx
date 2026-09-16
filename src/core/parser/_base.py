@@ -71,6 +71,7 @@ class Parser:
         if token_type in (
             "NUMBER",
             "TEXT",
+            "TYPE_VALUE",
             "BOOLEAN",
             "VOID",
             "IDENTIFIER",

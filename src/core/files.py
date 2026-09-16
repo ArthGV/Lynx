@@ -403,6 +403,22 @@ def _to_lynx(struct: Any) -> Type:
     return Void() if struct is None else cast(Type, struct)
 
 
+def _fold_map(mapping: list[tuple[Any, Any]], line: int | None) -> dict[Any, Any]:
+    """Fold (raw_key, value) pairs into a dict, erroring on duplicate keys."""
+    result: dict[Any, Any] = {}
+    seen: set[Any] = set()
+    duplicates: list[Any] = []
+    for raw, val in mapping:
+        if raw in seen and raw not in duplicates:
+            duplicates.append(raw[1])
+        seen.add(raw)
+        result[raw] = val
+    if duplicates:
+        rendered = ", ".join(str(dup) for dup in duplicates)
+        raise LynxTypeError(f"map keys must be unique, got duplicates {rendered}", line)
+    return result
+
+
 def _strip_comment(s: str) -> str:
     """Remove trailing # … comment, but not inside single-quoted strings."""
     in_single_quote = False
@@ -460,10 +476,7 @@ class _YamlParser:
             value = self._parse_value_after(rest, indent)
             raw = map_key(key_value)
             mapping.append((raw, value))
-        result: dict[Any, Any] = {}
-        for raw, val in mapping:
-            result[raw] = val
-        return result
+        return _fold_map(mapping, self.line)
 
     def _parse_list(self, indent: int) -> list[Any]:
         items: list[Any] = []
@@ -493,10 +506,7 @@ class _YamlParser:
                         entries.append((map_key(kv2), v2))
                     else:
                         self.i += 1
-                result: dict[Any, Any] = {}
-                for raw, val in entries:
-                    result[raw] = val
-                items.append(result)
+                items.append(_fold_map(entries, self.line))
             else:
                 val = _parse_inline_value(after_dash)
                 items.append(val)

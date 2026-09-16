@@ -20,7 +20,7 @@
       "match": "'((?:[^'\\\\]|\\\\.)*)'"
     },
     {
-      "match": "^\\s*(?!(?:distinct|boolean|middle|number|select|first|array|table|count|order|group|where|write|false|else|loop|stop|skip|type|last|text|sqrt|root|join|read|true|void|xor|len|end|not|map|sum|avg|min|max|if|in|pi)\\b)([a-zA-Z_](?:[a-zA-Z0-9]|_(?!_))*)(?=\\s*:)",
+      "match": "^\\s*(?!(?:distinct|boolean|Boolean|middle|number|Number|select|first|Array|Table|array|table|count|order|group|where|write|false|else|loop|stop|skip|type|last|text|Text|Void|sqrt|root|join|read|true|void|xor|len|end|not|Map|map|sum|avg|min|max|if|in|pi)\\b)([a-zA-Z_](?:[a-zA-Z0-9]|_(?!_))*)(?=\\s*:)",
       "captures": {
         "1": {
           "name": "variable.other.definition.lynx"
@@ -37,7 +37,7 @@
     },
     {
       "name": "keyword.operator.word.lynx",
-      "match": "\\b(?:select|order|group|where|write|stop|skip|root|join|xor|in)\\b"
+      "match": "\\b(?:Boolean|Number|select|Array|Table|order|group|where|write|stop|skip|Text|Void|root|join|xor|Map|in)\\b"
     },
     {
       "name": "support.function.builtin.lynx",

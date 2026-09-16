@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from src.errors.errors import LynxTypeError
 from src.types.base_type import ComplexType, Type
 from src.types.simple_type import Boolean, Number, Text, Void
 from src.utils.keys import map_key, value_from_key
@@ -22,11 +23,20 @@ class Map(ComplexType):
     conversion = "map"
     default_value = {}
 
-    def __init__(self, entries: list[tuple[Type, Type]] | None = None) -> None:
+    def __init__(self, entries: list[tuple[Type, Type]] | None = None, line: int | None = None) -> None:
         self.value: dict[tuple[str, Any], Type] = {}
         if entries:
+            seen: set[tuple[str, Any]] = set()
+            duplicates: list[Any] = []
             for key, value in entries:
-                self.set_item(key, value)
+                raw = map_key(key)
+                if raw in seen and raw not in duplicates:
+                    duplicates.append(raw[1])
+                seen.add(raw)
+                self.value[raw] = value
+            if duplicates:
+                rendered = ", ".join(str(dup) for dup in duplicates)
+                raise LynxTypeError(f"map keys must be unique, got duplicates {rendered}", line)
 
     def set_item(self, key: Type, value: Type) -> None:
         self.value[map_key(key)] = value

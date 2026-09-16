@@ -87,7 +87,7 @@ class ExpressionMixin(Parser):
                 return Number(self.advance().value)
             case "MINUS":
                 return self.parse_negative()
-            case "TEXT":
+            case "TEXT" | "TYPE_VALUE":
                 text = Text(self.advance().value)
                 if allow_chain and self._starts_expression(self.type()):
                     return self.parse_chain(text)

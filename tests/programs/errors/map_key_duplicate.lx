@@ -1,0 +1,2 @@
+// Two entries with the same key must error, naming the duplicate
+my_map: { 'a': 1; 'a': 2 }

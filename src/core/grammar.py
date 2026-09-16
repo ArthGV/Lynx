@@ -53,6 +53,14 @@ KEYWORDS = {
     "number": "TO_NUMBER",
     "boolean": "TO_BOOLEAN",
     "text": "TO_TEXT",
+    # type-name values: `Number` is the value type 3 holds, so `(type 3) = Number`
+    "Number": "TYPE_VALUE",
+    "Text": "TYPE_VALUE",
+    "Boolean": "TYPE_VALUE",
+    "Array": "TYPE_VALUE",
+    "Map": "TYPE_VALUE",
+    "Table": "TYPE_VALUE",
+    "Void": "TYPE_VALUE",
     # constructors
     "array": "ARRAY",
     "map": "MAP",
