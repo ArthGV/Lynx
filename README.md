@@ -37,6 +37,27 @@ This is what **everything works with everything** means. Every operation is defi
 type, so the interpreter never answers "unsupported operand" — only "not implemented yet,"
 pointing at the line. No casts, no type juggling, no `None` special-casing: data stays native.
 
+## Design principles
+
+**Data and ML focused.** Every feature earns its place by moving data forward. Graphics, web, UI,
+and OS glue are out of scope by design — a feature, not a limitation. The roadmap extends only
+where data lives: graphs, tensors, the rest of SQL, native machine learning.
+
+**Minimal syntax.** The whole grammar fits on one screen. Keywords, symbols, and precedence all
+live in one file, and the lexer, parser, and editor follow from it — fewer rules to learn, fewer
+surprises.
+
+**Low verbosity.** One symbol, one meaning: `:` assigns, `=` compares — no `==`, no
+`let`/`const`/`var`. High-level keywords phrase operations as English sentences and take the
+whole rest of the line, so `sum orders 'amount'` and `where orders 'amount' > 15` replace the
+parenthesis-plumbing chains other languages need. Parentheses group; they don't decorate.
+
+**Clear separation between data and code.** Data lives in files; code reads it, transforms it,
+and hands it back — read, manipulate, write, done. The language is agnostic to the data's
+specifics: `read` infers typing across `.csv`, `.yaml`, and `.txt`, ragged or missing cells
+become `void`, and the same high-level queries (`where`, `group`, `sum`) work whatever the shape
+of the data. You don't adapt the pipeline per data source.
+
 ## A real program
 
 Tables are values. Columns are arrays, rows are maps, and the query keywords read like English.
@@ -100,6 +121,10 @@ Output:
 ```
 
 ## Install and run
+
+**Requirements.** lynx is a Python tree-walking interpreter — the only dependency is Python
+3.10+. `pip install -e .` installs it, then `lynx program.lx` runs your file. The `.lx` files you
+write are plain text.
 
 ```bash
 pip install -e .
