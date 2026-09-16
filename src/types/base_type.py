@@ -202,6 +202,15 @@ class Type(ABC):
 
         return self.root(Number(2))
 
+    def last_index(self) -> Type:
+        from src.types.array import Array
+        from src.types.simple_type import Number
+
+        length = self.length()
+        if isinstance(length, Array):
+            return Array([Number(cast(Number, item).value - 1) for item in length.value])
+        return Number(cast(Number, length).value - 1)
+
     def not_equal(self, other: Any) -> Boolean:
         return self.equals(other).not_()
 

@@ -32,6 +32,12 @@ def test_array_length():
     assert print_(arr().length()) == "0"
 
 
+def test_array_last_index():
+    assert print_(arr(Number(10), Number(20), Number(30)).last_index()) == "2"
+    assert print_(arr(Number(5)).last_index()) == "0"
+    assert print_(arr().last_index()) == "-1"
+
+
 def test_array_conversions():
     a = arr(Number(1), Boolean(True))
     assert print_(a.text()) == "[ 1, true ]"
@@ -86,6 +92,12 @@ def mp(*entries):
 def test_map_length():
     assert print_(mp((Text("a"), Number(1))).length()) == "1"
     assert print_(mp().length()) == "0"
+
+
+def test_map_last_index():
+    m = mp((Text("a"), Number(1)), (Text("b"), Number(2)), (Text("c"), Number(3)))
+    assert print_(m.last_index()) == "2"
+    assert print_(mp().last_index()) == "-1"
 
 
 def test_map_first_last():
@@ -233,6 +245,12 @@ def test_number_root():
     assert type(Number(8).root(Number(0))) is Void
 
 
+def test_number_last_index():
+    assert print_(Number(123).last_index()) == "2"
+    assert print_(Number(7).last_index()) == "0"
+    assert print_(Number(0).last_index()) == "0"
+
+
 def test_number_not_():
     assert print_(Number(5).not_()) == "-4"
     assert print_(Number(0).not_()) == "1"
@@ -248,6 +266,12 @@ def test_text_middle():
     assert print_(Text("hi").middle()) == "i"
     assert print_(Text("a").middle()) == "a"
     assert print_(Text("").middle()) == ""
+
+
+def test_text_last_index():
+    assert print_(Text("hello").last_index()) == "4"
+    assert print_(Text("a").last_index()) == "0"
+    assert print_(Text("").last_index()) == "-1"
 
 
 def test_text_power():
@@ -278,6 +302,11 @@ def test_boolean_middle():
     assert print_(Boolean(False).middle()) == "false"
 
 
+def test_boolean_last_index():
+    assert print_(Boolean(True).last_index()) == "0"
+    assert print_(Boolean(False).last_index()) == "0"
+
+
 def test_boolean_power():
     assert print_(Boolean(True).power(Boolean(True))) == "true"
     assert print_(Boolean(True).power(Boolean(False))) == "true"
@@ -302,6 +331,10 @@ def test_boolean_not_():
 
 def test_void_middle():
     assert type(Void().middle()) is Void
+
+
+def test_void_last_index():
+    assert print_(Void().last_index()) == "-1"
 
 
 def test_void_power():
@@ -352,6 +385,14 @@ def test_table_length_empty():
     assert isinstance(result, Array)
     assert result.value[0].value == 0
     assert result.value[1].value == 0
+
+
+def test_table_last_index():
+    t = tbl(("id", [1, 2, 3]), ("price", [10, 20, 30]))
+    result = t.last_index()
+    assert isinstance(result, Array)
+    assert result.value[0].value == 2  # nrows - 1
+    assert result.value[1].value == 1  # ncols - 1
 
 
 def test_table_first_last():
