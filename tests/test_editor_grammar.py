@@ -34,9 +34,7 @@ from src.core.grammar import KEYWORDS, SYMBOLS  # noqa: E402
     ids=lambda value: getattr(value, "name", ""),
 )
 def test_generated_file_is_current(path, build):
-    assert json.loads(path.read_text()) == build(), (
-        f"{path.name} is stale — run `python editors/vscode/generate.py`"
-    )
+    assert json.loads(path.read_text()) == build(), f"{path.name} is stale — run `python editors/vscode/generate.py`"
 
 
 def test_every_symbol_is_coloured():
@@ -44,8 +42,6 @@ def test_every_symbol_is_coloured():
 
 
 def test_every_keyword_is_coloured():
-    matched = " ".join(
-        pattern["match"] for pattern in build_grammar()["patterns"] if "match" in pattern
-    )
+    matched = " ".join(pattern["match"] for pattern in build_grammar()["patterns"] if "match" in pattern)
     for word in KEYWORDS:
         assert word in matched

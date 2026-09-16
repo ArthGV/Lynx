@@ -19,15 +19,15 @@ Because layers 2 and 3 both settle the pair before dispatching, every method in
 """
 
 from collections.abc import Callable
-from typing import Any
+from typing import cast
 
 from src.errors.errors import LynxNotImplemented
 from src.runtime import values
 
 # How an operator reconciles two different types when no `@mixed` handler
 # claims the pair.
-LEFT = "left"      # coerce the right operand into the left's type
-RANK = "rank"      # promote both operands to the higher-ranked type
+LEFT = "left"  # coerce the right operand into the left's type
+RANK = "rank"  # promote both operands to the higher-ranked type
 STRICT = "strict"  # different types simply never match
 PASSTHROUGH = "passthrough"  # call left.method(right) with no coercion
 
@@ -51,10 +51,11 @@ POLICY = {
 }
 
 # (left type, right type, method) -> handler(left, right)
-MIXED: dict[tuple[type, type, str], Callable[..., values.Type]] = {}
+Handler = Callable[..., values.Type]
+MIXED: dict[tuple[type, type, str], Handler] = {}
 
 
-def mixed(first: type, second: type, method: str, commutes: bool = False) -> Callable:
+def mixed(first: type, second: type, method: str, commutes: bool = False) -> Callable[[Handler], Handler]:
     """Register the meaning of one operation on one pair of types.
 
     The handler's parameters are named by type and read in source order, so it
@@ -64,17 +65,19 @@ def mixed(first: type, second: type, method: str, commutes: bool = False) -> Cal
     two directions differ — `'hi' + 2` is 'hi2', `2 + 'hi'` is '2hi' — is two
     registrations instead, each read left to right.
     """
-    def register(handler: Callable) -> Callable:
+
+    def register(handler: Handler) -> Handler:
         MIXED[(first, second, method)] = handler
         if commutes:
             MIXED[(second, first, method)] = lambda left, right: handler(right, left)
         return handler
+
     return register
 
 
 def binary(method: str, left: values.Type, right: values.Type) -> values.Type:
     if type(left) is type(right):
-        return getattr(left, method)(right)
+        return cast(values.Type, getattr(left, method)(right))
 
     handler = MIXED.get((type(left), type(right), method))
     if handler is not None:
@@ -88,21 +91,20 @@ def binary(method: str, left: values.Type, right: values.Type) -> values.Type:
     if policy is PASSTHROUGH:
         # The type decides what "in" means for this pair itself; no coercing
         # the container into the element's type first.
-        return getattr(left, method)(right)
+        return cast(values.Type, getattr(left, method)(right))
 
     # Nobody wrote this pair, so reconcile it and borrow the same-type logic.
     # A hole we land in that way belongs to the *pair* the user wrote, not to
     # whichever type we happened to coerce towards, so it is reported as such:
     # `'hi' * true` is a missing Text-and-Boolean rule, not a missing Text one.
     try:
-        if policy is RANK and right.rank > left.rank:
+        if policy is RANK and left.rank is not None and right.rank is not None and right.rank > left.rank:
             # Promote the left operand instead, so position can't change the answer.
-            return getattr(right.coerce(left), method)(right)
-        return getattr(left, method)(left.coerce(right))
+            return cast(values.Type, getattr(right.coerce(left), method)(right))
+        return cast(values.Type, getattr(left, method)(left.coerce(right)))
     except LynxNotImplemented as error:
         raise LynxNotImplemented(
-            f"'{method}' is not implemented yet between "
-            f"{left.type_name()} and {right.type_name()}"
+            f"'{method}' is not implemented yet between {left.type_name()} and {right.type_name()}"
         ) from error
 
 
@@ -119,23 +121,27 @@ def repeat_multiply_text_number(text: values.Text, number: values.Number) -> val
     fraction = magnitude - whole
     result = text.value * whole
     if fraction > 0:
-        result += text.value[:int(fraction * len(text.value))]
+        result += text.value[: int(fraction * len(text.value))]
     if number.value < 0:
         result = result[::-1]
     return values.Text(result)
+
 
 @mixed(values.Boolean, values.Number, "multiply", commutes=True)
 def repeat_multiply_boolean_number(bool: values.Boolean, number: values.Number) -> values.Number:
     return values.Number(bool.number().value * int(number.value))
 
+
 @mixed(values.Void, values.Number, "multiply", commutes=True)
-def repeat_multiply_void_number(void: values.Void, number: values.Number) -> values.Void:
-    return values.Number.default()
+def repeat_multiply_void_number(void: values.Void, number: values.Number) -> values.Number:
+    return cast(values.Number, values.Number.default())
+
 
 @mixed(values.Void, values.Text, "multiply", commutes=True)
 def repeat_multiply_void_text(void: values.Void, text: values.Text) -> values.Text:
-    return values.Text.default()
+    return cast(values.Text, values.Text.default())
+
 
 @mixed(values.Void, values.Boolean, "multiply", commutes=True)
 def repeat_multiply_void_boolean(void: values.Void, bool: values.Boolean) -> values.Boolean:
-    return values.Boolean.default()
+    return cast(values.Boolean, values.Boolean.default())

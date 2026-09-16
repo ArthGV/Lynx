@@ -15,6 +15,7 @@ class FunctionValue:
 
 class _Return(Exception):
     """Control-flow signal: a `>>>` statement unwinds the function body."""
+
     def __init__(self, value: Any) -> None:
         super().__init__()
         self.value = value

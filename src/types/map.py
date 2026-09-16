@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from src.types.base_type import ComplexType, Type
 from src.types.simple_type import Boolean, Number, Text, Void
 from src.utils.keys import map_key, value_from_key
@@ -20,8 +22,8 @@ class Map(ComplexType):
     conversion = "map"
     default_value = {}
 
-    def __init__(self, entries=None) -> None:
-        self.value: dict[tuple, Type] = {}
+    def __init__(self, entries: list[tuple[Type, Type]] | None = None) -> None:
+        self.value: dict[tuple[str, Any], Type] = {}
         if entries:
             for key, value in entries:
                 self.set_item(key, value)
@@ -79,7 +81,7 @@ class Map(ComplexType):
     def equals(self, other: Map) -> Boolean:
         if len(self.value) != len(other.value):
             return Boolean(False)
-        for (rk, rv) in self.value.items():
+        for rk, rv in self.value.items():
             if rk not in other.value:
                 return Boolean(False)
             ov = other.value[rk]
@@ -101,7 +103,7 @@ class Map(ComplexType):
 
     def keys(self) -> list[Type]:
         """The map's keys in insertion order, rebuilt into values."""
-        return [value_from_key(raw) for raw in self.value.keys()]
+        return [value_from_key(raw) for raw in self.value]
 
     def iterate(self) -> list[Type]:
         return self.keys()
@@ -113,17 +115,44 @@ class Map(ComplexType):
         return self
 
     # --- not implemented yet ---
-    def add(self, other: Map) -> Type: self.todo("add")
-    def subtract(self, other: Map) -> Type: self.todo("subtract")
-    def multiply(self, other: Map) -> Type: self.todo("multiply")
-    def divide(self, other: Map) -> Type: self.todo("divide")
-    def power(self, other: Map) -> Type: self.todo("power")
-    def root(self, other: Map) -> Type: self.todo("root")
-    def xor(self, other: Map) -> Type: self.todo("xor")
-    def not_(self) -> Type: self.todo("not_")
-    def sum(self) -> Type: self.todo("sum")
-    def avg(self) -> Type: self.todo("avg")
-    def min(self) -> Type: self.todo("min")
-    def max(self) -> Type: self.todo("max")
-    def join(self, other: Map) -> Type: self.todo("join")
-    def read(self) -> Type: self.todo("read")
+    def add(self, other: Map) -> Type:
+        self.todo("add")
+
+    def subtract(self, other: Map) -> Type:
+        self.todo("subtract")
+
+    def multiply(self, other: Map) -> Type:
+        self.todo("multiply")
+
+    def divide(self, other: Map) -> Type:
+        self.todo("divide")
+
+    def power(self, other: Map) -> Type:
+        self.todo("power")
+
+    def root(self, other: Map) -> Type:
+        self.todo("root")
+
+    def xor(self, other: Map) -> Type:
+        self.todo("xor")
+
+    def not_(self) -> Type:
+        self.todo("not_")
+
+    def sum(self) -> Type:
+        self.todo("sum")
+
+    def avg(self) -> Type:
+        self.todo("avg")
+
+    def min(self) -> Type:
+        self.todo("min")
+
+    def max(self) -> Type:
+        self.todo("max")
+
+    def join(self, other: Map) -> Type:
+        self.todo("join")
+
+    def read(self) -> Type:
+        self.todo("read")

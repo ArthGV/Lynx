@@ -6,6 +6,8 @@ route the operator (named by its grammar table) to the value layer and pin any
 error to its line.
 """
 
+from typing import cast
+
 from src.core.grammar import BINARY_METHOD, UNARY_METHOD
 from src.errors.errors import LynxError
 from src.runtime import operations, values
@@ -28,7 +30,7 @@ def apply_unary(operator: str, value: values.Type, line: int | None) -> values.T
     # stub that hasn't been filled in raises LynxNotImplemented, which we locate
     # to `line`.
     try:
-        return getattr(value, UNARY_METHOD[operator])()
+        return cast(values.Type, getattr(value, UNARY_METHOD[operator])())
     except LynxError as error:
         if error.line is None:
             error.line = line

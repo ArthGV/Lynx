@@ -11,28 +11,28 @@ and `table.py` while the `src.types` package is still loading.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from src.types.base_type import Type
 
 
-def map_key(value):
+def map_key(value: Type) -> tuple[str, Any]:
     """A hashable, type-qualified representation of a simple value, so `1`
     and `'1'` are distinct keys. Keys are restricted to simple types."""
-    from src.types.simple_type import Boolean, Number, Text, Void
+    from src.types.simple_type import Boolean, Number, Text
 
-    if isinstance(value, (Number, Text, Boolean, Void)):
+    if isinstance(value, (Number, Text, Boolean)):
         return (value.type_name(), value.value)
     return (value.type_name(), repr(value))
 
 
-def cells_equal(a, b) -> bool:
+def cells_equal(a: Type, b: Type) -> bool:
     """True when two table cells hold equal values of the same type."""
     return type(a) is type(b) and a.equals(b).is_true()
 
 
-def value_from_key(raw: tuple) -> Type:
+def value_from_key(raw: tuple[str, Any]) -> Type:
     """Reverse of `map_key`: rebuild the key value stored in a map."""
     from src.types.simple_type import Boolean, Number, Text, Void
 

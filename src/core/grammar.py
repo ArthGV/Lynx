@@ -48,11 +48,11 @@ KEYWORDS = {
     "in": "IN",
     "not": "NOT",
     "middle": "MIDDLE",
-    #types
+    # types
     "number": "TO_NUMBER",
     "boolean": "TO_BOOLEAN",
     "text": "TO_TEXT",
-    #constructors
+    # constructors
     "array": "ARRAY",
     "map": "MAP",
     "table": "TABLE",
@@ -119,9 +119,12 @@ SYMBOLS = {
 # one tier looser than IN; ordering one tier tighter.
 EQUALITY_LEVEL = {"EQUAL": "equals", "NOT_EQUAL": "not_equal", "ALMOST": "almost"}
 ORDERING_LEVEL = {
-    "GREATER": "greater", "LESS": "less",
-    "GREATER_OR_EQUAL": "greater_or_equal", "LESSER_OR_EQUAL": "lesser_or_equal",
-    "GREATER_OR_ALMOST": "greater_or_almost", "LESSER_OR_ALMOST": "lesser_or_almost",
+    "GREATER": "greater",
+    "LESS": "less",
+    "GREATER_OR_EQUAL": "greater_or_equal",
+    "LESSER_OR_EQUAL": "lesser_or_equal",
+    "GREATER_OR_ALMOST": "greater_or_almost",
+    "LESSER_OR_ALMOST": "lesser_or_almost",
 }
 
 # Binary operators grouped by precedence, lowest first. Each maps a token

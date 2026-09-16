@@ -5,9 +5,11 @@ lazily import types (via Text.read → files) without an import cycle.
 """
 
 from pathlib import Path
+from typing import Any, cast
 
 from src.errors.errors import LynxError, LynxTypeError
 from src.types.array import Array
+from src.types.base_type import Type
 from src.types.map import Map
 from src.types.simple_type import Boolean, Number, Text, Void
 from src.types.table import Table
@@ -20,13 +22,12 @@ SUPPORTED = {".txt", ".csv", ".yaml"}
 # read
 # ---------------------------------------------------------------------------
 
-def read(path: str, line: int | None = None):
+
+def read(path: str, line: int | None = None) -> Type:
     """Read a file and return a lynx Value."""
     ext = Path(path).suffix
     if ext not in SUPPORTED:
-        raise LynxError(
-            f"unsupported file format '{ext}', use .txt, .csv or .yaml", line
-        )
+        raise LynxError(f"unsupported file format '{ext}', use .txt, .csv or .yaml", line)
     try:
         content = Path(path).read_text()
     except FileNotFoundError:
@@ -46,17 +47,14 @@ def read(path: str, line: int | None = None):
 # write
 # ---------------------------------------------------------------------------
 
-def write(value, path, line: int | None = None) -> None:
+
+def write(value: Type, path: Type, line: int | None = None) -> None:
     """Write a lynx Value to a file."""
     if not isinstance(path, Text):
-        raise LynxTypeError(
-            f"write needs a text path, got {path.type_name()}", line
-        )
+        raise LynxTypeError(f"write needs a text path, got {path.type_name()}", line)
     ext = Path(path.value).suffix
     if ext not in SUPPORTED:
-        raise LynxError(
-            f"unsupported file format '{ext}', use .txt, .csv or .yaml", line
-        )
+        raise LynxError(f"unsupported file format '{ext}', use .txt, .csv or .yaml", line)
     target = Path(path.value)
     if target.is_dir():
         raise LynxError(f"cannot write '{path.value}': Is a directory", line)
@@ -81,7 +79,8 @@ def write(value, path, line: int | None = None) -> None:
 # supported-format helper
 # ---------------------------------------------------------------------------
 
-def _formats_to(value) -> str:
+
+def _formats_to(value: Type) -> str:
     if isinstance(value, (Array, Table)):
         return ".csv"
     if isinstance(value, Map):
@@ -93,7 +92,8 @@ def _formats_to(value) -> str:
 # txt
 # ---------------------------------------------------------------------------
 
-def _write_txt(value, ext, line):
+
+def _write_txt(value: Type, ext: str, line: int | None) -> str:
     if isinstance(value, (Number, Boolean, Void)):
         return str(value)
     if isinstance(value, Text):
@@ -105,10 +105,11 @@ def _write_txt(value, ext, line):
 
 
 # ---------------------------------------------------------------------------
-# csv – write
+# csv - write
 # ---------------------------------------------------------------------------
 
-def _write_csv(value, ext, line):
+
+def _write_csv(value: Type, ext: str, line: int | None) -> str:
     if isinstance(value, Array):
         if not value.value:
             return ""
@@ -122,9 +123,7 @@ def _write_csv(value, ext, line):
         header = _csv_line([_csv_cell(Text(name), line) for name in names])
         rows = []
         for i in range(value.nrows):
-            rows.append(
-                _csv_line([_csv_cell(value.columns[name][i], line) for name in names])
-            )
+            rows.append(_csv_line([_csv_cell(value.columns[name][i], line) for name in names]))
         return header + "\n" + "\n".join(rows) + "\n"
     raise LynxTypeError(
         f"a value of type {value.type_name()} writes to {_formats_to(value)}, not .csv",
@@ -136,7 +135,7 @@ def _csv_line(cells: list[str]) -> str:
     return ",".join(cells)
 
 
-def _csv_cell(value, line) -> str:
+def _csv_cell(value: Type, line: int | None) -> str:
     if isinstance(value, Void):
         return "void"
     if isinstance(value, Boolean):
@@ -145,17 +144,14 @@ def _csv_cell(value, line) -> str:
         return str(value)
     if isinstance(value, Text):
         if "\n" in value.value:
-            raise LynxError(
-                "cannot write a text containing a newline to a .csv", line
-            )
+            raise LynxError("cannot write a text containing a newline to a .csv", line)
         if '"' in value.value or "," in value.value:
             return '"' + value.value.replace('"', '""') + '"'
         if _reinfers_non_text(value.value):
             return '"' + value.value + '"'
         return value.value
     raise LynxTypeError(
-        f"cannot write {value.type_name()} values in a .csv; "
-        "only scalars (number, text, boolean, void) are supported",
+        f"cannot write {value.type_name()} values in a .csv; only scalars (number, text, boolean, void) are supported",
         line,
     )
 
@@ -176,10 +172,11 @@ def _is_exact_number(s: str) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# csv – read
+# csv - read
 # ---------------------------------------------------------------------------
 
-def _read_csv(content: str, line):
+
+def _read_csv(content: str, line: int | None) -> Type:
     data_lines = []
     for raw in content.splitlines():
         stripped = raw.strip()
@@ -198,12 +195,11 @@ def _read_csv(content: str, line):
             raise LynxTypeError(f"duplicate column title '{name}'", line)
         seen[name] = True
     ncols = len(header)
-    columns = {name: [] for name in header}
+    columns: dict[str, list[Type]] = {name: [] for name in header}
     for row_idx, row in enumerate(data_lines[1:], start=1):
         if len(row) > ncols:
             raise LynxError(
-                f"row {row_idx + 1} has {len(row)} values but the header "
-                f"declares {ncols} columns",
+                f"row {row_idx + 1} has {len(row)} values but the header declares {ncols} columns",
                 line,
             )
         for col_idx, name in enumerate(header):
@@ -250,7 +246,7 @@ def _parse_csv_line(line: str) -> list[tuple[str, bool]]:
     return cells
 
 
-def _infer_cell(text: str, quoted: bool):
+def _infer_cell(text: str, quoted: bool) -> Type:
     if quoted:
         return Text(text)
     if text == "void":
@@ -265,10 +261,11 @@ def _infer_cell(text: str, quoted: bool):
 
 
 # ---------------------------------------------------------------------------
-# yaml – write
+# yaml - write
 # ---------------------------------------------------------------------------
 
-def _write_yaml(value, ext, line):
+
+def _write_yaml(value: Type, ext: str, line: int | None) -> str:
     if not isinstance(value, Map):
         raise LynxTypeError(
             f"a value of type {value.type_name()} writes to {_formats_to(value)}, not .yaml",
@@ -278,7 +275,7 @@ def _write_yaml(value, ext, line):
     return _yaml_map_entries(entries, 0, line) + "\n"
 
 
-def _yaml_key(key, line) -> str:
+def _yaml_key(key: Type, line: int | None) -> str:
     if isinstance(key, Text):
         return "'" + key.value.replace("'", "''") + "'"
     if isinstance(key, Number):
@@ -288,7 +285,7 @@ def _yaml_key(key, line) -> str:
     return "void"
 
 
-def _yaml_scalar(value) -> str:
+def _yaml_scalar(value: Type) -> str:
     if isinstance(value, Text):
         return "'" + value.value.replace("'", "''") + "'"
     if isinstance(value, Number):
@@ -298,16 +295,14 @@ def _yaml_scalar(value) -> str:
     return "void"
 
 
-def _yaml_entry(key, value, indent, line) -> str:
+def _yaml_entry(key: Type, value: Type, indent: int, line: int | None) -> str:
     pad = "  " * indent
     head = pad + _yaml_key(key, line) + ":"
     if isinstance(value, (Number, Boolean, Void)):
         return head + " " + _yaml_scalar(value)
     if isinstance(value, Text):
         if "\n" in value.value:
-            raise LynxError(
-                "cannot write a text containing a newline to a .yaml", line
-            )
+            raise LynxError("cannot write a text containing a newline to a .yaml", line)
         return head + " " + _yaml_scalar(value)
     if isinstance(value, Map):
         if not value.value:
@@ -319,19 +314,18 @@ def _yaml_entry(key, value, indent, line) -> str:
             return head + " []"
         return head + "\n" + _yaml_list(value.value, indent + 1, line)
     raise LynxTypeError(
-        f"cannot write {value.type_name()} values in a .yaml; "
-        "only scalars, maps and arrays are supported",
+        f"cannot write {value.type_name()} values in a .yaml; only scalars, maps and arrays are supported",
         line,
     )
 
 
-def _yaml_map_entries(entries, indent, line) -> str:
+def _yaml_map_entries(entries: list[tuple[Type, Type]], indent: int, line: int | None) -> str:
     if not entries:
         return "{}"
     return "\n".join(_yaml_entry(k, v, indent, line) for k, v in entries)
 
 
-def _yaml_list(items, indent, line) -> str:
+def _yaml_list(items: list[Type], indent: int, line: int | None) -> str:
     pad = "  " * indent
     rows = []
     for item in items:
@@ -346,13 +340,12 @@ def _yaml_list(items, indent, line) -> str:
                 rows.append(dash + " " + _yaml_scalar(first_val))
             elif isinstance(first_val, Text):
                 if "\n" in first_val.value:
-                    raise LynxError(
-                        "cannot write a text containing a newline to a .yaml", line
-                    )
+                    raise LynxError("cannot write a text containing a newline to a .yaml", line)
                 rows.append(dash + " " + _yaml_scalar(first_val))
             elif isinstance(first_val, Map):
                 if first_val.value:
-                    rows.append(dash + "\n" + _yaml_map_entries(list(first_val.value.items()), indent + 2, line))
+                    entries_nested = [(value_from_key(k), v) for k, v in first_val.value.items()]
+                    rows.append(dash + "\n" + _yaml_map_entries(entries_nested, indent + 2, line))
                 else:
                     rows.append(dash + " {}")
             elif isinstance(first_val, Array):
@@ -370,10 +363,11 @@ def _yaml_list(items, indent, line) -> str:
 
 
 # ---------------------------------------------------------------------------
-# yaml – read
+# yaml - read
 # ---------------------------------------------------------------------------
 
-def _read_yaml(content: str, line):
+
+def _read_yaml(content: str, line: int | None) -> Map:
     stripped_lines = []
     for raw in content.splitlines():
         if not raw.strip():
@@ -401,12 +395,12 @@ def _read_yaml(content: str, line):
     return Map([(value_from_key(k), _to_lynx(v)) for k, v in root.items()])
 
 
-def _to_lynx(struct):
+def _to_lynx(struct: Any) -> Type:
     if isinstance(struct, dict):
         return Map([(value_from_key(k), _to_lynx(v)) for k, v in struct.items()])
     if isinstance(struct, list):
         return Array([_to_lynx(v) for v in struct])
-    return Void() if struct is None else struct
+    return Void() if struct is None else cast(Type, struct)
 
 
 def _strip_comment(s: str) -> str:
@@ -426,13 +420,13 @@ def _strip_comment(s: str) -> str:
 
 
 class _YamlParser:
-    def __init__(self, lines, line):
+    def __init__(self, lines: list[tuple[int, str]], line: int | None) -> None:
         self.lines = lines
         self.n = len(lines)
         self.i = 0
         self.line = line
 
-    def _parse_block(self, indent):
+    def _parse_block(self, indent: int) -> Any:
         if self.i >= self.n:
             return None
         if self.lines[self.i][0] != indent:
@@ -446,13 +440,13 @@ class _YamlParser:
             return {}
         if content.startswith("- "):
             return self._parse_list(indent)
-        key, rest = self._split_top_level_colon(content)
+        key, _rest = self._split_top_level_colon(content)
         if key is not None:
             return self._parse_map(indent)
         self.i += 1
         return _parse_inline_value(content)
 
-    def _parse_map(self, indent):
+    def _parse_map(self, indent: int) -> dict[Any, Any]:
         mapping = []
         while self.i < self.n and self.lines[self.i][0] == indent:
             content = self.lines[self.i][1]
@@ -466,13 +460,13 @@ class _YamlParser:
             value = self._parse_value_after(rest, indent)
             raw = map_key(key_value)
             mapping.append((raw, value))
-        result = {}
+        result: dict[Any, Any] = {}
         for raw, val in mapping:
             result[raw] = val
         return result
 
-    def _parse_list(self, indent):
-        items = []
+    def _parse_list(self, indent: int) -> list[Any]:
+        items: list[Any] = []
         while self.i < self.n and self.lines[self.i][0] == indent:
             content = self.lines[self.i][1]
             if not content.startswith("- "):
@@ -499,7 +493,7 @@ class _YamlParser:
                         entries.append((map_key(kv2), v2))
                     else:
                         self.i += 1
-                result = {}
+                result: dict[Any, Any] = {}
                 for raw, val in entries:
                     result[raw] = val
                 items.append(result)
@@ -509,7 +503,7 @@ class _YamlParser:
                 self.i += 1
         return items
 
-    def _parse_value_after(self, rest, indent):
+    def _parse_value_after(self, rest: str, indent: int) -> Any:
         """Parse the value after a key: line at `indent`."""
         rest = rest.strip()
         if rest == "":
@@ -530,7 +524,7 @@ class _YamlParser:
         self.i += 1
         return _parse_inline_value(rest)
 
-    def _split_top_level_colon(self, content):
+    def _split_top_level_colon(self, content: str) -> tuple[str | None, str]:
         """Split on the first top-level colon that is not inside quotes."""
         in_single_quote = False
         for i, ch in enumerate(content):
@@ -540,12 +534,12 @@ class _YamlParser:
                 in_single_quote = False
             elif ch == ":" and not in_single_quote:
                 key = content[:i].rstrip()
-                rest = content[i + 1:].lstrip()
+                rest = content[i + 1 :].lstrip()
                 return key, rest
         return None, content
 
 
-def _parse_inline_value(s: str):
+def _parse_inline_value(s: str) -> Any:
     s = s.strip()
     if not s:
         return None
@@ -584,7 +578,7 @@ def _parse_inline_value(s: str):
     return Text(s)
 
 
-def _parse_token(s: str, for_key=False, line=None):
+def _parse_token(s: str, for_key: bool = False, line: int | None = None) -> Any:
     """Parse a scalar token (used for both keys and values)."""
     s = s.strip()
     if not s:

@@ -80,9 +80,7 @@ class ExpressionMixin(Parser):
                         self.advance()
                         if not self._starts_comma_item(self.type()):
                             break
-                        items.append(
-                            self.parse_binary(UNARY_OPERAND_LEVEL, allow_chain)
-                        )
+                        items.append(self.parse_binary(UNARY_OPERAND_LEVEL, allow_chain))
                     first = ArrayLiteral(items)
                 return UnaryExpression(operator, first, token.line)
             case "NUMBER":
@@ -131,16 +129,12 @@ class ExpressionMixin(Parser):
                 if self._starts_expression(self.type()):
                     return self.parse_chain(self.parse_call(name, token.line))
                 return Identifier(name, token.line)
-        raise LynxSyntaxError(
-            f"unexpected {self.type()}", token.line if token else None
-        )
+        raise LynxSyntaxError(f"unexpected {self.type()}", token.line if token else None)
 
     def parse_negative(self) -> Number:
         token = self.advance()
         if self.type() != "NUMBER":
-            raise LynxSyntaxError(
-                f"expected NUMBER after '-', got {self.type()}", token.line
-            )
+            raise LynxSyntaxError(f"expected NUMBER after '-', got {self.type()}", token.line)
         return Number(-float(self.advance().value))
 
     def parse_parenthesized(self, allow_chain: bool) -> Any:

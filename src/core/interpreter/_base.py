@@ -11,7 +11,7 @@ imported at the *bottom* of this file — after every function they call — so
 they can import back from this partially-loaded module without a cycle.
 """
 
-from typing import Any
+from typing import Any, cast
 
 from src.core.nodes import (
     Append,
@@ -45,6 +45,17 @@ from src.errors.errors import LynxTypeError
 from src.runtime import values
 from src.runtime.environment import Environment
 from src.runtime.functions import FunctionValue, _Return, _Skip, _Stop
+
+__all__ = [
+    "_Return",
+    "_Skip",
+    "_Stop",
+    "evaluate",
+    "evaluate_key",
+    "evaluate_table_key",
+    "execute",
+    "is_range",
+]
 
 
 def execute(node: Any, env: Environment) -> None:
@@ -146,25 +157,25 @@ def evaluate(node: Any, env: Environment) -> values.Type:
             return _statements.append_to(base, value, front, line, env)
 
         case MapLiteral(pairs, line):
-            return values.Map([
-                (evaluate_key(k, env, line), evaluate(v, env))
-                for k, v in pairs
-            ])
+            return values.Map([(evaluate_key(k, env, line), evaluate(v, env)) for k, v in pairs])
 
         case TableLiteral(columns, line):
-            return values.Table([
-                (
-                    evaluate_table_key(k, env, line),
-                    _expressions.column_cells_list(value_exprs, line, env),
-                )
-                for k, value_exprs in columns
-            ], line)
+            return values.Table(
+                [
+                    (
+                        evaluate_table_key(k, env, line),
+                        _expressions.column_cells_list(value_exprs, line, env),
+                    )
+                    for k, value_exprs in columns
+                ],
+                line,
+            )
 
         case Cell(inner):
             return evaluate(inner, env)
 
         case Identifier(name, line):
-            return env.get(name, line)
+            return cast(values.Type, env.get(name, line))
 
         case Call(callee, args, line):
             return _expressions.call(callee, args, line, env)
@@ -188,18 +199,14 @@ def evaluate(node: Any, env: Environment) -> values.Type:
 def evaluate_key(node: Any, env: Environment, line: int | None) -> values.Type:
     key = evaluate(node, env)
     if not isinstance(key, values.SimpleType):
-        raise LynxTypeError(
-            f"map key must be a simple type, got {key.type_name()}", line
-        )
+        raise LynxTypeError(f"map key must be a simple type, got {key.type_name()}", line)
     return key
 
 
 def evaluate_table_key(node: Any, env: Environment, line: int | None) -> values.Text:
     name = evaluate(node, env)
     if not isinstance(name, values.Text):
-        raise LynxTypeError(
-            f"table column name must be text, got {name.type_name()}", line
-        )
+        raise LynxTypeError(f"table column name must be text, got {name.type_name()}", line)
     return name
 
 
@@ -217,13 +224,9 @@ def _describe(value: values.Type) -> str:
 
 def _int_bound(value: values.Type, which: str, line: int | None) -> int:
     if not isinstance(value, values.Number):
-        raise LynxTypeError(
-            f"range {which} must be an integer, got {_describe(value)}", line
-        )
+        raise LynxTypeError(f"range {which} must be an integer, got {_describe(value)}", line)
     if not isinstance(value.value, int):
-        raise LynxTypeError(
-            f"range {which} must be an integer, got {_describe(value)}", line
-        )
+        raise LynxTypeError(f"range {which} must be an integer, got {_describe(value)}", line)
     return value.value
 
 

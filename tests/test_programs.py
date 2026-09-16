@@ -34,10 +34,7 @@ def run_capturing(source):
 
 def strip_expected_comments(text):
     """Remove full-line // comment lines from golden-test expected output."""
-    return "".join(
-        line for line in text.splitlines(keepends=True)
-        if not line.strip().startswith("//")
-    )
+    return "".join(line for line in text.splitlines(keepends=True) if not line.strip().startswith("//"))
 
 
 @pytest.mark.parametrize("program", PROGRAMS, ids=lambda p: p.stem)
