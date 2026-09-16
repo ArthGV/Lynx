@@ -93,6 +93,16 @@ class Write:
 
 
 @dataclass
+class Read:
+    """`read 'path'`: reads a file and returns its value. The path operand is
+    a text expression here — this node replaces the old per-type `read` method,
+    so no Value type carries `read` anymore."""
+
+    operand: Any
+    line: int | None = None
+
+
+@dataclass
 class Print:
     value: Any
 

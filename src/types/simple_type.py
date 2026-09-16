@@ -118,9 +118,6 @@ class Number(SimpleType):
             return [Number(i) for i in range(n + 1)]
         return [Number(i) for i in range(0, n - 1, -1)]
 
-    def read(self) -> Type:
-        self.todo("read")
-
 
 class Text(SimpleType):
     rank = 2
@@ -211,7 +208,13 @@ class Text(SimpleType):
         return Number(len(self.value))
 
     def distinct(self) -> Text:
-        return self
+        seen: set[str] = set()
+        out: list[str] = []
+        for char in self.value:
+            if char not in seen:
+                seen.add(char)
+                out.append(char)
+        return Text("".join(out))
 
     def sum(self) -> Type:
         self.todo("sum")
@@ -227,11 +230,6 @@ class Text(SimpleType):
 
     def join(self, other: Text) -> Type:
         self.todo("join")
-
-    def read(self) -> Type:
-        from src.core.files import read as _read
-
-        return _read(self.value)
 
 
 class Boolean(SimpleType):
@@ -330,9 +328,6 @@ class Boolean(SimpleType):
     def join(self, other: Boolean) -> Type:
         self.todo("join")
 
-    def read(self) -> Type:
-        self.todo("read")
-
 
 class Void(SimpleType):
     """The absence of a value, like Python's None."""
@@ -421,6 +416,3 @@ class Void(SimpleType):
 
     def join(self, other: Type) -> Type:
         self.todo("join")
-
-    def read(self) -> Type:
-        self.todo("read")

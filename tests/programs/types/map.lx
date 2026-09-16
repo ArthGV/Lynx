@@ -11,7 +11,7 @@ my_dict: { 'a': 1; 'b': 2 }
 missing: my_dict 'nope'
 >> missing = void
 
-// first / last over the entries' values
+// first / last over the entries' keys
 >> first my_dict
 >> last my_dict
 

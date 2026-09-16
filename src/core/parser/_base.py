@@ -12,7 +12,7 @@ through the package `__init__`.
 
 from typing import Any
 
-from src.core.grammar import UNARY_METHOD
+from src.core.grammar import EXPRESSION_KEYWORDS, UNARY_METHOD
 from src.core.lexer import Token
 from src.core.nodes import Program
 from src.errors.errors import LynxSyntaxError
@@ -86,7 +86,7 @@ class Parser:
             return True
         if token_type in TABLE_QUERY:
             return True
-        return token_type in UNARY_METHOD
+        return token_type in UNARY_METHOD or token_type in EXPRESSION_KEYWORDS
 
     def _starts_comma_item(self, token_type: str) -> bool:
         # What a comma-run element may begin with: any expression, plus MINUS

@@ -7,9 +7,9 @@ Map
 // Missing keys return void, like a None-default dict
 void
 true
-// first / last over the entries' values
-1
-2
+// first / last over the entries' keys
+a
+b
 // empty map is distinct from void
 {}
 0

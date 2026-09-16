@@ -173,8 +173,13 @@ UNARY_METHOD = {
     "MAX": "max",
     "COUNT": "count",
     "DISTINCT": "distinct",
-    "READ": "read",
 }
+
+# Keyword expressions that aren't dispatched through a Value method: `read`
+# takes a file path (not a type's value) and returns whatever the file holds,
+# so the parser makes it its own node for the interpreter to resolve. Listed
+# here so the lexer's operator classification and _starts_expression follow.
+EXPRESSION_KEYWORDS = {"READ"}
 
 # How much of the line a keyword function swallows: its operand is parsed at
 # this BINARY_LEVELS tier, so it takes that tier and every tighter one. At 0 it

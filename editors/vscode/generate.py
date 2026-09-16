@@ -29,6 +29,7 @@ sys.path.insert(0, str(ROOT))
 from src.core.grammar import (  # noqa: E402
     BLOCK_COMMENT,
     COMMENT,
+    EXPRESSION_KEYWORDS,
     KEYWORDS,
     LITERALS,
     SYMBOLS,
@@ -91,7 +92,7 @@ def word_scope(word: str, token: str) -> str:
         return "constant.language.lynx"
     if token in CONTROL:
         return "keyword.control.lynx"
-    if token in UNARY_METHOD or token in CONSTRUCTOR:
+    if token in UNARY_METHOD or token in CONSTRUCTOR or token in EXPRESSION_KEYWORDS:
         return "support.function.builtin.lynx"
     return "keyword.operator.word.lynx"
 

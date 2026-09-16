@@ -470,7 +470,7 @@ def test_write_path_must_be_text(tmp_path):
 
 
 def test_read_non_text_operand(tmp_path):
-    assert run_err(">> read 5") == ("NotImplemented on line 1: 'read' is not implemented yet for Number")
+    assert run_err(">> read 5") == ("TypeError on line 1: read needs a text path, got Number")
 
 
 # ---------------------------------------------------------------------------

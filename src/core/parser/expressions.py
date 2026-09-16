@@ -25,6 +25,7 @@ from src.core.nodes import (
     MapLiteral,
     Number,
     RangeExpression,
+    Read,
     TableLiteral,
     TableQuery,
     Text,
@@ -83,6 +84,8 @@ class ExpressionMixin(Parser):
                         items.append(self.parse_binary(UNARY_OPERAND_LEVEL, allow_chain))
                     first = ArrayLiteral(items)
                 return UnaryExpression(operator, first, token.line)
+            case "READ":
+                return self.parse_read(allow_chain)
             case "NUMBER":
                 return Number(self.advance().value)
             case "MINUS":
@@ -136,6 +139,23 @@ class ExpressionMixin(Parser):
         if self.type() != "NUMBER":
             raise LynxSyntaxError(f"expected NUMBER after '-', got {self.type()}", token.line)
         return Number(-float(self.advance().value))
+
+    def parse_read(self, allow_chain: bool) -> Any:
+        # `read 'path'` — the same operand-swallowing as the prefix keyword
+        # functions above (whole rest of the line, comma-run grouped as an
+        # array), so `read 'a', 'b'` still reads the two as one array and the
+        # interpreter rejects it as a non-text path.
+        token = self.advance()
+        operand = self.parse_binary(UNARY_OPERAND_LEVEL, allow_chain)
+        if self.type() == "COMMA":
+            items = [operand]
+            while self.type() == "COMMA":
+                self.advance()
+                if not self._starts_comma_item(self.type()):
+                    break
+                items.append(self.parse_binary(UNARY_OPERAND_LEVEL, allow_chain))
+            operand = ArrayLiteral(items)
+        return Read(operand, token.line)
 
     def parse_parenthesized(self, allow_chain: bool) -> Any:
         """A `( … )` group is a primary: it overrides precedence at its spot,

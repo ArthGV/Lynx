@@ -30,6 +30,7 @@ from src.core.nodes import (
     Print,
     Program,
     RangeExpression,
+    Read,
     Return,
     SetItem,
     Skip,
@@ -41,7 +42,7 @@ from src.core.nodes import (
     Void,
     Write,
 )
-from src.errors.errors import LynxTypeError
+from src.errors.errors import LynxError, LynxTypeError
 from src.runtime import values
 from src.runtime.environment import Environment
 from src.runtime.functions import FunctionValue, _Return, _Skip, _Stop
@@ -185,6 +186,17 @@ def evaluate(node: Any, env: Environment) -> values.Type:
 
         case UnaryExpression(operator, operand, line):
             return _operators.apply_unary(operator, evaluate(operand, env), line)
+
+        case Read(operand, line):
+            path = evaluate(operand, env)
+            if not isinstance(path, values.Text):
+                raise LynxTypeError(f"read needs a text path, got {path.type_name()}", line)
+            try:
+                return _files.read(path.value, line)
+            except LynxError as error:
+                if error.line is None:
+                    error.line = line
+                raise
 
         case BinaryExpression(left, operator, right, line):
             return _operators.apply_binary(operator, evaluate(left, env), evaluate(right, env), line)

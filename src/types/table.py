@@ -11,7 +11,7 @@ from src.types.base_type import ComplexType, Type
 from src.types.map import Map
 from src.types.simple_type import Boolean, Number, Text, Void
 from src.utils.keys import cells_equal, map_key
-from src.utils.text import compare_raw
+from src.utils.text import compare_raw, edit_distance_sets
 
 
 class Table(ComplexType):
@@ -155,7 +155,7 @@ class Table(ComplexType):
         return 0
 
     def almost(self, other: Table) -> Boolean:
-        return self.equals(other)
+        return Boolean(edit_distance_sets(set(self.columns.keys()), set(other.columns.keys())) <= 1)
 
     def equals(self, other: Table) -> Boolean:
         if self.nrows != other.nrows:
@@ -306,6 +306,3 @@ class Table(ComplexType):
 
     def max(self) -> Type:
         self.todo("max")
-
-    def read(self) -> Type:
-        self.todo("read")

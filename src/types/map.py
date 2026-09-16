@@ -8,7 +8,7 @@ from src.errors.errors import LynxTypeError
 from src.types.base_type import ComplexType, Type
 from src.types.simple_type import Boolean, Number, Text, Void
 from src.utils.keys import map_key, value_from_key
-from src.utils.text import compare_raw
+from src.utils.text import compare_raw, edit_distance_sets
 
 
 class Map(ComplexType):
@@ -60,19 +60,19 @@ class Map(ComplexType):
 
     def first(self) -> Type:
         if self.value:
-            return next(iter(self.value.values()))
+            return value_from_key(next(iter(self.value)))
         return Void()
 
     def last(self) -> Type:
         if self.value:
-            return list(self.value.values())[-1]
+            return value_from_key(list(self.value)[-1])
         return Void()
 
     def middle(self) -> Type:
         if not self.value:
             return Void()
-        values = list(self.value.values())
-        return values[len(values) // 2]
+        keys = list(self.value)
+        return value_from_key(keys[len(keys) // 2])
 
     def compare(self, other: Map) -> int:
         if len(self.value) != len(other.value):
@@ -86,7 +86,7 @@ class Map(ComplexType):
         return 0
 
     def almost(self, other: Map) -> Boolean:
-        return self.equals(other)
+        return Boolean(edit_distance_sets(set(self.value.keys()), set(other.value.keys())) <= 1)
 
     def equals(self, other: Map) -> Boolean:
         if len(self.value) != len(other.value):
@@ -163,6 +163,3 @@ class Map(ComplexType):
 
     def join(self, other: Map) -> Type:
         self.todo("join")
-
-    def read(self) -> Type:
-        self.todo("read")

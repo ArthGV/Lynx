@@ -55,9 +55,17 @@ def test_array_comparison():
 
 
 def test_array_almost():
+    # one edit away: equal, one replacement, one insertion, one removal
     assert arr(Number(1), Number(2)).almost(arr(Number(1), Number(2))).is_true()
-    assert arr(Number(1), Number(2)).almost(arr(Number(1), Number(3))).is_true() is False
-    assert arr(Number(1)).almost(arr(Number(1), Number(2))).is_true() is False
+    assert arr(Number(1), Number(2)).almost(arr(Number(1), Number(3))).is_true()
+    assert arr(Number(1), Number(2)).almost(arr(Number(1), Number(2), Number(3))).is_true()
+    assert arr(Number(1), Number(2)).almost(arr(Number(1))).is_true()
+    # more than one edit away
+    assert arr(Number(1)).almost(arr(Number(1), Number(2), Number(3))).is_true() is False
+    assert arr(Number(1), Number(2)).almost(arr(Number(3), Number(4))).is_true() is False
+    # a different element type still counts as an edit
+    assert arr(Number(1)).almost(arr(Text("1"))).is_true()  # one type-changing replacement
+    assert arr(Number(1), Number(2)).almost(arr(Text("1"), Text("2"))).is_true() is False  # two edits
 
 
 def test_array_arithmetic_not_implemented():
@@ -102,15 +110,15 @@ def test_map_last_index():
 
 def test_map_first_last():
     m = mp((Text("a"), Number(1)), (Text("b"), Number(2)))
-    assert print_(m.first()) == "1"
-    assert print_(m.last()) == "2"
+    assert print_(m.first()) == "a"
+    assert print_(m.last()) == "b"
     assert type(mp().first()) is Void
     assert type(mp().last()) is Void
 
 
 def test_map_middle():
     m = mp((Text("a"), Number(1)), (Text("b"), Number(2)), (Text("c"), Number(3)))
-    assert print_(m.middle()) == "2"
+    assert print_(m.middle()) == "b"
     assert type(mp().middle()) is Void
 
 
@@ -185,11 +193,16 @@ def test_map_compare():
 
 
 def test_map_almost():
+    # one edit away on the keys — values are ignored
     a = mp((Text("a"), Number(1)), (Text("b"), Number(2)))
     b = mp((Text("a"), Number(1)), (Text("b"), Number(2)))
-    c = mp((Text("a"), Number(9)))
-    assert a.almost(b).is_true()
-    assert a.almost(c).is_true() is False
+    assert a.almost(b).is_true()  # same keys
+    assert a.almost(mp((Text("a"), Number(9)))).is_true()  # one key removed, values ignored
+    assert a.almost(mp((Text("a"), Number(1)), (Text("x"), Number(2)))).is_true()  # one key renamed
+    three_keys = mp((Text("a"), Number(1)), (Text("b"), Number(2)), (Text("c"), Number(3)))
+    assert a.almost(three_keys).is_true()  # one key added
+    assert a.almost(mp((Text("x"), Number(1)))).is_true() is False  # replacement + removal
+    assert a.almost(mp((Text("x"), Number(1)), (Text("y"), Number(2)))).is_true() is False  # two renamed
 
 
 def test_map_distinct_is_identity():
@@ -457,11 +470,14 @@ def test_table_compare():
 
 
 def test_table_almost():
+    # one edit away on the column heads — cell data is ignored
     a = tbl(("x", [1, 2]))
     b = tbl(("x", [1, 2]))
-    c = tbl(("x", [1, 3]))
-    assert a.almost(b).is_true()
-    assert a.almost(c).is_true() is False
+    assert a.almost(b).is_true()  # same headers
+    assert a.almost(tbl(("x", [1, 3]))).is_true()  # same headers, different data
+    assert a.almost(tbl(("y", [1, 2]))).is_true()  # one header renamed
+    assert a.almost(tbl(("x", [1, 2]), ("y", [3, 4]))).is_true()  # one header added
+    assert a.almost(tbl(("y", [1, 2]), ("z", [3, 4]))).is_true() is False  # two headers differ
 
 
 def test_table_get_column():
@@ -622,8 +638,15 @@ def test_table_count_is_rows():
 
 def test_distinct_default_is_identity():
     assert Number(5).distinct().value == 5
-    assert Text("x").distinct().value == "x"
     assert type(Void().distinct()) is Void
+
+
+def test_text_distinct():
+    assert Text("hello").distinct().value == "helo"
+    assert Text("banana").distinct().value == "ban"
+    assert Text("aaa").distinct().value == "a"
+    assert Text("").distinct().value == ""
+    assert Text("x").distinct().value == "x"
 
 
 def test_array_distinct():
