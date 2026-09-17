@@ -1,0 +1,2 @@
+// Deleting a name that was never assigned
+NameError on line 1: 'nope' is not defined

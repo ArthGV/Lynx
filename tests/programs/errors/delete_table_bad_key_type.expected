@@ -1,0 +1,2 @@
+// Table deletion keys are a column name or a row index
+TypeError on line 2: table deletion needs a column name or a row index, got Boolean

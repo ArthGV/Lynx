@@ -1,0 +1,2 @@
+// A table knows columns or rows, not nested cells
+TypeError on line 2: table deletion needs a single column or row, got 2 access steps

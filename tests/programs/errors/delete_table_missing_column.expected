@@ -1,0 +1,2 @@
+// A table without that column
+Error on line 2: table has no column 'nope'

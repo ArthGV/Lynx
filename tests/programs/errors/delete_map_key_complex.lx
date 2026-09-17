@@ -1,0 +1,3 @@
+arr: 1, 2
+m: { 'k': 3 }
+del m arr

@@ -1,0 +1,2 @@
+// A range step in the middle of a path, not the last one
+Error on line 2: range slicing is only supported for the last index

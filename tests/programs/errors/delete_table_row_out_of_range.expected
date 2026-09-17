@@ -1,0 +1,2 @@
+// Row index beyond the last row
+Error on line 2: index 5 out of range for a table with 2 rows

@@ -1,0 +1,107 @@
+// Deleting a variable frees its name for reuse
+f: 1
+g: f
+del f
+g: 2
+>> g
+
+// Variable deletion keeps other references to the value alive
+a: 1, 2
+b: a
+del a
+>> b
+
+// Array: single element deletion shifts the rest
+c: 10, 20, 30, 40
+del c 1
+>> c
+>> c 1
+>> len c
+
+// Array: delete first and last elements
+del c 0
+del c 1
+>> c
+
+// Array: ascending slice deletion
+d: 1, 2, 3, 4, 5
+del d 1__3
+>> d
+
+// Array: descending slice deletion
+e: 1, 2, 3, 4, 5
+del e 4__2
+>> e
+
+// Array: front shorthand slice deletion
+h: 1, 2, 3
+del h __1
+>> h
+
+// Array: deleting by a computed index
+i: 0
+j: 5, 6, 7
+del j i
+>> j
+
+// Map: delete a key
+m: { 'a': 1; 'b': 2; 'c': 3 }
+del m 'b'
+>> m
+>> m 'b'
+>> len m
+
+// Map: deleting a missing key is a silent no-op
+m2: { 'a': 1 }
+del m2 'nope'
+>> m2
+>> len m2
+
+// Map: non-text keys (boolean, number) delete the same way
+mk: { true: 't'; 7: 'seven' }
+del mk true
+del mk 7
+>> mk
+
+// Map: nested deletion descends into the stored value
+n: { 'a': 10, 20, 30 }
+del n 'a' 0
+>> n
+>> n 'a'
+
+// Array: nested deletion via comma-grouped steps
+nested: 10, 20
+outer: 'x', nested
+del outer 1, 0
+>> outer
+
+// Table: deleting a column
+t: ['id': 1, 2, 3; 'price': 10, 20, 30; 'qty': 5, 6, 7]
+del t 'price'
+>> t 0
+>> t 'price'
+>> len t
+>> t 'qty'
+
+// Table: deleting a row shifts the rest up
+del t 1
+>> len t
+>> t 1
+>> t 'id'
+
+// Table: deleting a row from a padded (uneven) table
+tp: ['a': 1, 2; 'b': 10, 20, 30]
+del tp 2
+>> len tp
+>> tp 1
+
+// Table: deleting a column leaves the others intact
+del tp 'b'
+>> len tp
+>> tp 0
+
+// Table: deleting the last column leaves an empty table
+t2: ['only': 1]
+del t2 'only'
+>> t2
+>> len t2

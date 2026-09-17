@@ -1,0 +1,2 @@
+// Slice end beyond the last element
+Error on line 2: range end 7 out of bounds for an array of length 3

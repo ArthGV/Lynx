@@ -1,0 +1,2 @@
+// del needs a name to delete
+SyntaxError on line 1: expected IDENTIFIER, got NUMBER

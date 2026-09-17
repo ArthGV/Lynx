@@ -5,7 +5,7 @@ are not reachable from `.lx` programs — there is no keyword for them. These ar
 tested here directly against the values module.
 """
 
-from src.errors.errors import LynxNotImplemented, LynxTypeError
+from src.errors.errors import LynxError, LynxNotImplemented, LynxTypeError
 from src.runtime.values import Array, Boolean, Map, Number, Table, Text, Void
 
 
@@ -226,6 +226,36 @@ def test_map_arithmetic_not_implemented():
         assert False, "not_ should not be implemented"
     except LynxNotImplemented:
         pass
+
+
+def test_map_remove_item():
+    m = mp((Text("a"), Number(1)), (Text("b"), Number(2)))
+    m.remove_item(Text("a"))
+    assert len(m.value) == 1
+    assert type(m.get_item(Text("a"))) is Void
+    assert m.get_item(Text("b")).value == 2
+
+
+def test_map_remove_item_missing_is_noop():
+    m = mp((Text("a"), Number(1)))
+    m.remove_item(Text("nope"))
+    assert len(m.value) == 1
+    assert m.get_item(Text("a")).value == 1
+
+
+def test_map_remove_item_removes_whole_map():
+    m = mp((Text("a"), Number(1)), (Text("b"), Number(2)))
+    m.remove_item(Text("a"))
+    m.remove_item(Text("b"))
+    assert len(m.value) == 0
+
+
+def test_map_remove_item_distinct_key_types():
+    # 1 and '1' are different keys; removing one leaves the other.
+    m = mp((Number(1), Text("num")), (Text("1"), Text("text")))
+    m.remove_item(Number(1))
+    assert len(m.value) == 1
+    assert m.get_item(Text("1")).value == "text"
 
 
 def print_(v):
@@ -539,6 +569,72 @@ def test_table_get_row_pads_short_column():
     row = t.get_row(1)
     assert row.get_item(Text("id")).value == 2
     assert type(row.get_item(Text("price"))) is Void
+
+
+def test_table_del_column():
+    t = tbl(("id", [1, 2, 3]), ("price", [10, 20, 30]))
+    t.del_column("price")
+    assert list(t.columns.keys()) == ["id"]
+    assert t.nrows == 3
+    assert [c.value for c in t.columns["id"]] == [1, 2, 3]
+
+
+def test_table_del_column_missing_raises():
+    t = tbl(("id", [1, 2]))
+    try:
+        t.del_column("nope")
+        assert False, "should have raised"
+    except LynxError as e:
+        assert "'nope'" in str(e)
+        assert "no column" in str(e)
+
+
+def test_table_del_column_last_leaves_empty():
+    t = tbl(("only", [1]))
+    t.del_column("only")
+    assert t.columns == {}
+    assert t.nrows == 0
+
+
+def test_table_del_row():
+    t = tbl(("id", [1, 2, 3]), ("price", [10, 20, 30]))
+    t.del_row(1)
+    assert t.nrows == 2
+    assert [c.value for c in t.columns["id"]] == [1, 3]
+    assert [c.value for c in t.columns["price"]] == [10, 30]
+
+
+def test_table_del_row_first_and_last():
+    t = tbl(("id", [1, 2, 3]))
+    t.del_row(0)
+    assert [c.value for c in t.columns["id"]] == [2, 3]
+    t.del_row(1)
+    assert [c.value for c in t.columns["id"]] == [2]
+    assert t.nrows == 1
+
+
+def test_table_del_row_out_of_range_raises():
+    t = tbl(("id", [1, 2]))
+    for idx in (-1, 2):
+        try:
+            t.del_row(idx)
+            assert False, f"index {idx} should have raised"
+        except LynxError as e:
+            assert f"index {idx} out of range" in str(e)
+    assert t.nrows == 2
+
+
+def test_table_del_row_updates_padding():
+    # The padded column loses its void fill with the row, staying aligned.
+    t = Table([("a", [Number(1), Number(2)]), ("b", [Number(3)])])
+    assert t.nrows == 2
+    t.del_row(1)
+    assert t.nrows == 1
+    assert len(t.columns["a"]) == 1
+    assert len(t.columns["b"]) == 1
+    row = t.get_row(0)
+    assert row.get_item(Text("a")).value == 1
+    assert row.get_item(Text("b")).value == 3
 
 
 def test_table_arithmetic_not_implemented():

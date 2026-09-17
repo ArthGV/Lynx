@@ -1,0 +1,2 @@
+// Array indices must be numbers
+TypeError on line 2: array index must be a number, got Text

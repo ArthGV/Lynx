@@ -1,0 +1,2 @@
+// Map keys must be simple types
+TypeError on line 3: map key must be a simple type, got Array

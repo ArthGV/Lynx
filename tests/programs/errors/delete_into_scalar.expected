@@ -1,0 +1,2 @@
+// You can't index into a scalar to delete something from it
+TypeError on line 2: cannot delete from a Number

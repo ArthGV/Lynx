@@ -1,0 +1,2 @@
+// Text holds no per-character deletion
+TypeError on line 2: cannot delete from a Text

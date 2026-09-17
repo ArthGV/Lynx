@@ -1,0 +1,2 @@
+// del with no target at all
+SyntaxError on line 1: expected IDENTIFIER, got NEWLINE
