@@ -1,0 +1,16 @@
+// numeric lanes: fast aggregates, filters, ordering, and cache invalidation
+t: ['id': 1, 2, 3, 4, 5; 'price': 10, 20, 15, 90, 7]
+
+>> sum t 'price'
+>> avg t 'price'
+>> min t 'price'
+>> max t 'price'
+
+>> where t 'price' > 15
+>> order t 'price'
+
+t 'price': 1, 2, 3, 4
+>> sum t 'price'
+>> avg t 'price'
+>> min t 'price'
+>> max t 'price'

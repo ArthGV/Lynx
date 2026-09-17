@@ -824,6 +824,84 @@ def test_table_join_no_shared_columns_is_empty():
     assert print_(joined) == "┌────┐\n└────┘"
 
 
+# --- numeric lane fast paths --------------------------------------------
+
+
+def test_table_column_aggregate_matches_copy():
+    # The fast path must agree with copying the column into an Array and
+    # calling the generic aggregate.
+    t = tbl(("price", [10, 20, 15, 90, 7]))
+    for method in ("sum", "avg", "min", "max"):
+        fast = t.column_aggregate("price", method)
+        generic = getattr(t.get_column("price"), method)()
+        assert fast is not None
+        assert fast.value == generic.value
+    assert t.column_aggregate("price", "sum").value == 142
+    assert t.column_aggregate("price", "avg").value == 28.4
+    assert t.column_aggregate("price", "min").value == 7
+    assert t.column_aggregate("price", "max").value == 90
+
+
+def test_table_column_aggregate_mixed_missing_empty():
+    t = tbl(("price", [1, 2]), ("mixed", [1, "nope"]))
+    # A non-Number cell (or a Void pad) means the lane is off.
+    assert t.column_aggregate("price", "sum").value == 3
+    assert t.column_aggregate("mixed", "sum") is None
+    assert t.column_aggregate("nope", "sum") is None
+    padded = Table([("a", [Number(3), Number(4)]), ("b", [Number(1)])])
+    assert padded.column_aggregate("b", "sum") is None
+    assert type(Table([("price", [])]).column_aggregate("price", "sum")) is Void
+
+
+def test_table_lane_invalidated_on_mutation():
+    t = tbl(("price", [1, 2, 3]))
+    assert t.column_aggregate("price", "sum").value == 6
+    t.set_column("price", [Number(5), Number(6), Number(7)])
+    assert t.column_aggregate("price", "sum").value == 18
+    t.del_row(0)
+    assert t.column_aggregate("price", "sum").value == 13
+    t.del_column("price")
+    t.set_column("price", [Number(1), Number(2)])
+    assert t.column_aggregate("price", "sum").value == 3
+    assert t.column_aggregate("price", "avg").value == 1.5
+
+
+def test_table_rows_where_numeric_fast_path():
+    t = tbl(("id", [1, 2, 3, 4, 5]), ("price", [10, 20, 15, 90, 7]))
+
+    def ids(result):
+        return [c.value for c in result.columns["id"]]
+
+    assert ids(t.rows_where("price", "GREATER", Number(15))) == [2, 4]
+    assert ids(t.rows_where("price", "LESSER_OR_EQUAL", Number(15))) == [1, 3, 5]
+    assert ids(t.rows_where("price", "EQUAL", Number(20))) == [2]
+    assert ids(t.rows_where("price", "NOT_EQUAL", Number(20))) == [1, 3, 4, 5]
+    assert ids(t.rows_where("price", "ALMOST", Number(20))) == [2]
+    # >~ 20 keeps strictly-greater (90) or within 1 (20); 15 and 7 are neither.
+    assert ids(t.rows_where("price", "GREATER_OR_ALMOST", Number(20))) == [2, 4]
+    assert ids(t.rows_where("price", "LESSER_OR_ALMOST", Number(20))) == [1, 2, 3, 5]
+
+
+def test_table_rows_where_padded_falls_back():
+    # Price 4 padded with Void: the generic path comparison-sorts the void row
+    # the same way the fast path would, so results stay identical.
+    t = Table(
+        [
+            ("id", [Number(1), Number(2), Number(3), Number(4), Number(5)]),
+            ("price", [Number(10), Number(20), Number(15), Number(90)]),
+        ]
+    )
+    kept = t.rows_where("price", "GREATER", Number(15))
+    assert [c.value for c in kept.columns["id"]] == [2, 4]
+
+
+def test_table_order_by_numeric_lane():
+    t = tbl(("id", [1, 2, 3, 4, 5]), ("price", [10, 20, 15, 90, 7]))
+    ordered = t.order_by("price")
+    assert [c.value for c in ordered.columns["id"]] == [5, 1, 3, 2, 4]
+    assert [c.value for c in ordered.columns["price"]] == [7, 10, 15, 20, 90]
+
+
 # --- iterate ------------------------------------------------------------
 
 

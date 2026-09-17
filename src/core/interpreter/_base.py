@@ -11,7 +11,7 @@ imported at the *bottom* of this file — after every function they call — so
 they can import back from this partially-loaded module without a cycle.
 """
 
-from typing import Any
+from typing import Any, cast
 
 from src.core.nodes import (
     Append,
@@ -50,6 +50,14 @@ from src.runtime.environment import Environment
 from src.runtime.functions import FunctionValue, _Return, _Skip, _Stop
 
 _UNSET = object()
+
+# Sentinels and tables for the `sum t 'price'`-shaped unary fast path: when a
+# SUM/AVG/MIN/MAX unary's operand is exactly `name 'col'` and the name resolves
+# to a Table whose column is all Number, column_aggregate computes the result
+# straight off the raw lane. Any other operand shape, non-table value, or
+# mixed column sends the expression down the generic walker unchanged.
+_NO_TABLE_AGGREGATE = object()
+_TABLE_AGGREGATE_METHOD = {"SUM": "sum", "AVG": "avg", "MIN": "min", "MAX": "max"}
 
 __all__ = [
     "_Return",
@@ -151,6 +159,29 @@ def execute(node: Any, env: Environment) -> None:
             raise LynxTypeError(f"cannot execute {type(node).__name__}")
 
 
+def _table_column_aggregate(operator: str, operand: Any, line: int | None, env: Environment) -> values.Type | object:
+    # Fast path for `sum t 'price'`/`avg`/`min`/`max`: resolve the operand's
+    # single text-argument call directly and run the aggregate off the column's
+    # raw lane. Only fires when the callee is a Table holding nothing but
+    # Numbers in that column; anything else returns the sentinel and the caller
+    # walks the operand through the generic evaluator (identical result).
+    method = _TABLE_AGGREGATE_METHOD.get(operator)
+    if method is None:
+        return _NO_TABLE_AGGREGATE
+    if not isinstance(operand, Call) or not isinstance(operand.callee, str) or len(operand.args) != 1:
+        return _NO_TABLE_AGGREGATE
+    argument = operand.args[0]
+    if not isinstance(argument, Text):
+        return _NO_TABLE_AGGREGATE
+    table = env.get(operand.callee, line)
+    if not isinstance(table, values.Table):
+        return _NO_TABLE_AGGREGATE
+    result = table.column_aggregate(argument.value, method)
+    if result is None:
+        return _NO_TABLE_AGGREGATE
+    return result
+
+
 def evaluate(node: Any, env: Environment) -> values.Type:
     match node:
         case Number(value):
@@ -172,6 +203,9 @@ def evaluate(node: Any, env: Environment) -> values.Type:
             return _operators.apply_binary(operator, evaluate(left, env), evaluate(right, env), line)
 
         case UnaryExpression(operator, operand, line):
+            aggregate = _table_column_aggregate(operator, operand, line, env)
+            if aggregate is not _NO_TABLE_AGGREGATE:
+                return cast(values.Type, aggregate)
             return _operators.apply_unary(operator, evaluate(operand, env), line)
 
         case Call(callee, args, line):

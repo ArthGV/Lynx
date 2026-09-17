@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from dataclasses import dataclass
 from functools import cmp_to_key
 from typing import Any
 
@@ -12,6 +14,35 @@ from src.types.map import Map
 from src.types.simple_type import Boolean, Number, Text, Void
 from src.utils.keys import cells_equal, map_key
 from src.utils.text import compare_raw, edit_distance_sets
+
+
+@dataclass
+class _ColumnLane:
+    # The raw values of an all-Number column, cached so aggregates and row
+    # filters skip per-cell Boxing and dispatch. Valid while the source list
+    # keeps its identity and length — the only table mutations (set_column
+    # replaces the list, del_column removes it, del_row shortens it) all
+    # invalidate one of the two. `numbers` is None for columns holding any
+    # non-Number cell (then no query ever uses the lane).
+    column_id: int
+    length: int
+    numbers: list[int | float] | None
+
+
+# The same-type Number predicates behind `where`: mirrors base_type's
+# compare/almost-derived methods on raw values, so the lane filter is
+# behaviour-identical to dispatching each cell through operations.binary.
+_NUMBER_PREDICATES: dict[str, Callable[[int | float, int | float], bool]] = {
+    "equals": lambda a, b: a == b,
+    "not_equal": lambda a, b: a != b,
+    "greater": lambda a, b: a > b,
+    "less": lambda a, b: a < b,
+    "greater_or_equal": lambda a, b: a >= b,
+    "lesser_or_equal": lambda a, b: a <= b,
+    "almost": lambda a, b: abs(a - b) < 1,
+    "greater_or_almost": lambda a, b: a > b or abs(a - b) < 1,
+    "lesser_or_almost": lambda a, b: a < b or abs(a - b) < 1,
+}
 
 
 class Table(ComplexType):
@@ -47,7 +78,28 @@ class Table(ComplexType):
         if duplicates:
             rendered = ", ".join(f"'{name}'" for name in duplicates)
             raise LynxTypeError(f"table column names must be unique, got duplicates {rendered}", line)
+        self._lanes: dict[str, _ColumnLane] = {}
         self._recompute_padding()
+
+    def _lane(self, name: str) -> _ColumnLane | None:
+        # A cached raw-number view of one column, rebuilt whenever the column
+        # list is replaced or resized (see the _ColumnLane docstring).
+        column = self.columns.get(name)
+        if column is None:
+            return None
+        lane = self._lanes.get(name)
+        if lane is None or lane.column_id != id(column) or lane.length != len(column):
+            numbers: list[int | float] = []
+            is_number = True
+            for cell in column:
+                if isinstance(cell, Number):
+                    numbers.append(cell.value)
+                else:
+                    is_number = False
+                    break
+            lane = _ColumnLane(id(column), len(column), numbers if is_number else None)
+            self._lanes[name] = lane
+        return lane
 
     def _recompute_padding(self) -> None:
         # Shorter columns are padded with Void up to the longest so every row
@@ -253,6 +305,12 @@ class Table(ComplexType):
         if name not in self.columns:
             raise LynxError(f"table has no column '{name}'", line)
         column = self.columns[name]
+        lane = self._lane(name)
+        if lane is not None and lane.numbers is not None:
+            # All-Number column: decorates raw values directly, same stable
+            # order the (rank, value) key below produces (rank is constant).
+            ordered = sorted(range(self.nrows), key=lane.numbers.__getitem__)
+            return self._from_row_indices(ordered)
         if all(self._simple_cell_key(cell) is not None for cell in column):
             # Scalar cells: `_compare_cells` orders different types by rank,
             # then same-type cells by `.compare` — the (rank, value) key
@@ -306,12 +364,18 @@ class Table(ComplexType):
 
         method = BINARY_METHOD.get(operator, operator)
         column = self.columns[name]
-        kept: list[int] = []
+        lane = self._lane(name)
+        if lane is not None and lane.numbers is not None and isinstance(rhs, Number):
+            predicate = _NUMBER_PREDICATES.get(method)
+            if predicate is not None:
+                kept = [i for i, value in enumerate(lane.numbers) if predicate(value, rhs.value)]
+                return self._from_row_indices(kept)
+        kept_rows: list[int] = []
         for i in range(self.nrows):
             result = ops.binary(method, column[i], rhs)
             if result.boolean().is_true():
-                kept.append(i)
-        return self._from_row_indices(kept)
+                kept_rows.append(i)
+        return self._from_row_indices(kept_rows)
 
     def join(self, other: Table, line: int | None = None) -> Table:
         shared = [name for name in self.columns if name in other.columns]
@@ -364,6 +428,29 @@ class Table(ComplexType):
 
     def _from_row_indices(self, indices: list[int]) -> Table:
         return Table([(name, [column[i] for i in indices]) for name, column in self.columns.items()])
+
+    def column_aggregate(self, name: str, method: str) -> Type | None:
+        # Fast aggregate over an all-Number column, called by the interpreter's
+        # `sum t 'price'`-shaped unary dispatch: same result as copying the
+        # column into an Array and calling Array.sum/avg/min/max (which skips
+        # non-Numbers and returns Void when none), but without the copy or the
+        # per-cell dispatch. Returns None when the fast path can't be used, so
+        # the caller falls back to the exact generic evaluation.
+        lane = self._lane(name)
+        if lane is None or lane.numbers is None:
+            return None
+        numbers = lane.numbers
+        if not numbers:
+            return Void()
+        if method == "sum":
+            return Number(sum(numbers))
+        if method == "avg":
+            return Number(sum(numbers) / len(numbers))
+        if method == "min":
+            return Number(min(numbers))
+        if method == "max":
+            return Number(max(numbers))
+        return None
 
     def count(self) -> Number:
         return Number(self.nrows)
