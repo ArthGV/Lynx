@@ -11,7 +11,7 @@ imported at the *bottom* of this file — after every function they call — so
 they can import back from this partially-loaded module without a cycle.
 """
 
-from typing import Any, cast
+from typing import Any
 
 from src.core.nodes import (
     Append,
@@ -180,7 +180,7 @@ def evaluate(node: Any, env: Environment) -> values.Type:
             return evaluate(inner, env)
 
         case Identifier(name, line):
-            return cast(values.Type, env.get(name, line))
+            return env.get(name, line)  # type: ignore[no-any-return]
 
         case Call(callee, args, line):
             return _expressions.call(callee, args, line, env)

@@ -77,7 +77,8 @@ def mixed(first: type, second: type, method: str, commutes: bool = False) -> Cal
 
 def binary(method: str, left: values.Type, right: values.Type) -> values.Type:
     if type(left) is type(right):
-        return cast(values.Type, getattr(left, method)(right))
+        # The hot path: one value's own operation on another of its own type.
+        return getattr(left, method)(right)  # type: ignore[no-any-return]
 
     handler = MIXED.get((type(left), type(right), method))
     if handler is not None:
@@ -91,7 +92,7 @@ def binary(method: str, left: values.Type, right: values.Type) -> values.Type:
     if policy is PASSTHROUGH:
         # The type decides what "in" means for this pair itself; no coercing
         # the container into the element's type first.
-        return cast(values.Type, getattr(left, method)(right))
+        return getattr(left, method)(right)  # type: ignore[no-any-return]
 
     # Nobody wrote this pair, so reconcile it and borrow the same-type logic.
     # A hole we land in that way belongs to the *pair* the user wrote, not to
@@ -100,8 +101,8 @@ def binary(method: str, left: values.Type, right: values.Type) -> values.Type:
     try:
         if policy is RANK and left.rank is not None and right.rank is not None and right.rank > left.rank:
             # Promote the left operand instead, so position can't change the answer.
-            return cast(values.Type, getattr(right.coerce(left), method)(right))
-        return cast(values.Type, getattr(left, method)(left.coerce(right)))
+            return getattr(right.coerce(left), method)(right)  # type: ignore[no-any-return]
+        return getattr(left, method)(left.coerce(right))  # type: ignore[no-any-return]
     except LynxNotImplemented as error:
         raise LynxNotImplemented(
             f"'{method}' is not implemented yet between {left.type_name()} and {right.type_name()}"

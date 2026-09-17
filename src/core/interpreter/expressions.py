@@ -32,6 +32,20 @@ def call(callee: Any, args: list[Any], line: int | None, env: Environment) -> va
     # (the result of an earlier chained call), so resolve it to a value first.
     fn = env.get(callee, line) if isinstance(callee, str) else evaluate(callee, env)
 
+    # Functions are checked first: user-function calls are the common case and
+    # the container `isinstance` chain below is only meaningful for indexing.
+    if isinstance(fn, FunctionValue):
+        if len(args) != len(fn.params):
+            raise LynxInputError(f"{callee} expected {len(fn.params)} input but got {len(args)}", line)
+        scope = fn.env.child()
+        for param, arg in zip(fn.params, args):
+            scope.set(param, evaluate(arg, env))
+        try:
+            execute(fn.body, scope)
+        except _Return as returned:
+            return returned.value  # type: ignore[no-any-return]
+        return values.Void()
+
     if isinstance(fn, values.Array):
         return index_array(fn, args, line, env)
 
@@ -44,20 +58,9 @@ def call(callee: Any, args: list[Any], line: int | None, env: Environment) -> va
     if isinstance(fn, values.Text):
         return index_text(fn, args, line, env)
 
-    if not isinstance(fn, FunctionValue):
-        if isinstance(callee, str):
-            raise LynxTypeError(f"'{callee}' is not a function, it is a {fn.type_name()}", line)
-        raise LynxTypeError(f"cannot call a {fn.type_name()}", line)
-    if len(args) != len(fn.params):
-        raise LynxInputError(f"{callee} expected {len(fn.params)} input but got {len(args)}", line)
-    scope = fn.env.child()
-    for param, arg in zip(fn.params, args):
-        scope.set(param, evaluate(arg, env))
-    try:
-        execute(fn.body, scope)
-    except _Return as returned:
-        return cast(values.Type, returned.value)
-    return values.Void()
+    if isinstance(callee, str):
+        raise LynxTypeError(f"'{callee}' is not a function, it is a {fn.type_name()}", line)
+    raise LynxTypeError(f"cannot call a {fn.type_name()}", line)
 
 
 def index_array(array: values.Array, args: list[Any], line: int | None, env: Environment) -> values.Type:
