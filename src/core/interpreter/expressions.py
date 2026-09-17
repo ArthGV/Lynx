@@ -16,7 +16,24 @@ from src.core.interpreter._base import (
     execute,
     is_range,
 )
-from src.core.nodes import ArrayLiteral, BinaryExpression, Call, Cell
+from src.core.nodes import (
+    ArrayLiteral,
+    BinaryExpression,
+    Call,
+    Cell,
+)
+from src.core.nodes import (
+    Boolean as BooleanLiteral,
+)
+from src.core.nodes import (
+    Number as NumberLiteral,
+)
+from src.core.nodes import (
+    Text as TextLiteral,
+)
+from src.core.nodes import (
+    Void as VoidLiteral,
+)
 from src.errors.errors import LynxError, LynxInputError, LynxSyntaxError, LynxTypeError
 from src.runtime import values
 from src.runtime.environment import Environment
@@ -314,6 +331,17 @@ def cell_value(node: Any, line: int | None, env: Environment) -> list[values.Typ
     # One table column cell. A `Cell` (a parenthesized value like `(4, 5)`,
     # `(a)` or `(__7)`) is kept as a single element; any other value that
     # evaluates to an array is spread into the column.
+    #
+    # A literal Number/Text/Boolean/Void is boxed directly — the dominant case
+    # for table literals — skipping the generic evaluate() match dispatch.
+    if isinstance(node, NumberLiteral):
+        return [values.Number(node.value)]
+    if isinstance(node, TextLiteral):
+        return [values.Text(node.value)]
+    if isinstance(node, BooleanLiteral):
+        return [values.Boolean(node.value)]
+    if isinstance(node, VoidLiteral):
+        return [values.Void()]
     if isinstance(node, Cell):
         return [evaluate(node.inner, env)]
     value = evaluate(node, env)

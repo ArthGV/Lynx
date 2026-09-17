@@ -40,6 +40,12 @@ from src.errors.errors import LynxSyntaxError
 # parens are plain grouping: `(number x) + 1`.
 _BINARY_OPERATOR_TOKENS = {token for level in BINARY_LEVELS for token in level}
 
+# A literal cell is complete when the token after it is one of these row
+# terminators: the cell is a bare value, not part of a range, an operator
+# expression, or a chained call. Lexed majorities of table columns qualify.
+_CELL_LITERAL_TOKENS = ("NUMBER", "TEXT", "TYPE_VALUE", "BOOLEAN", "VOID")
+_CELL_TERMINATOR_TOKENS = ("COMMA", "SEMICOLON", "RBRACK")
+
 
 class ExpressionMixin(Parser):
     def parse_expression(self, allow_chain: bool = True) -> Any:
@@ -208,6 +214,23 @@ class ExpressionMixin(Parser):
         # element cell — `(4, 5)`, `(a)` and `(__7)` each store the array as
         # one cell. Anything else parses normally; if it evaluates to an
         # array, the interpreter spreads it into the column.
+        #
+        # Most cells are bare literals that end a row — `1` or `'alpha'` before
+        # a comma, semicolon, or `]`. Those never take operators, ranges, or
+        # chains, so they're boxed directly instead of climbing the whole
+        # precedence ladder; anything more is handled below.
+        cell_type = self.type()
+        if cell_type in _CELL_LITERAL_TOKENS:
+            after = self.peek_next()
+            if after is not None and after.type in _CELL_TERMINATOR_TOKENS:
+                token = self.advance()
+                if token.type in ("TEXT", "TYPE_VALUE"):
+                    return Text(token.value)
+                if token.type == "BOOLEAN":
+                    return Boolean(token.value)
+                if token.type == "VOID":
+                    return Void()
+                return Number(token.value)
         if self.type() == "LPAREN":
             save = self.current
             node = self.parse_parenthesized(False)

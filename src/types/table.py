@@ -202,14 +202,46 @@ class Table(ComplexType):
     # --- SQL-style operations ---
 
     def distinct(self) -> Table:
-        seen: list[Map] = []
-        indices: list[int] = []
+        keys: list[tuple[Any, ...] | None] = []
+        for i in range(self.nrows):
+            parts: list[tuple[str, tuple[str, Any]]] = []
+            for name, column in self.columns.items():
+                cell_key = self._simple_cell_key(column[i])
+                if cell_key is None:
+                    parts = []
+                    break
+                parts.append((name, cell_key))
+            keys.append(tuple(parts) if parts else None)
+        if all(key is not None for key in keys):
+            seen: set[tuple[Any, ...]] = set()
+            kept: list[int] = []
+            for i, key in enumerate(keys):
+                assert key is not None
+                if key not in seen:
+                    seen.add(key)
+                    kept.append(i)
+            return self._from_row_indices(kept)
+        # Rows holding nested values can't be hashed canonically, so fall
+        # back to pairwise row equality.
+        seen_rows: list[Map] = []
+        kept_indices: list[int] = []
         for i in range(self.nrows):
             row = self.get_row(i)
-            if not any(row.equals(prev).is_true() for prev in seen):
-                seen.append(row)
-                indices.append(i)
-        return self._from_row_indices(indices)
+            if not any(row.equals(prev).is_true() for prev in seen_rows):
+                seen_rows.append(row)
+                kept_indices.append(i)
+        return self._from_row_indices(kept_indices)
+
+    @staticmethod
+    def _simple_cell_key(cell: Type) -> tuple[str, Any] | None:
+        """A hashable, equality-faithful key for a scalar cell, or None for a
+        nested value. Mirrors `map_key` (adding Void, which has no `.value`):
+        two cells share a key exactly when `cells_equal` would say so."""
+        if isinstance(cell, Void):
+            return ("Void", "void")
+        if isinstance(cell, (Number, Text, Boolean)):
+            return (cell.type_name(), cell.value)
+        return None
 
     def select(self, names: list[str], line: int | None = None) -> Type:
         for name in names:
@@ -221,11 +253,29 @@ class Table(ComplexType):
         if name not in self.columns:
             raise LynxError(f"table has no column '{name}'", line)
         column = self.columns[name]
-        ordered = sorted(
-            range(self.nrows),
-            key=cmp_to_key(lambda i, j: self._compare_cells(column[i], column[j])),  # type: ignore[call-overload]
-        )
+        if all(self._simple_cell_key(cell) is not None for cell in column):
+            # Scalar cells: `_compare_cells` orders different types by rank,
+            # then same-type cells by `.compare` — the (rank, value) key
+            # reproduces that exactly, so one decorate pass replaces the
+            # pairwise comparator (kept for columns holding nested values).
+            ordered = sorted(
+                range(self.nrows),
+                key=lambda i: (column[i].rank, self._scalar_value(column[i])),
+            )
+        else:
+            ordered = sorted(
+                range(self.nrows),
+                key=cmp_to_key(lambda i, j: self._compare_cells(column[i], column[j])),  # type: ignore[call-overload]
+            )
         return self._from_row_indices(ordered)
+
+    @staticmethod
+    def _scalar_value(cell: Type) -> Any:
+        if isinstance(cell, Void):
+            return "void"
+        if isinstance(cell, (Number, Text, Boolean)):
+            return cell.value
+        return repr(cell)
 
     @staticmethod
     def _compare_cells(a: Type, b: Type) -> int:
@@ -268,7 +318,40 @@ class Table(ComplexType):
         if not shared:
             return Table([])
         names = list(self.columns) + [name for name in other.columns if name not in shared]
-        columns: dict[str, list[Type]] = {name: [] for name in names}
+
+        def join_key(table: Table, index: int) -> tuple[Any, ...] | None:
+            parts: list[tuple[str, tuple[str, Any]]] = []
+            for name in shared:
+                cell_key = table._simple_cell_key(table.columns[name][index])
+                if cell_key is None:
+                    return None
+                parts.append((name, cell_key))
+            return tuple(parts)
+
+        left_keys = [join_key(self, r) for r in range(self.nrows)]
+        right_keys = [join_key(other, s) for s in range(other.nrows)]
+        if all(key is not None for key in left_keys) and all(key is not None for key in right_keys):
+            # Hash the right table on the shared columns, then walk the left
+            # rows in order — the same (left row, matched right rows in order)
+            # sequence the nested loop produces, in O(n + m) instead of O(n·m).
+            buckets: dict[tuple[Any, ...], list[int]] = {}
+            for s, key in enumerate(right_keys):
+                assert key is not None
+                buckets.setdefault(key, []).append(s)
+            columns: dict[str, list[Type]] = {name: [] for name in names}
+            for r, key in enumerate(left_keys):
+                assert key is not None
+                for s in buckets.get(key, []):
+                    for name in self.columns:
+                        columns[name].append(self.columns[name][r])
+                    for name in other.columns:
+                        if name not in shared:
+                            columns[name].append(other.columns[name][s])
+            return Table(list(columns.items()))
+
+        # A shared column holding nested values can't be hashed canonically,
+        # so fall back to the pairwise scan.
+        columns = {name: [] for name in names}
         for r in range(self.nrows):
             for s in range(other.nrows):
                 if all(cells_equal(self.columns[name][r], other.columns[name][s]) for name in shared):

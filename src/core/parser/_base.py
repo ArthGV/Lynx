@@ -39,6 +39,11 @@ class Parser:
         token = self.peek()
         return token.type if token else EOF
 
+    def peek_next(self) -> Token | None:
+        if self.current + 1 >= len(self.tokens):
+            return None
+        return self.tokens[self.current + 1]
+
     def advance(self) -> Token:
         token = self.tokens[self.current]
         self.current += 1

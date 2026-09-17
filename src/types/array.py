@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from src.types.base_type import ComplexType, Type
 from src.types.simple_type import Boolean, Number, Text, Void
 from src.utils.text import compare_raw, edit_distance_seq
@@ -120,11 +122,32 @@ class Array(ComplexType):
         return Number(len(self.value))
 
     def distinct(self) -> Array:
-        seen: list[Type] = []
+        keys: list[tuple[str, Any] | None] = []
         for item in self.value:
-            if not any(type(item) is type(seen_item) and item.equals(seen_item).is_true() for seen_item in seen):
-                seen.append(item)
-        return Array(seen)
+            if isinstance(item, Void):
+                keys.append(("Void", "void"))
+            elif isinstance(item, (Number, Text, Boolean)):
+                keys.append((item.type_name(), item.value))
+            else:
+                keys.append(None)
+        if all(key is not None for key in keys):
+            # Simple elements hash canonically — first occurrence wins, same
+            # as the pairwise scan below but in O(n) instead of O(n²).
+            seen: set[tuple[str, Any]] = set()
+            kept: list[Type] = []
+            for item, key in zip(self.value, keys):
+                assert key is not None
+                if key not in seen:
+                    seen.add(key)
+                    kept.append(item)
+            return Array(kept)
+        # Nested elements can't be hashed canonically, so fall back to
+        # pairwise type-and-equality scanning.
+        seen_items: list[Type] = []
+        for item in self.value:
+            if not any(type(item) is type(prev) and item.equals(prev).is_true() for prev in seen_items):
+                seen_items.append(item)
+        return Array(seen_items)
 
     # --- not implemented yet ---
     def add(self, other: Array) -> Type:
