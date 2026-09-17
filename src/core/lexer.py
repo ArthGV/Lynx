@@ -20,8 +20,22 @@ TEXT = re.compile(r"'((?:[^'\\]|\\.)*)'")
 # lexes as `l`, `__`, `n`, while `a_b` and trailing underscores stay a name.
 IDENTIFIER = re.compile(r"[a-zA-Z_](?:[a-zA-Z0-9]|_(?!_))*")
 
-# Longest symbols first so ">>" wins over ">" and "//" over "/".
+# Longest symbols first so ">>" wins over ">" and "//" over "/". The cursor
+# lexer splits this into a first-char map so a symbol costs one dict probe
+# instead of a scan past every single-character symbol.
 ORDERED_SYMBOLS = sorted(SYMBOLS, key=len, reverse=True)
+
+# Single-character symbols: char -> token type, hit directly per character.
+_SINGLE_SYMBOLS: dict[str, str] = {symbol: token for symbol, token in SYMBOLS.items() if len(symbol) == 1}
+# Multi-character symbols: first char -> candidates, longest first, so `>>>`
+# wins over the `>>` it starts with. Only consulted for a first char that has
+# them.
+_MULTI_SYMBOLS: dict[str, list[tuple[str, str]]] = {}
+for _symbol, _token in SYMBOLS.items():
+    if len(_symbol) > 1:
+        _MULTI_SYMBOLS.setdefault(_symbol[0], []).append((_symbol, _token))
+for _candidates in _MULTI_SYMBOLS.values():
+    _candidates.sort(key=lambda pair: len(pair[0]), reverse=True)
 
 # Escapes in text literals. An unknown sequence is kept literally, so `'C:\q'`
 # stays `C:\q` and `'a\b'` is `\b`. Deliberately no `\"`: the language only
@@ -87,11 +101,14 @@ def tokenize(source: str) -> list[Token]:
             indents.pop()
             tokens.append(Token("DEDENT", None, line_no))
 
-        rest = stripped
-        while rest:
-            if rest.startswith(COMMENT):
+        text = stripped
+        pos = 0
+        while pos < len(text):
+            if text.startswith(COMMENT, pos):
                 break
-            rest = read_token(rest, line_no, tokens)
+            pos = read_token(text, pos, line_no, tokens)
+            while pos < len(text) and text[pos] == " ":
+                pos += 1
 
         tokens.append(Token("NEWLINE", None, line_no))
 
@@ -108,35 +125,47 @@ def tokenize(source: str) -> list[Token]:
     return tokens
 
 
-def read_token(rest: str, line_no: int, tokens: list[Token]) -> str:
-    """Read one token from the front of `rest` and return what's left."""
-    match = TEXT.match(rest)
+def read_token(text: str, pos: int, line_no: int, tokens: list[Token]) -> int:
+    """Read one token starting at `text[pos]`; return the index just past it.
+
+    Matches are anchored with `re.match(..., pos)` so nothing past the token
+    is ever sliced, and after a token the caller only skips spaces — the
+    cursor never re-copies the rest of the line like the old offset+slice walk.
+    """
+    match = TEXT.match(text, pos)
     if match:
         tokens.append(Token("TEXT", _unescape(match.group(1)), line_no))
-        return rest[match.end() :].lstrip()
+        return match.end()
 
-    match = NUMBER.match(rest)
+    match = NUMBER.match(text, pos)
     if match:
-        after = rest[match.end() :]
-        if after.startswith("_") and not after.startswith("__"):
+        end = match.end()
+        if end < len(text) and text[end] == "_" and text[end : end + 2] != "__":
             raise LynxSyntaxError(
-                f"use '__' for ranges, not '_': {rest[: match.end()]}{after}",
+                f"use '__' for ranges, not '_': {text[pos:]}",
                 line_no,
             )
         tokens.append(Token("NUMBER", match.group(0), line_no))
-        return after.lstrip()
+        return end
 
-    for symbol in ORDERED_SYMBOLS:
-        if rest.startswith(symbol):
-            tokens.append(Token(SYMBOLS[symbol], symbol, line_no))
-            return rest[len(symbol) :].lstrip()
+    char = text[pos]
+    candidates = _MULTI_SYMBOLS.get(char)
+    if candidates is not None:
+        for symbol, kind in candidates:
+            if text.startswith(symbol, pos):
+                tokens.append(Token(kind, symbol, line_no))
+                return pos + len(symbol)
+    token = _SINGLE_SYMBOLS.get(char)
+    if token is not None:
+        tokens.append(Token(token, char, line_no))
+        return pos + 1
 
-    match = IDENTIFIER.match(rest)
+    match = IDENTIFIER.match(text, pos)
     if match:
         word = match.group(0)
         # Literal keywords carry their Python value; everything else its text.
         value = LITERALS.get(word, word)
         tokens.append(Token(KEYWORDS.get(word, "IDENTIFIER"), value, line_no))
-        return rest[match.end() :].lstrip()
+        return match.end()
 
-    raise LynxSyntaxError(f"unexpected character near {rest!r}", line_no)
+    raise LynxSyntaxError(f"unexpected character near {text[pos:]!r}", line_no)
