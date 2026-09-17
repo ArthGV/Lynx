@@ -21,8 +21,12 @@ class Number(SimpleType):
     rank = 3
     conversion = "number"
     default_value = 0
+    value: int | float
 
     def __init__(self, value: float | str) -> None:
+        if isinstance(value, int) and not isinstance(value, bool):
+            self.value = value
+            return
         self.value = float(value)
         if self.value % 1 == 0:
             self.value = int(self.value)

@@ -70,40 +70,8 @@ def execute(node: Any, env: Environment) -> None:
         case Program(statements):
             execute(statements, env)
 
-        case Write(value, path, line):
-            _files.write(evaluate(value, env), evaluate(path, env), line)
-
-        case Print(value):
-            print(evaluate(value, env))
-
         case Assignment(name, value):
             env.set(name, evaluate(value, env))
-
-        case SetItem(base, steps, value, line):
-            _statements.assign_item(base, steps, value, line, env)
-
-        case Append(base, value, front, line):
-            _statements.append_to(base, value, front, line, env)
-
-        case Delete(base, steps, line):
-            _statements.delete_item(base, steps, line, env)
-
-        case Function(name, params, body):
-            env.set(name, FunctionValue(params, body, env))
-
-        case Call(callee, args, line):
-            _expressions.call(callee, args, line, env)
-
-        case Return(value, line):
-            raise _Return(evaluate(value, env))
-
-        case If(branches, else_body):
-            for branch in branches:
-                if evaluate(branch.condition, env).boolean().is_true():
-                    execute(branch.body, env)
-                    return
-            if else_body is not None:
-                execute(else_body, env)
 
         case Loop(condition, body, targets, iterable):
             if targets is None:
@@ -129,6 +97,35 @@ def execute(node: Any, env: Environment) -> None:
                     except _Skip:
                         continue
 
+        case If(branches, else_body):
+            for branch in branches:
+                if evaluate(branch.condition, env).boolean().is_true():
+                    execute(branch.body, env)
+                    return
+            if else_body is not None:
+                execute(else_body, env)
+
+        case Print(value):
+            print(evaluate(value, env))
+
+        case Call(callee, args, line):
+            _expressions.call(callee, args, line, env)
+
+        case Append(base, value, front, line):
+            _statements.append_to(base, value, front, line, env)
+
+        case SetItem(base, steps, value, line):
+            _statements.assign_item(base, steps, value, line, env)
+
+        case Delete(base, steps, line):
+            _statements.delete_item(base, steps, line, env)
+
+        case Return(value, line):
+            raise _Return(evaluate(value, env))
+
+        case Function(name, params, body):
+            env.set(name, FunctionValue(params, body, env))
+
         case Stop(condition, line):
             if condition is None or evaluate(condition, env).boolean().is_true():
                 raise _Stop()
@@ -136,6 +133,9 @@ def execute(node: Any, env: Environment) -> None:
         case Skip(condition, line):
             if condition is None or evaluate(condition, env).boolean().is_true():
                 raise _Skip()
+
+        case Write(value, path, line):
+            _files.write(evaluate(value, env), evaluate(path, env), line)
 
         case _:
             raise LynxTypeError(f"cannot execute {type(node).__name__}")
@@ -154,6 +154,24 @@ def evaluate(node: Any, env: Environment) -> values.Type:
 
         case Void():
             return values.Void()
+
+        case Identifier(name, line):
+            return env.get(name, line)  # type: ignore[no-any-return]
+
+        case BinaryExpression(left, operator, right, line):
+            return _operators.apply_binary(operator, evaluate(left, env), evaluate(right, env), line)
+
+        case UnaryExpression(operator, operand, line):
+            return _operators.apply_unary(operator, evaluate(operand, env), line)
+
+        case Call(callee, args, line):
+            return _expressions.call(callee, args, line, env)
+
+        case RangeExpression(start, end, line):
+            return _expressions.build_range(start, end, line, env)
+
+        case Cell(inner):
+            return evaluate(inner, env)
 
         case ArrayLiteral(items, line):
             return values.Array([evaluate(item, env) for item in items])
@@ -176,20 +194,8 @@ def evaluate(node: Any, env: Environment) -> values.Type:
                 line,
             )
 
-        case Cell(inner):
-            return evaluate(inner, env)
-
-        case Identifier(name, line):
-            return env.get(name, line)  # type: ignore[no-any-return]
-
-        case Call(callee, args, line):
-            return _expressions.call(callee, args, line, env)
-
         case TableQuery(kind, expression, line):
             return _expressions.evaluate_table_query(kind, expression, line, env)
-
-        case UnaryExpression(operator, operand, line):
-            return _operators.apply_unary(operator, evaluate(operand, env), line)
 
         case Read(operand, line):
             path = evaluate(operand, env)
@@ -201,12 +207,6 @@ def evaluate(node: Any, env: Environment) -> values.Type:
                 if error.line is None:
                     error.line = line
                 raise
-
-        case BinaryExpression(left, operator, right, line):
-            return _operators.apply_binary(operator, evaluate(left, env), evaluate(right, env), line)
-
-        case RangeExpression(start, end, line):
-            return _expressions.build_range(start, end, line, env)
 
         case _:
             raise LynxTypeError(f"cannot evaluate {type(node).__name__}")
