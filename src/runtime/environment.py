@@ -26,5 +26,16 @@ class Environment:
     def set(self, name: str, value: Any) -> None:
         self.values[name] = value
 
+    def delete(self, name: str, line: int | None = None) -> None:
+        # Removes the name from whichever scope holds it, like `get` finds it.
+        # Deleting a name that was never assigned is an error, same as reading one.
+        if name in self.values:
+            del self.values[name]
+            return
+        if self.parent is not None:
+            self.parent.delete(name, line)
+            return
+        raise LynxNameError(f"'{name}' is not defined", line)
+
     def child(self) -> Environment:
         return Environment(self)

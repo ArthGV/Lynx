@@ -63,6 +63,21 @@ class Table(ComplexType):
         self.columns[name] = list(cells)
         self._recompute_padding()
 
+    def del_column(self, name: str) -> None:
+        # Every column is always padded to nrows, so dropping one leaves the
+        # remaining heights untouched — except dropping the last one, which
+        # empties the table. Re-padding recomputes nrows to cover both.
+        # Deleting a name that isn't there is a silent no-op, like Map.remove_item.
+        self.columns.pop(name, None)
+        self._recompute_padding()
+
+    def del_row(self, index: int) -> None:
+        if index < 0 or index >= self.nrows:
+            raise LynxError(f"index {index} out of range for a table with {self.nrows} rows")
+        for column in self.columns.values():
+            del column[index]
+        self.nrows -= 1
+
     def __repr__(self) -> str:
         if not self.columns:
             return "┌────┐\n└────┘"

@@ -100,6 +100,12 @@ del tp 'b'
 >> len tp
 >> tp 0
 
+// Table: deleting a nonexistent column is a silent no-op
+tn: ['x': 1, 2; 'y': 3, 4]
+del tn 'nope'
+>> len tn
+>> tn 0
+
 // Table: deleting the last column leaves an empty table
 t2: ['only': 1]
 del t2 'only'

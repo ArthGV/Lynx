@@ -10,7 +10,13 @@ already-defined functions only.
 from typing import Any
 
 from src.core.interpreter._base import evaluate, is_range
-from src.core.interpreter.expressions import get_element, slice_assign, table_cells
+from src.core.interpreter.expressions import (
+    _slice_bounds,
+    _sliced_indices,
+    get_element,
+    slice_assign,
+    table_cells,
+)
 from src.errors.errors import LynxError, LynxTypeError
 from src.runtime import values
 from src.runtime.environment import Environment
@@ -80,3 +86,66 @@ def assign_item(base: str, steps: list[Any], value_node: Any, line: int | None, 
         container.value = "".join(chars)
         return
     raise LynxTypeError(f"cannot assign into a {container.type_name()}", line)
+
+
+def delete_item(base: str, steps: list[Any], line: int | None, env: Environment) -> None:
+    # `del a 1, 0` / `del m 'k'` / `del t 'col'` — walk the deref path to the
+    # innermost container, then remove the last step. With no steps at all the
+    # whole variable goes. Range slicing works on the last step only, exactly
+    # as in assign_item: a mid-path slice would delete from a throwaway copy.
+    if not steps:
+        env.delete(base, line)
+        return
+    container = env.get(base, line)
+    # A table holds no nested cells to delete below itself, so multi-step
+    # paths into one are rejected before the walk: `t 'col'` is a column, and
+    # `t 0` is a row, full stop. Without this, `del t 'col' 0` would descend
+    # into a column copy and silently mutate nothing.
+    if isinstance(container, values.Table) and len(steps) != 1:
+        raise LynxTypeError(f"table deletion needs a single column or row, got {len(steps)} access steps", line)
+    for step in steps[:-1]:
+        if is_range(step):
+            raise LynxError("a range slice can only be the last step of a delete path", line)
+        container = get_element(container, step, line, env)
+    if is_range(steps[-1]):
+        if not isinstance(container, values.Array):
+            raise LynxTypeError("range slicing is only supported for arrays", line)
+        start, end = _slice_bounds(steps[-1], env, line)
+        indices = _sliced_indices(start, end)
+        worst = max(start, end)
+        if worst >= len(container.value):
+            which = "start" if start > end else "end"
+            raise LynxError(f"range {which} {worst} out of bounds for an array of length {len(container.value)}", line)
+        for index in sorted(indices, reverse=True):
+            del container.value[index]
+        return
+    key = evaluate(steps[-1], env)
+    if isinstance(container, values.Array):
+        if not isinstance(key, values.Number):
+            raise LynxTypeError(f"array index must be a number, got {key.type_name()}", line)
+        idx = key.value
+        if not isinstance(idx, int) or idx < 0 or idx >= len(container.value):
+            raise LynxError(f"index {idx} out of range for an array of length {len(container.value)}", line)
+        del container.value[idx]
+        return
+    if isinstance(container, values.Map):
+        if not isinstance(key, values.SimpleType):
+            raise LynxTypeError(f"map key must be a simple type, got {key.type_name()}", line)
+        container.remove_item(key)
+        return
+    if isinstance(container, values.Table):
+        # Column or row deletion only makes sense as a single step; there are
+        # no nested cells to delete a level below the table.
+        if len(steps) != 1:
+            raise LynxTypeError(f"table deletion needs a single column or row, got {len(steps)} access steps", line)
+        if isinstance(key, values.Text):
+            container.del_column(key.value)
+            return
+        if isinstance(key, values.Number):
+            idx = key.value
+            if not isinstance(idx, int) or idx < 0 or idx >= container.nrows:
+                raise LynxError(f"index {idx} out of range for a table with {container.nrows} rows", line)
+            container.del_row(idx)
+            return
+        raise LynxTypeError(f"table deletion needs a column name or a row index, got {key.type_name()}", line)
+    raise LynxTypeError(f"cannot delete from a {container.type_name()}", line)

@@ -45,6 +45,9 @@ void
 // Table: deleting a column leaves the others intact
 [ 2, 1 ]
 { a: 1 }
+// Table: deleting a nonexistent column is a silent no-op
+[ 2, 2 ]
+{ x: 1; y: 3 }
 // Table: deleting the last column leaves an empty table
 ┌────┐
 └────┘

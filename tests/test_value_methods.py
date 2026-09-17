@@ -579,14 +579,12 @@ def test_table_del_column():
     assert [c.value for c in t.columns["id"]] == [1, 2, 3]
 
 
-def test_table_del_column_missing_raises():
+def test_table_del_column_missing_is_noop():
     t = tbl(("id", [1, 2]))
-    try:
-        t.del_column("nope")
-        assert False, "should have raised"
-    except LynxError as e:
-        assert "'nope'" in str(e)
-        assert "no column" in str(e)
+    t.del_column("nope")
+    assert list(t.columns.keys()) == ["id"]
+    assert t.nrows == 2
+    assert [c.value for c in t.columns["id"]] == [1, 2]
 
 
 def test_table_del_column_last_leaves_empty():

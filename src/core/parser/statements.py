@@ -16,6 +16,7 @@ from src.core.nodes import (
     Assignment,
     Branch,
     Call,
+    Delete,
     Function,
     If,
     Loop,
@@ -47,6 +48,8 @@ class StatementMixin(Parser):
                 return self.parse_loop_control(Skip)
             case "WRITE":
                 return self.parse_write()
+            case "DELETE":
+                return self.parse_delete()
             case "IDENTIFIER":
                 return self.parse_name_statement()
         token = self.peek()
@@ -154,6 +157,25 @@ class StatementMixin(Parser):
     def parse_append(self, name: str, line: int | None) -> Append:
         token = self.advance()
         return Append(name, self.parse_assign_rhs(), token.type == "PREPEND", line)
+
+    def parse_delete(self) -> Delete:
+        # `del <name>` deletes the variable; `del <name> <step>...` descends
+        # through a deref path and deletes the last step, mirroring the step
+        # run of try_parse_mutation (comma-grouped or space-chained).
+        token = self.match("DELETE")
+        name = self.match("IDENTIFIER").value
+        steps: list[Any] = []
+        if self._starts_expression(self.type()):
+            steps.append(self.parse_expression(False))
+            while True:
+                if self.type() == "COMMA":
+                    self.advance()
+                    steps.append(self.parse_expression(False))
+                elif self._starts_expression(self.type()):
+                    steps.append(self.parse_expression(False))
+                else:
+                    break
+        return Delete(name, steps, token.line)
 
     def try_parse_mutation(self, name: str, line: int | None) -> SetItem | None:
         # `name <expr>... : value` is an element mutation (`a 0: 5`). The deref

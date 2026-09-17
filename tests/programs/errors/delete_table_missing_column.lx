@@ -1,2 +1,0 @@
-t: ['id': 1]
-del t 'nope'

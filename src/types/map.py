@@ -41,6 +41,13 @@ class Map(ComplexType):
     def set_item(self, key: Type, value: Type) -> None:
         self.value[map_key(key)] = value
 
+    def remove_item(self, key: Type) -> None:
+        # Deleting a key that isn't there is a silent no-op, matching the
+        # lenient lookup of get_item.
+        raw = map_key(key)
+        if raw in self.value:
+            del self.value[raw]
+
     def get_item(self, key: Type) -> Type:
         return self.value.get(map_key(key), Void())
 

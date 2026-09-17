@@ -66,6 +66,18 @@ class Append:
 
 
 @dataclass
+class Delete:
+    """`del <name>` or `del <name> <step>...`. Empty `steps` deletes the whole
+    variable; otherwise each step descends into a container and the last one
+    is what gets removed — an array index or slice, a map key, or a table
+    column name or row index."""
+
+    base: str  # variable name holding the value being deleted from
+    steps: list[Any]  # index/key expressions, applied in order; [] = the variable
+    line: int | None = None
+
+
+@dataclass
 class Function:
     name: str
     params: list[Any]

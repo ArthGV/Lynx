@@ -49,6 +49,7 @@ KEYWORDS = {
     "in": "IN",
     "not": "NOT",
     "middle": "MIDDLE",
+    "del": "DELETE",
     # types
     "number": "TO_NUMBER",
     "boolean": "TO_BOOLEAN",

@@ -21,6 +21,7 @@ from src.core.nodes import (
     Boolean,
     Call,
     Cell,
+    Delete,
     Function,
     Identifier,
     If,
@@ -83,6 +84,9 @@ def execute(node: Any, env: Environment) -> None:
 
         case Append(base, value, front, line):
             _statements.append_to(base, value, front, line, env)
+
+        case Delete(base, steps, line):
+            _statements.delete_item(base, steps, line, env)
 
         case Function(name, params, body):
             env.set(name, FunctionValue(params, body, env))
