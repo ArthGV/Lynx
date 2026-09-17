@@ -1,0 +1,7 @@
+//a plan-compiled loop that never enters leaves variables untouched
+total: 99
+i: 5
+loop i < 3
+ total: total + i
+ i: i + 1
+>> total

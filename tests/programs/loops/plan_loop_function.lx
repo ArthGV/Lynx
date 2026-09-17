@@ -1,0 +1,8 @@
+//a plan-compiled loop inside a function scope
+f: x
+ total: 0
+ loop x > 0
+  total: total + x
+  x: x - 1
+ >> total
+f 5

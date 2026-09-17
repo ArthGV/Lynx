@@ -43,10 +43,13 @@ from src.core.nodes import (
     Void,
     Write,
 )
+from src.core.plan import compile_loop_plan
 from src.errors.errors import LynxError, LynxTypeError
 from src.runtime import values
 from src.runtime.environment import Environment
 from src.runtime.functions import FunctionValue, _Return, _Skip, _Stop
+
+_UNSET = object()
 
 __all__ = [
     "_Return",
@@ -73,7 +76,14 @@ def execute(node: Any, env: Environment) -> None:
         case Assignment(name, value):
             env.set(name, evaluate(value, env))
 
-        case Loop(condition, body, targets, iterable):
+        case Loop(condition, body, targets, iterable) as loop_node:
+            loop_ast: Any = loop_node
+            plan: Any = getattr(loop_ast, "_loop_plan", _UNSET)
+            if plan is _UNSET:
+                plan = compile_loop_plan(condition, body, targets, iterable)
+                loop_ast._loop_plan = plan
+            if plan is not None and plan.try_run(env):
+                return
             if targets is None:
                 while evaluate(condition, env).boolean().is_true():
                     try:
