@@ -1,0 +1,15 @@
+[package]
+name = "lynx-lexer"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[[bin]]
+name = "lynx-lexer"
+path = "src/main.rs"
+
+[profile.release]
+lto = true
+codegen-units = 1
+
+[dependencies]

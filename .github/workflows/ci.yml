@@ -39,3 +39,20 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - run: pip install -e ".[dev]"
       - run: python -m pytest
+
+  native-lexer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+      - run: pip install -e ".[dev]"
+      - run: make lexers
+      - name: full suite through the Rust lexer
+        run: |
+          LYNX_LEXER=native LYNX_LEXER_PATH=rust/lexer/target/release/lynx-lexer \
+          python -m pytest
