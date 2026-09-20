@@ -222,3 +222,6 @@ ex.lx
 src/Lynx.code-workspace
 .opencode/
 my_*
+
+# Private performance benchmarks (not part of the repo)
+performance_test/
