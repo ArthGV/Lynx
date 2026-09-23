@@ -274,14 +274,14 @@ def test_graph_csv_write_bytes_and_roundtrip(tmp_path):
     run_lx(src + f"write g, '{p}'")
     assert p.read_text() == (
         GRAPH_HEADER
-        "node,a,,Ida\n"
-        "node,b,,void\n"
-        "node,c,,void\n"
-        "node,d,,void\n"
-        "node,e,,void\n"
-        "edge,a,b,loves\n"
-        "edge,a,c,loves\n"
-        "edge,d,e,void\n"
+        + "node,a,,Ida\n"
+        + "node,b,,void\n"
+        + "node,c,,void\n"
+        + "node,d,,void\n"
+        + "node,e,,void\n"
+        + "edge,a,b,loves\n"
+        + "edge,a,c,loves\n"
+        + "edge,d,e,void\n"
     )
     out = run_lx(src + f"h: graph (read '{p}')\n>> g = h\n>> h 'a' -> 'c'\n>> from h 'a'\n>> len h\n")
     assert out == "true\nloves\n[ b, c ]\n[ 5, 3 ]\n"
@@ -306,10 +306,10 @@ def test_graph_csv_ambiguous_cells_keep_types(tmp_path):
     run_lx(src + f"write g, '{p}'")
     assert p.read_text() == (
         GRAPH_HEADER
-        'node,"42",,true\n'
-        'node,seven,,"42"\n'
-        'node,eight,,void\n'
-        'edge,seven,eight,"void"\n'
+        + 'node,"42",,true\n'
+        + 'node,seven,,"42"\n'
+        + 'node,eight,,"void"\n'
+        + 'edge,seven,eight,"void"\n'
     )
     out = run_lx(
         f"h: graph (read '{p}')\n"

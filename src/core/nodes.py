@@ -205,6 +205,69 @@ class TableQuery:
 
 
 @dataclass
+class GraphSegment:
+    """One `;`-separated statement of a graph literal: a source node, its
+    optional value, a target comma-run, and an optional label. The label is
+    applied to every edge this segment creates; when present the targets may
+    each carry their own value."""
+
+    source: str  # the bare node id
+    value: Any | None  # a parenthesized node value, or None
+    targets: list[tuple[str, Any | None]]  # (node id, value or None) pairs
+    label: Any | None  # an expression evaluating to a Text, or None
+    line: int | None = None
+
+
+@dataclass
+class GraphLiteral:
+    """`g: a('Ida') -> b, c : 'loves'; d -> e` — nodes, edges and labels."""
+
+    segments: list[GraphSegment]
+    line: int | None = None
+
+
+@dataclass
+class GraphBuild:
+    """`graph` (an empty graph) or `graph <operand>` (a table of node/edge
+    records to convert into a graph)."""
+
+    operand: Any | None
+    line: int | None = None
+
+
+@dataclass
+class GraphQuery:
+    """`from g 'a'` / `to g 'b'`: the node ids a node points at / is pointed
+    at by, as an array. `kind` is FROM or TO."""
+
+    kind: str
+    graph: Any  # expression evaluating to a Graph
+    node: Any  # expression evaluating to a node id
+    line: int | None = None
+
+
+@dataclass
+class EdgeStep:
+    """The `-> 'to'` of an edge access or mutation step. Appears as a call
+    argument (`g 'a' -> 'b'`), a mutation/delete step (`g 'a' -> 'b': 'l'`,
+    `del g 'a' -> 'b'`). `target` evaluates to the edge's target node id."""
+
+    target: Any
+    line: int | None = None
+
+
+@dataclass
+class EdgeCreate:
+    """The right-hand side of an edge-creating mutation: `g 'x': -> 'z'` or
+    `g 'x': -> 'z'('loves')`. `target` evaluates to the target node id and
+    `value` (optional) to the node value / edge label."""
+
+    target: Any
+    value: Any | None
+    line: int | None = None
+
+
+@dataclass
 class UnaryExpression:
     operator: str  # a token type, e.g. "LENGTH" — never the spelling
     operand: Any

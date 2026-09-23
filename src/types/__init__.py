@@ -9,6 +9,7 @@ module re-exports all of these.
 
 from src.types.array import Array
 from src.types.base_type import ComplexType, Type
+from src.types.graph import Graph
 from src.types.map import Map
 from src.types.simple_type import Boolean, Number, SimpleType, Text, Void
 from src.types.table import Table
@@ -17,6 +18,7 @@ __all__ = [
     "Array",
     "Boolean",
     "ComplexType",
+    "Graph",
     "Map",
     "Number",
     "SimpleType",

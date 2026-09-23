@@ -61,11 +61,16 @@ KEYWORDS = {
     "Array": "TYPE_VALUE",
     "Map": "TYPE_VALUE",
     "Table": "TYPE_VALUE",
+    "Graph": "TYPE_VALUE",
     "Void": "TYPE_VALUE",
     # constructors
     "array": "ARRAY",
     "map": "MAP",
     "table": "TABLE",
+    "graph": "GRAPH",
+    # graph neighbours: `from g 'a'` / `to g 'b'`
+    "from": "FROM",
+    "to": "TO",
     "sqrt": "SQRT",
     "root": "ROOT",
     # table SQL-style operations
@@ -122,6 +127,7 @@ SYMBOLS = {
     "[": "LBRACK",
     "]": "RBRACK",
     ";": "SEMICOLON",
+    "->": "ARROW",
 }
 
 # The two comparison tiers, factored out so `where` (WHERE_OPERATORS below)

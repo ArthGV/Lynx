@@ -21,6 +21,9 @@ from src.core.nodes import (
     Boolean,
     Call,
     Cell,
+    EdgeStep,
+    GraphBuild,
+    GraphQuery,
     Identifier,
     MapLiteral,
     Number,
@@ -112,6 +115,19 @@ class ExpressionMixin(Parser):
                 # Zero-argument constructor: `t: table` is an empty table.
                 self.advance()
                 return TableLiteral([], token.line)
+            case "GRAPH":
+                # `graph` on its own constructs an empty graph; a trailing
+                # operand is a source to convert (`graph t`, `graph (read …)`).
+                token = self.advance()
+                if self._starts_expression(self.type()):
+                    return GraphBuild(self.parse_binary(0, allow_chain), token.line)
+                return GraphBuild(None, token.line)
+            case "FROM":
+                token = self.advance()
+                return self.parse_graph_query("FROM", token.line)
+            case "TO":
+                token = self.advance()
+                return self.parse_graph_query("TO", token.line)
             case kind if kind in TABLE_QUERY:
                 token = self.advance()
                 return self.parse_table_query(kind, token.line)
@@ -269,6 +285,19 @@ class ExpressionMixin(Parser):
         right = self.parse_binary(0)
         return TableQuery(kind, BinaryExpression(left, operator.type, right, line), line)
 
+    def parse_graph_query(self, kind: str, line: int | None) -> GraphQuery:
+        # `from g 'a'` / `to g 'b'`: a graph name, then the node id. The name
+        # is a bare identifier (the same way `where` parses its table) so the
+        # node operand is never swallowed as a chained step; the node itself is
+        # a single expression, so the query doesn't eat a trailing operator.
+        if self.type() == "IDENTIFIER":
+            name = self.advance()
+            graph: Any = Identifier(name.value, name.line)
+        else:
+            graph = self.parse_expression(False)
+        node = self.parse_expression(False)
+        return GraphQuery(kind, graph, node, line)
+
     def parse_access_steps(self, operand: Any) -> Any:
         # Access steps like parse_chain, except each step is a single primary —
         # a text column or a number — so a comparison operator that follows the
@@ -278,6 +307,11 @@ class ExpressionMixin(Parser):
             while self.type() == "COMMA":
                 self.advance()
                 args.append(self.parse_primary(False))
+            if self.type() == "ARROW":
+                # An edge access: `t 'a' -> 'b'` — the arrow target joins this
+                # run's args so the interpreter can see both endpoint ids.
+                self.advance()
+                args.append(EdgeStep(self.parse_expression(False)))
             operand = Call(operand, args, self.peek_line())
         return operand
 
@@ -292,5 +326,8 @@ class ExpressionMixin(Parser):
             while self.type() == "COMMA":
                 self.advance()
                 args.append(self.parse_expression(False))
+            if self.type() == "ARROW":
+                self.advance()
+                args.append(EdgeStep(self.parse_expression(False)))
             operand = Call(operand, args, self.peek_line())
         return operand

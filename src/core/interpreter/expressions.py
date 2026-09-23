@@ -16,7 +16,7 @@ from src.core.interpreter._base import (
     execute,
     is_range,
 )
-from src.core.nodes import ArrayLiteral, BinaryExpression, Call, Cell
+from src.core.nodes import ArrayLiteral, BinaryExpression, Call, Cell, EdgeStep, GraphSegment
 from src.errors.errors import LynxError, LynxInputError, LynxSyntaxError, LynxTypeError
 from src.runtime import values
 from src.runtime.environment import Environment
@@ -40,6 +40,9 @@ def call(callee: Any, args: list[Any], line: int | None, env: Environment) -> va
 
     if isinstance(fn, values.Table):
         return index_table(fn, args, line, env)
+
+    if isinstance(fn, values.Graph):
+        return index_graph(fn, args, line, env)
 
     if isinstance(fn, values.Text):
         return index_text(fn, args, line, env)
@@ -122,6 +125,37 @@ def index_text(text_value: values.Text, args: list[Any], line: int | None, env: 
     return current
 
 
+def index_graph(graph: values.Graph, args: list[Any], line: int | None, env: Environment) -> values.Type:
+    # `g 'a'` reads a node's value; `g 'a' -> 'b'` reads the edge's label. Once
+    # a plain step lands on a node value, further plain args descend into it
+    # (`g 'cfg' 'k'` after an inner call already split the steps). An EdgeStep
+    # has to follow a node read.
+    current: values.Type = graph
+    node_id: str | None = None
+    for arg in args:
+        if isinstance(arg, EdgeStep):
+            if node_id is None:
+                raise LynxSyntaxError("an edge access needs a node of its own first, like: g 'a' -> 'b'", line)
+            target = evaluate(arg.target, env)
+            if not isinstance(target, values.Text):
+                raise LynxTypeError(f"a graph node id must be a Text, got {target.type_name()}", line)
+            if node_id not in graph.nodes:
+                raise LynxError(f"cannot read an edge from missing node '{node_id}'", line)
+            current = graph.edges.get((node_id, target.value), values.Void())
+            node_id = None
+            continue
+        key = evaluate(arg, env)
+        if isinstance(current, values.Graph):
+            if not isinstance(key, values.Text):
+                raise LynxTypeError(f"a graph node id must be a Text, got {key.type_name()}", line)
+            node_id = key.value
+            current = current.nodes.get(node_id, values.Void())
+        else:
+            node_id = None
+            current = get_element(current, arg, line, env)
+    return current
+
+
 def get_element(container: values.Type, step: Any, line: int | None, env: Environment) -> values.Type:
     """Fetch one index/key lookup into `container`. Shared by read access and
     mutation so both validate and report the same way."""
@@ -146,6 +180,11 @@ def get_element(container: values.Type, step: Any, line: int | None, env: Enviro
                 raise LynxError(f"index {idx} out of range for a table with {container.nrows} rows", line)
             return container.get_row(idx)
         raise LynxTypeError(f"table access needs a column name or a row index, got {key.type_name()}", line)
+    if isinstance(container, values.Graph):
+        # Mid-path descent into a graph: a text step picks a node's value.
+        if not isinstance(key, values.Text):
+            raise LynxTypeError(f"a graph node id must be a Text, got {key.type_name()}", line)
+        return container.nodes.get(key.value, values.Void())
     if isinstance(container, values.Text):
         if not isinstance(key, values.Number):
             raise LynxTypeError(f"text index must be a number, got {key.type_name()}", line)
@@ -335,3 +374,49 @@ def table_cells(value_node: Any, line: int | None, env: Environment) -> list[val
     if isinstance(value_node, ArrayLiteral):
         return column_cells_list(value_node.items, line, env)
     return cell_value(value_node, line, env)
+
+
+def build_graph(segments: list[GraphSegment], line: int | None, env: Environment) -> values.Graph:
+    # `g: a('Ida') -> b, c : 'loves'; d -> e` — one segment per `;`. A node
+    # carrying a parenthesized value must not already exist (a bare
+    # re-appearance is a silent no-op); an edge may appear once only. The
+    # segment label, when present, applies to every edge the segment creates.
+    graph = values.Graph()
+    for segment in segments:
+        source = segment.source
+        if segment.value is not None:
+            if source in graph.nodes:
+                raise LynxTypeError(f"node '{source}' is defined twice", segment.line)
+            graph.nodes[source] = evaluate(segment.value, env)
+        else:
+            graph.nodes.setdefault(source, values.Void())
+        label = None if segment.label is None else evaluate(segment.label, env)
+        if label is not None and not isinstance(label, values.Text):
+            raise LynxTypeError(f"an edge label must be a Text, got {label.type_name()}", segment.line)
+        for target_id, target_value_node in segment.targets:
+            if target_id == source:
+                raise LynxError(f"cannot create an edge from '{source}' to itself", segment.line)
+            if (source, target_id) in graph.edges:
+                raise LynxTypeError(f"edge '{source}' -> '{target_id}' is defined twice", segment.line)
+            if target_value_node is not None:
+                if target_id in graph.nodes:
+                    raise LynxTypeError(f"node '{target_id}' is defined twice", segment.line)
+                graph.nodes[target_id] = evaluate(target_value_node, env)
+            else:
+                graph.nodes.setdefault(target_id, values.Void())
+            graph.edges[(source, target_id)] = label if label is not None else values.Void()
+    return graph
+
+
+def evaluate_graph_query(kind: str, graph_node: Any, node_node: Any, line: int | None, env: Environment) -> values.Type:
+    # `from g 'a'` — an array of the ids `a` points at; `to g 'a'` — the ids
+    # pointing at it. A node the graph does not have yields void, not an error.
+    graph = evaluate(graph_node, env)
+    if not isinstance(graph, values.Graph):
+        raise LynxTypeError(f"{kind.lower()} needs a graph, got {graph.type_name()}", line)
+    node = evaluate(node_node, env)
+    if not isinstance(node, values.Text):
+        raise LynxTypeError(f"a graph node id must be a Text, got {node.type_name()}", line)
+    if kind == "FROM":
+        return graph.out_neighbors(node)
+    return graph.in_neighbors(node)

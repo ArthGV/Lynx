@@ -59,6 +59,8 @@ void
 void
 // Edge creation with a label upserts: `g 'from': -> 'to'(label)`
 loves
+loves
+hates
 hates
 [ 3, 1 ]
 // An unlabelled `-> 'to'` on an existing edge resets the label to void,
