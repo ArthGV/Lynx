@@ -6,7 +6,7 @@ tested here directly against the values module.
 """
 
 from src.errors.errors import LynxError, LynxNotImplemented, LynxTypeError
-from src.runtime.values import Array, Boolean, Map, Number, Table, Text, Void
+from src.runtime.values import Array, Boolean, Graph, Map, Number, Table, Text, Void
 
 
 def arr(*items):
@@ -654,6 +654,194 @@ def test_table_default_is_not_void():
     empty = Table.default()
     assert type(empty) is Table
     assert empty.nrows == 0
+
+
+# --- Graph ---------------------------------------------------------------
+
+
+def gr(nodes=(), edges=()):
+    """Build a Graph direct from records; edge endpoints are auto-created."""
+    g = Graph()
+    for node_id, value in nodes:
+        g.nodes[node_id] = value
+    for src, dst, label in edges:
+        g.nodes.setdefault(src, Void())
+        g.nodes.setdefault(dst, Void())
+        g.edges[(src, dst)] = label
+    return g
+
+
+def test_graph_construction_and_default():
+    empty = Graph()
+    assert empty.nodes == {}
+    assert empty.edges == {}
+    assert Graph.default().nodes == {}
+    assert type(empty) is not Void
+
+
+def test_graph_length():
+    g = gr(
+        nodes=[("a", Text("Ida")), ("b", Void())],
+        edges=[("a", "b", Text("loves"))],
+    )
+    result = g.length()
+    assert isinstance(result, Array)
+    assert result.value[0].value == 2  # nodes
+    assert result.value[1].value == 1  # edges
+    empty_result = gr().length()
+    assert empty_result.value[0].value == 0
+    assert empty_result.value[1].value == 0
+
+
+def test_graph_node_access():
+    g = gr(nodes=[("a", Number(42)), ("b", Void())])
+    assert g.get_item(Text("a")).value == 42
+    assert type(g.get_item(Text("b"))) is Void
+    assert type(g.get_item(Text("nope"))) is Void
+    try:
+        g.get_item(Number(5))
+        assert False, "a non-text node id should be rejected"
+    except LynxTypeError:
+        pass
+
+
+def test_graph_iterate():
+    g = gr(nodes=[("b", Void()), ("a", Void())], edges=[("a", "c", Void())])
+    # insertion order is preserved; a target created mid-way stays in place
+    assert iter_str(g) == ["b", "a", "c"]
+    assert iter_str(gr()) == []
+
+
+def test_graph_first_last_middle():
+    g = gr(nodes=[("a", Void()), ("b", Void()), ("c", Void())])
+    assert print_(g.first()) == "a"
+    assert print_(g.last()) == "c"
+    assert print_(g.middle()) == "b"
+    assert type(gr().first()) is Void
+    assert type(gr().last()) is Void
+    assert type(gr().middle()) is Void
+
+
+def test_graph_neighbours():
+    g = gr(
+        nodes=[("a", Void()), ("b", Void()), ("c", Void())],
+        edges=[("a", "b", Void()), ("a", "c", Void())],
+    )
+    assert iter_str(g.out_neighbors(Text("a"))) == ["b", "c"]
+    assert iter_str(g.in_neighbors(Text("b"))) == ["a"]
+    assert iter_str(g.out_neighbors(Text("c"))) == []
+    assert type(g.out_neighbors(Text("nope"))) is Void
+    assert type(g.in_neighbors(Text("nope"))) is Void
+
+
+def test_graph_conversions():
+    g = gr(nodes=[("a", Text("Ida")), ("b", Void())], edges=[("a", "b", Text("loves"))])
+    assert g.number().value == 2
+    assert g.boolean().is_true() is True
+    assert gr().boolean().is_true() is False
+    assert type(g.void()) is Void
+    assert print_(g.text()) == "a('Ida') -> b : 'loves'"
+
+
+def test_graph_text_repr_empty():
+    assert print_(gr().text()) == "graph"
+
+
+def test_graph_text_repr_groups_targets_by_label():
+    g = gr(
+        nodes=[("a", Void())],
+        edges=[("a", "b", Text("x")), ("a", "c", Void()), ("a", "d", Text("x"))],
+    )
+    assert print_(g.text()) == "a -> b, d : 'x'\na -> c"
+
+
+def test_graph_equality():
+    a = gr(
+        nodes=[("a", Text("Ida")), ("b", Void())],
+        edges=[("a", "b", Text("loves"))],
+    )
+    b = gr(
+        nodes=[("b", Void()), ("a", Text("Ida"))],
+        edges=[("a", "b", Text("loves"))],
+    )
+    c = gr(nodes=[("a", Text("Ida")), ("b", Void())])
+    d = gr(
+        nodes=[("a", Text("Ida")), ("b", Void())],
+        edges=[("a", "b", Text("hates"))],
+    )
+    assert a.equals(b).is_true()
+    assert a.equals(c).is_true() is False
+    assert a.equals(d).is_true() is False
+
+
+def test_graph_compare():
+    a = gr(nodes=[("a", Void()), ("b", Void())], edges=[("a", "b", Void())])
+    b = gr(nodes=[("a", Void())])
+    assert a.compare(b) > 0  # more nodes
+    assert a.greater(b).is_true()
+    assert b.less(a).is_true()
+    assert a.compare(a) == 0
+
+
+def test_graph_almost():
+    base = gr(nodes=[("a", Void()), ("b", Void())], edges=[("a", "b", Text("loves"))])
+    assert base.almost(base).is_true()
+    # one isolated node added
+    assert base.almost(
+        gr(nodes=[("a", Void()), ("b", Void()), ("c", Void())], edges=[("a", "b", Text("loves"))])
+    ).is_true()
+    # one edge removed
+    assert base.almost(gr(nodes=[("a", Void()), ("b", Void())])).is_true()
+    # one edge label changed
+    assert base.almost(
+        gr(nodes=[("a", Void()), ("b", Void())], edges=[("a", "b", Text("hates"))])
+    ).is_true()
+    # two isolated nodes added is two edits
+    two = gr(
+        nodes=[("a", Void()), ("b", Void()), ("c", Void()), ("d", Void())],
+        edges=[("a", "b", Text("loves"))],
+    )
+    assert base.almost(two).is_true() is False
+
+
+def test_graph_aggregates_defaults():
+    g = gr(nodes=[("a", Void()), ("b", Void())])
+    assert g.count().value == 2
+    assert gr().count().value == 0
+    assert g.distinct().equals(g).is_true()
+
+
+def test_graph_sum_avg_min_max_not_implemented():
+    g = gr(nodes=[("a", Void())])
+    for method in ("sum", "avg", "min", "max"):
+        try:
+            getattr(g, method)()
+            assert False, f"{method} should not be implemented"
+        except LynxNotImplemented:
+            pass
+
+
+def test_graph_arithmetic_and_join_not_implemented():
+    g = gr(nodes=[("a", Void())])
+    for method in ("add", "subtract", "multiply", "divide", "power", "root", "xor"):
+        try:
+            getattr(g, method)(g)
+            assert False, f"{method} should not be implemented"
+        except LynxNotImplemented:
+            pass
+    try:
+        g.join(g)
+        assert False, "join should not be implemented"
+    except LynxNotImplemented:
+        pass
+
+
+def test_graph_membership_is_over_node_ids():
+    g = gr(nodes=[("a", Text("x")), ("b", Void())])
+    assert Text("a").in_(g).is_true()
+    assert Text("nope").in_(g).is_true() is False
+    # node values are not iterated, only the ids
+    assert Text("x").in_(g).is_true() is False
 
 
 # --- SQL-style operations ----------------------------------------------

@@ -1,0 +1,19 @@
+// Graphs round-trip through .csv: node and edge records share four columns
+true
+Graph
+[ 5, 3 ]
+Ida
+loves
+void
+[ b, c ]
+void
+// Array node values survive the round-trip as a parenthesized cell
+[ 1, 2, 3 ]
+Array
+1
+// Ambiguous cells are quoted and come back with the right types
+[ 3, 1 ]
+true
+Boolean
+void
+Text

@@ -1,0 +1,2 @@
+// the same edge written twice in one literal is an error
+TypeError on line 1: edge 'a' -> 'b' is defined twice

@@ -1,0 +1,2 @@
+// creating an edge from a node that does not exist is an error
+Error on line 2: cannot create an edge from missing node 'a'

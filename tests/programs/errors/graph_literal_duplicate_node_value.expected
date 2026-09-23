@@ -1,0 +1,2 @@
+// a node given two explicit values in one literal is an error
+TypeError on line 1: node 'a' is defined twice

@@ -1,0 +1,2 @@
+// an edge read from a non-existent source node is an error
+Error on line 2: cannot read an edge from missing node 'nope'

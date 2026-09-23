@@ -52,3 +52,17 @@ void
 ┌────┐
 └────┘
 [ 0, 0 ]
+// Graph: deleting a node removes it and all its incident edges
+[ 4, 2 ]
+[ 3, 0 ]
+void
+false
+true
+// Graph: deleting a missing node is a silent no-op
+[ 3, 0 ]
+// Graph: deleting an edge keeps both endpoints
+[ 3, 1 ]
+void
+void
+true
+true

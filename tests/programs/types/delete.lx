@@ -111,3 +111,25 @@ t2: ['only': 1]
 del t2 'only'
 >> t2
 >> len t2
+
+// Graph: deleting a node removes it and all its incident edges
+dg: a -> b : 'l'; b -> c; d
+>> len dg
+del dg 'b'
+>> len dg
+>> dg 'b'
+>> 'b' in dg
+>> 'a' in dg
+
+// Graph: deleting a missing node is a silent no-op
+del dg 'nope'
+>> len dg
+
+// Graph: deleting an edge keeps both endpoints
+dg2: a -> b : 'l'; b -> c
+del dg2 'a' -> 'b'
+>> len dg2
+>> dg2 'a' -> 'b'
+>> dg2 'b' -> 'c'
+>> 'a' in dg2
+>> 'b' in dg2

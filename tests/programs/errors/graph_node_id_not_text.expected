@@ -1,0 +1,2 @@
+// a non-text operand to a graph node access is an error
+TypeError on line 3: a graph node id must be a Text, got Number
