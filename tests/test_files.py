@@ -283,16 +283,16 @@ def test_graph_csv_write_bytes_and_roundtrip(tmp_path):
         + "edge,a,c,loves\n"
         + "edge,d,e,void\n"
     )
-    out = run_lx(src + f"h: graph (read '{p}')\n>> g = h\n>> h 'a' -> 'c'\n>> from h 'a'\n>> len h\n")
-    assert out == "true\nloves\n[ b, c ]\n[ 5, 3 ]\n"
+    out = run_lx(src + f"h: read '{p}'\n>> type h\n>> g = h\n>> h 'a' -> 'c'\n>> from h 'a'\n>> len h\n")
+    assert out == "Graph\ntrue\nloves\n[ b, c ]\n[ 5, 3 ]\n"
 
 
 def test_graph_csv_array_value_cell_roundtrip(tmp_path):
     p = tmp_path / "g.csv"
     run_lx("g: graph\ng 'nums': 1, 2, 3\n" f"write g, '{p}'")
     assert p.read_text() == GRAPH_HEADER + 'node,nums,,"(1, 2, 3)"\n'
-    out = run_lx(f"h: graph (read '{p}')\n>> h 'nums'\n>> type h 'nums'\n>> h 'nums' 0\n")
-    assert out == "[ 1, 2, 3 ]\nArray\n1\n"
+    out = run_lx(f"h: read '{p}'\n>> type h\n>> h 'nums'\n>> type h 'nums'\n>> h 'nums' 0\n")
+    assert out == "Graph\n[ 1, 2, 3 ]\nArray\n1\n"
 
 
 def test_graph_csv_ambiguous_cells_keep_types(tmp_path):
@@ -312,21 +312,95 @@ def test_graph_csv_ambiguous_cells_keep_types(tmp_path):
         + 'edge,seven,eight,"void"\n'
     )
     out = run_lx(
-        f"h: graph (read '{p}')\n"
+        f"h: read '{p}'\n"
+        ">> type h\n"
         ">> h '42'\n"
         ">> type h '42'\n"
         ">> h 'seven' -> 'eight'\n"
         ">> type h 'seven' -> 'eight'\n"
     )
-    assert out == "true\nBoolean\nvoid\nText\n"
+    assert out == "Graph\ntrue\nBoolean\nvoid\nText\n"
+
+
+def test_graph_csv_full_roundtrip_is_identity(tmp_path):
+    p = tmp_path / "g.csv"
+    build = (
+        "g: graph\n"
+        "g 'a': 'Ida'\n"
+        "g 'b': 42\n"
+        "g 'c': true\n"
+        "g 'nums': 1, 2, 3\n"
+        "g 'a': -> 'b'\n"
+        "g 'a': -> 'c'\n"
+        "g 'b': -> 'a'\n"
+        "g 'a' -> 'b': 'loves'\n"
+        "g 'a' -> 'c': 'loves'\n"
+        "g 'iso': 'solo'\n"
+    )
+    run_lx(build + f"write g, '{p}'\n")
+    assert p.read_text() == (
+        GRAPH_HEADER
+        + "node,a,,Ida\n"
+        + "node,b,,42\n"
+        + "node,c,,true\n"
+        + "node,nums,,\"(1, 2, 3)\"\n"
+        + "node,iso,,solo\n"
+        + "edge,a,b,loves\n"
+        + "edge,a,c,loves\n"
+        + "edge,b,a,void\n"
+    )
+    out = run_lx(
+        build + f"h: read '{p}'\n"
+        ">> type h\n"
+        ">> g = h\n"
+        ">> len h\n"
+        ">> h 'a'\n"
+        ">> type h 'b'\n"
+        ">> h 'a' -> 'b'\n"
+        ">> h 'a' -> 'c'\n"
+        ">> h 'b' -> 'a'\n"
+        ">> from h 'a'\n"
+        ">> to h 'b'\n"
+        ">> h 'nums'\n"
+        ">> h 'iso'\n"
+    )
+    assert out == (
+        "Graph\n"
+        "true\n"
+        "[ 5, 3 ]\n"
+        "Ida\n"
+        "Number\n"
+        "loves\n"
+        "loves\n"
+        "void\n"
+        "[ b, c ]\n"
+        "[ a ]\n"
+        "[ 1, 2, 3 ]\n"
+        "solo\n"
+    )
+
+
+def test_graph_csv_empty_roundtrip(tmp_path):
+    p = tmp_path / "g.csv"
+    run_lx(f"g: graph\nwrite g, '{p}'")
+    assert p.read_text() == GRAPH_HEADER
+    out = run_lx(f"h: read '{p}'\n>> type h\n>> len h\n>> h\n")
+    assert out == "Graph\n[ 0, 0 ]\ngraph\n"
+
+
+def test_graph_csv_copy_constructor_still_works(tmp_path):
+    p = tmp_path / "g.csv"
+    src = "g: a -> b : 'loves'\n"
+    run_lx(src + f"write g, '{p}'")
+    assert run_lx(f"h: graph (read '{p}')\n>> type h\n>> h 'a' -> 'b'\n") == "Graph\nloves\n"
 
 
 def test_graph_csv_parenthesized_text_value_stays_text(tmp_path):
     p = tmp_path / "g.csv"
     run_lx("g: graph\ng 'k': '(oops'\n" f"write g, '{p}'")
     assert p.read_text() == GRAPH_HEADER + "node,k,,(oops\n"
-    out = run_lx(f"h: graph (read '{p}')\n>> h 'k'\n>> type h 'k'\n")
-    assert out == "(oops\nText\n"
+    out = run_lx(f"h: read '{p}'\n>> type h\n>> h 'k'\n>> type h 'k'\n")
+    assert out == "Graph\n(oops\nText\n"
 
 
 def test_graph_csv_unsupported_node_value_is_error(tmp_path):

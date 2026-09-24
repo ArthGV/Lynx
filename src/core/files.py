@@ -18,6 +18,10 @@ from src.utils.keys import map_key, value_from_key
 
 SUPPORTED = {".txt", ".csv", ".yaml"}
 
+# A csv whose header is exactly these columns holds graph records. `read`
+# re-assembles it into a Graph; the writer emits the same header for a Graph.
+GRAPH_SCHEMA = ["kind", "from", "to", "value"]
+
 
 # ---------------------------------------------------------------------------
 # read
@@ -127,7 +131,7 @@ def _write_csv(value: Type, ext: str, line: int | None) -> str:
             rows.append(_csv_line([_csv_cell(value.columns[name][i], line) for name in names]))
         return header + "\n" + "\n".join(rows) + "\n"
     if isinstance(value, Graph):
-        rows = ["kind,from,to,value"]
+        rows = [",".join(GRAPH_SCHEMA)]
         for node_id in value.nodes:
             cell = _graph_cell(value.nodes[node_id], line)
             rows.append(_csv_line(["node", _csv_cell(Text(node_id), line), "", cell]))
@@ -227,9 +231,19 @@ def _read_csv(content: str, line: int | None) -> Type:
         data_lines.append(_parse_csv_line(stripped))
     if not data_lines:
         return Array([])
+    header = [text for text, _ in data_lines[0]]
+    if header == GRAPH_SCHEMA:
+        # A graph csv: a bare header is an empty graph, rows go through the
+        # table shape so every `_from_table` rule and error message applies.
+        if len(data_lines) == 1:
+            return Graph()
+        return Graph(_table_from_lines(data_lines, line), line)
     if len(data_lines) == 1:
         return Array([_infer_cell(text, quoted) for text, quoted in data_lines[0]])
-    # table path
+    return _table_from_lines(data_lines, line)
+
+
+def _table_from_lines(data_lines: list[list[tuple[str, bool]]], line: int | None) -> Table:
     header = [text for text, _ in data_lines[0]]
     seen = {}
     for name in header:

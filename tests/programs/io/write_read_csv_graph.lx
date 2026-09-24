@@ -1,7 +1,7 @@
 // Graphs round-trip through .csv: node and edge records share four columns
 g: a('Ida') -> b, c : 'loves'; d -> e
 write g, 'tests/programs/io/out/graph.csv'
-h: graph (read 'tests/programs/io/out/graph.csv')
+h: read 'tests/programs/io/out/graph.csv'
 >> g = h
 >> type h
 >> len h
@@ -15,7 +15,7 @@ h: graph (read 'tests/programs/io/out/graph.csv')
 g2: graph
 g2 'nums': 1, 2, 3
 write g2, 'tests/programs/io/out/graph2.csv'
-h2: graph (read 'tests/programs/io/out/graph2.csv')
+h2: read 'tests/programs/io/out/graph2.csv'
 >> h2 'nums'
 >> type h2 'nums'
 >> h2 'nums' 0
@@ -26,7 +26,7 @@ g3 '42': true
 g3 'seven': '42'
 g3 'seven': -> 'eight'('void')
 write g3, 'tests/programs/io/out/graph3.csv'
-h3: graph (read 'tests/programs/io/out/graph3.csv')
+h3: read 'tests/programs/io/out/graph3.csv'
 >> len h3
 >> h3 '42'
 >> type h3 '42'
