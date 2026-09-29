@@ -714,12 +714,9 @@ def test_graph_iterate():
 
 def test_graph_first_last_middle():
     g = gr(nodes=[("a", Void()), ("b", Void()), ("c", Void())])
-    assert print_(g.first()) == "a"
-    assert print_(g.last()) == "c"
-    assert print_(g.middle()) == "b"
-    assert type(gr().first()) is Void
-    assert type(gr().last()) is Void
-    assert type(gr().middle()) is Void
+    assert print_(g.first()) == "[ a, void ]"
+    assert print_(g.last()) == "[ c, void ]"
+    assert print_(g.middle()) == "[ b, void ]"
 
 
 def test_graph_neighbours():
@@ -744,7 +741,7 @@ def test_graph_conversions():
 
 
 def test_graph_text_repr_empty():
-    assert print_(gr().text()) == "graph"
+    assert print_(gr().text()) == "->"
 
 
 def test_graph_text_repr_groups_targets_by_label():

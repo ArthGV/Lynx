@@ -21,9 +21,9 @@ void
 // Membership and the sequence operations iterate over node ids
 true
 false
-a
-e
-c
+[ a, Ida ]
+[ e, void ]
+[ c, void ]
 5
 true
 5
@@ -41,7 +41,7 @@ true
 false
 true
 // Empty graph via the `graph` constructor
-graph
+->
 Graph
 [ 0, 0 ]
 false

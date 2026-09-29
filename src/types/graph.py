@@ -165,7 +165,7 @@ class Graph(ComplexType):
 
     def __repr__(self) -> str:
         if not self.nodes:
-            return "graph"
+            return "->"
         if not self.edges:
             return "\n".join(self._fragment(node_id) for node_id in self.nodes)
         lines: list[str] = []
@@ -206,18 +206,24 @@ class Graph(ComplexType):
 
     def first(self) -> Type:
         if self.nodes:
-            return Text(next(iter(self.nodes)))
+            node_name = next(iter(self.nodes))
+            node_value = self.nodes[node_name]
+            return Array([node_name, node_value])
         return Void()
 
     def last(self) -> Type:
         if self.nodes:
-            return Text(list(self.nodes)[-1])
+            node_name = list(self.nodes)[-1]
+            node_value = self.nodes[node_name]
+            return Array([node_name, node_value])
         return Void()
 
     def middle(self) -> Type:
-        if not self.nodes:
-            return Void()
-        return Text(list(self.nodes)[len(self.nodes) // 2])
+        if self.nodes:
+            node_name = list(self.nodes)[len(self.nodes) // 2]
+            node_value = self.nodes[node_name]
+            return Array([node_name, node_value])
+        return Void()
 
     def iterate(self) -> list[Type]:
         return [Text(node_id) for node_id in self.nodes]

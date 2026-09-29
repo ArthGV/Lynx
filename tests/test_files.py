@@ -385,7 +385,7 @@ def test_graph_csv_empty_roundtrip(tmp_path):
     run_lx(f"g: graph\nwrite g, '{p}'")
     assert p.read_text() == GRAPH_HEADER
     out = run_lx(f"h: read '{p}'\n>> type h\n>> len h\n>> h\n")
-    assert out == "Graph\n[ 0, 0 ]\ngraph\n"
+    assert out == "Graph\n[ 0, 0 ]\n->\n"
 
 
 def test_graph_csv_copy_constructor_still_works(tmp_path):
