@@ -1,0 +1,8 @@
+kind,from,to,value
+node,paris,,Paris
+node,rome,,Fiumicino
+edge,paris,london,easyjet
+edge,paris,berlin,easyjet
+edge,london,newyork,british
+edge,berlin,newyork,lufthansa
+edge,rome,newyork,ita

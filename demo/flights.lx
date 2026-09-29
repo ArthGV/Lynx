@@ -1,0 +1,71 @@
+// ─────────────────────────────────────────────────────────────
+// demo/flights.lx — book the cheapest Paris → New York flight.
+//
+//   run: lynx demo/flights.lx     (or: python -m src.main demo/flights.lx)
+//
+//   Business problem: no direct Paris → New York flight. Quote the
+//   cheapest itinerary with ONE stopover.
+//
+//   Data: the layout is the whole point.
+//     flights.csv  → a Table   one row per route · PRICES live here
+//     routes.csv   → a Graph   who flies where, airline on each edge
+//   Neither view alone can quote the trip — the graph knows the
+//   stopovers, the table knows the prices. One loop walks the graph
+//   and prices every leg in the table.
+// ─────────────────────────────────────────────────────────────
+
+// ── 1 · load both views ────────────────────────────────────────
+legs: read 'demo/flights.csv'     // fares, the table
+net:  read 'demo/routes.csv'      // routes, the graph
+
+>> '── inputs ──────────────────────────────────────────────────'
+>> legs
+>> net
+
+// ── 2 · no direct flight? ──────────────────────────────────────
+// A graph edge lookup: one expression, void when the edge is missing.
+>> '── is there a direct paris -> newyork flight? ───────────────'
+>> net 'paris' -> 'newyork'
+
+// ── 3 · cheapest itinerary with one stopover ───────────────────
+best_route: g, legs, a, b         // candidates from the graph…
+    best: 100000
+    via: void
+    loop m: from g a
+        leg1: first (where legs 'route' = a + '-' + m) 'price'   // …priced in the table
+        leg2: first (where legs 'route' = m + '-' + b) 'price'
+        if ((type leg1) = Number) * ((type leg2) = Number)       // both legs sold?
+            cost: leg1 + leg2
+            if cost < best
+                best: cost
+                via: m
+    >>> best, via                  // total cost, via city
+
+itinerary: best_route net, legs, 'paris', 'newyork'
+via_city:  itinerary 1
+route_cost: itinerary 0
+
+>> '── answer · cheapest paris → newyork itinerary ──────────────'
+>> route_cost, via_city
+
+// ── 4 · the quote, leg by leg ──────────────────────────────────
+leg1_price:  first (where legs 'route' = 'paris' + '-' + via_city) 'price'
+leg2_price:  first (where legs 'route' = via_city + '-' + 'newyork') 'price'
+leg1_airline: net 'paris' -> via_city
+leg2_airline: net via_city -> 'newyork'
+
+>> '── the quote ────────────────────────────────────────────────'
+>> 'paris → ' + via_city + ' on ' + leg1_airline + ' · ' + (text leg1_price) + ' EUR'
+>> via_city + ' → newyork on ' + leg2_airline + ' · ' + (text leg2_price) + ' EUR'
+>> 'total: ' + (text route_cost) + ' EUR'
+
+// the candidate that lost the search, so the choice can be explained
+rejected: (first (where legs 'route' = 'paris-london') 'price') + (first (where legs 'route' = 'london-newyork') 'price')
+>> 'the other stopover (london) would be ' + (text rejected) + ' EUR'
+
+// ── 5 · is 320 EUR a good price? ────────────────────────────────
+// The cheapest ticket to newyork anywhere in the table:
+>> '── context · one-stopover premium ────────────────────────────'
+>> 'cheapest newyork ticket in the market: ' + (text (min (where legs 'dest' = 'newyork') 'price')) + ' EUR'
+premium: route_cost - min (where legs 'dest' = 'newyork') 'price'
+>> 'so reaching newyork from paris costs ' + (text premium) + ' EUR more than that'

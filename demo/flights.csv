@@ -1,0 +1,6 @@
+route,airline,price,dest
+paris-london,easyjet,45,london
+paris-berlin,easyjet,40,berlin
+london-newyork,british,320,newyork
+berlin-newyork,lufthansa,280,newyork
+rome-newyork,ita,210,newyork
