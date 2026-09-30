@@ -17,7 +17,8 @@ from src.core.interpreter.expressions import (
     slice_assign,
     table_cells,
 )
-from src.errors.errors import LynxError, LynxTypeError
+from src.core.nodes import EdgeCreate, EdgeStep
+from src.errors.errors import LynxError, LynxSyntaxError, LynxTypeError
 from src.runtime import values
 from src.runtime.environment import Environment
 
@@ -41,6 +42,11 @@ def append_to(base: str, value_node: Any, front: bool, line: int | None, env: En
 def assign_item(base: str, steps: list[Any], value_node: Any, line: int | None, env: Environment) -> None:
     # `a 1, 0: 5` — walk the deref path to the innermost container, then set.
     container = env.get(base, line)
+    if isinstance(container, values.Graph) and _graph_assign(container, steps, value_node, line, env):
+        # `g 'x': 42`, `g 'x': -> 'z'(label)` and `g 'a' -> 'b': label` are
+        # graph-builtins, handled whole. Any other path falls through to the
+        # generic walk below.
+        return
     for step in steps[:-1]:
         if is_range(step):
             raise LynxError("range slicing is only supported for the last index", line)
@@ -88,6 +94,76 @@ def assign_item(base: str, steps: list[Any], value_node: Any, line: int | None, 
     raise LynxTypeError(f"cannot assign into a {container.type_name()}", line)
 
 
+def _graph_assign(graph: values.Graph, steps: list[Any], value_node: Any, line: int | None, env: Environment) -> bool:
+    """Handle a mutation into a graph. Returns True when the mutation was a
+    graph-builtin (node upsert, edge creation, strict label set); False for a
+    nested plain path like `g 'cfg' 'k': 7`, which the generic set walks."""
+    if isinstance(value_node, EdgeCreate):
+        # `g 'from': -> 'to'` / `g 'from': -> 'to'(label)` — create the edge,
+        # creating the target node as a by-product. The parenthesized value
+        # seeds both the target node and the label.
+        if len(steps) != 1 or is_range(steps[0]):
+            raise LynxSyntaxError("an edge mutation looks like: g 'from': -> 'to'", line)
+        source = _graph_node_id(steps[0], line, env)
+        target = _graph_node_id(value_node.target, line, env)
+        label: values.Type = values.Void()
+        if value_node.value is not None:
+            label = evaluate(value_node.value, env)
+            if not isinstance(label, values.Text):
+                raise LynxTypeError(f"an edge label must be a Text, got {label.type_name()}", line)
+        if source == target:
+            raise LynxError(f"cannot create an edge from '{source}' to itself", line)
+        if source not in graph.nodes:
+            raise LynxError(f"cannot create an edge from missing node '{source}'", line)
+        if value_node.value is not None:
+            # A labelled `-> 'to'(value)` upserts both the target node's value
+            # and the edge's label; a bare `-> 'to'` creates the target if it
+            # is missing but leaves an existing one's value untouched.
+            graph.set_node(target, label)
+        else:
+            graph.nodes.setdefault(target, values.Void())
+        graph.edges[(source, target)] = label
+        return True
+    if steps and isinstance(steps[-1], EdgeStep):
+        # `g 'a' -> 'b': label` — strict: the edge must already exist.
+        if len(steps) != 2 or is_range(steps[0]):
+            raise LynxSyntaxError("an edge label looks like: g 'a' -> 'b': 'loves'", line)
+        source = _graph_node_id(steps[0], line, env)
+        target = _graph_node_id(steps[-1].target, line, env)
+        label = evaluate(value_node, env)
+        if not isinstance(label, values.Text):
+            raise LynxTypeError(f"an edge label must be a Text, got {label.type_name()}", line)
+        graph.set_edge_label(source, target, label, line)
+        return True
+    if len(steps) == 1:
+        # `g 'x': value` — upsert the node (create it or overwrite its value).
+        key = _graph_node_id(steps[0], line, env)
+        graph.set_node(key, evaluate(value_node, env))
+        return True
+    return False
+
+
+def _graph_node_id(node: Any, line: int | None, env: Environment) -> str:
+    value = evaluate(node, env)
+    if not isinstance(value, values.Text):
+        raise LynxTypeError(f"a graph node id must be a Text, got {value.type_name()}", line)
+    return value.value
+
+
+def _delete_graph(graph: values.Graph, steps: list[Any], line: int | None, env: Environment) -> None:
+    if steps and isinstance(steps[-1], EdgeStep):
+        if len(steps) != 2:
+            raise LynxSyntaxError("a graph edge deletion looks like: del g 'a' -> 'b'", line)
+        source = _graph_node_id(steps[0], line, env)
+        target = _graph_node_id(steps[-1].target, line, env)
+        graph.delete_edge(source, target)
+        return
+    if len(steps) == 1:
+        graph.delete_node(_graph_node_id(steps[0], line, env))
+        return
+    raise LynxSyntaxError("a graph deletion names a node id or an edge, like: del g 'a'", line)
+
+
 def delete_item(base: str, steps: list[Any], line: int | None, env: Environment) -> None:
     # `del a 1, 0` / `del m 'k'` / `del t 'col'` — walk the deref path to the
     # innermost container, then remove the last step. With no steps at all the
@@ -97,6 +173,11 @@ def delete_item(base: str, steps: list[Any], line: int | None, env: Environment)
         env.delete(base, line)
         return
     container = env.get(base, line)
+    # `del g 'x'` drops a node and its incident edges; `del g 'a' -> 'b'`
+    # drops one edge. Missing targets are silent no-ops like Map deletion.
+    if isinstance(container, values.Graph):
+        _delete_graph(container, steps, line, env)
+        return
     # A table holds no nested cells to delete below itself, so multi-step
     # paths into one are rejected before the walk: `t 'col'` is a column, and
     # `t 0` is a row, full stop. Without this, `del t 'col' 0` would descend

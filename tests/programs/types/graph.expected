@@ -1,0 +1,100 @@
+// Graph literal: nodes may carry values, edges a label, targets a comma-run
+a('Ida') -> b, c : 'loves'
+d -> e
+Graph
+[ 5, 3 ]
+// Node access: `g 'id'` reads a node's value, void when valueless or missing
+Ida
+void
+void
+// Edge access: `g 'from' -> 'to'` reads the label, void when missing
+loves
+void
+void
+void
+// from / to: which nodes a node points at and is pointed at by
+[ b, c ]
+[  ]
+[ a ]
+void
+void
+// Membership and the sequence operations iterate over node ids
+true
+false
+[ a, Ida ]
+[ e, void ]
+[ c, void ]
+5
+true
+5
+true
+// Direction is stored per pair: the reverse edge is a separate record
+a -> b : 'loves'
+b -> a : 'loves'
+[ b ]
+[ b ]
+[ 2, 2 ]
+loves
+loves
+// Equality is structural: creation order does not matter
+true
+false
+true
+// Empty graph via the `graph` constructor
+->
+Graph
+[ 0, 0 ]
+false
+void
+void
+// Node assignment is an upsert: create a node or overwrite its value
+[ 2, 0 ]
+99
+hello
+void
+// `g 'from': -> 'to'` creates an edge, creating the target node as well
+[ 3, 1 ]
+true
+void
+void
+// Edge creation with a label upserts: `g 'from': -> 'to'(label)`
+loves
+loves
+hates
+hates
+[ 3, 1 ]
+// An unlabelled `-> 'to'` on an existing edge resets the label to void,
+// leaving the target node's value untouched
+void
+start
+void
+start
+[ 5, 2 ]
+// `g 'from' -> 'to': label` sets the label of an existing edge
+strict
+strict again
+// Node values can be any type: arrays, maps, and so on
+[ 1, 2, 3 ]
+1
+7
+[ 2, 0 ]
+// An array node value round-trips through the literal form
+[ 1, 2 ]
+n(1, 2) -> m
+// Node values on sources, targets and isolated positions print inline
+a -> b('val')
+val
+void
+a('src') -> b('dst'), c : 'l'
+dst
+l
+l
+// A bare re-appearance of a node in a literal does not conflict
+[ 3, 2 ]
+x
+void
+// Iteration visits the node ids in insertion order
+a,b,c,d,e,
+// Re-printing after a mutation shows updated values inline
+a('Ida') -> b(42), c : 'loves'
+d -> e

@@ -1,0 +1,144 @@
+// Graph literal: nodes may carry values, edges a label, targets a comma-run
+g: a('Ida') -> b, c : 'loves'; d -> e
+>> g
+>> type g
+>> len g
+
+// Node access: `g 'id'` reads a node's value, void when valueless or missing
+>> g 'a'
+>> g 'b'
+>> g 'nope'
+
+// Edge access: `g 'from' -> 'to'` reads the label, void when missing
+>> g 'a' -> 'b'
+>> g 'd' -> 'e'
+>> g 'e' -> 'd'
+>> g 'b' -> 'c'
+
+// from / to: which nodes a node points at and is pointed at by
+>> from g 'a'
+>> from g 'e'
+>> to g 'b'
+>> from g 'nope'
+>> to g 'nope'
+
+// Membership and the sequence operations iterate over node ids
+>> 'a' in g
+>> 'nope' in g
+>> first g
+>> last g
+>> middle g
+>> count g
+>> boolean g
+>> number g
+>> (type g) = Graph
+
+// Direction is stored per pair: the reverse edge is a separate record
+two_way: a -> b : 'loves'; b -> a : 'loves'
+>> two_way
+>> from two_way 'a'
+>> to two_way 'a'
+>> len two_way
+>> two_way 'a' -> 'b'
+>> two_way 'b' -> 'a'
+
+// Equality is structural: creation order does not matter
+same: b -> a : 'loves'; a -> b : 'loves'
+>> same = two_way
+one_way: a -> b : 'loves'
+>> two_way = one_way
+>> two_way > one_way
+
+// Empty graph via the `graph` constructor
+empty: graph
+>> empty
+>> type empty
+>> len empty
+>> boolean empty
+>> first empty
+>> empty 'a'
+
+// Node assignment is an upsert: create a node or overwrite its value
+g3: graph
+g3 'x': 42
+g3 'x': 99
+g3 'y': 'hello'
+>> len g3
+>> g3 'x'
+>> g3 'y'
+>> g3 'z'
+
+// `g 'from': -> 'to'` creates an edge, creating the target node as well
+g3 'x': -> 'z'
+>> len g3
+>> 'z' in g3
+>> g3 'z'
+>> g3 'x' -> 'z'
+
+// `g 'from': -> 'to'(value)` creates an edge and sets the target node's value
+g3 'x': -> 'z'('loves')
+>> g3 'z'
+>> g3 'x' -> 'z'
+g3 'x': -> 'z'('hates')
+>> g3 'z'
+>> g3 'x' -> 'z'
+>> len g3
+
+// An unlabelled `-> 'to'` on an existing edge resets the label to void,
+// leaving the target node's value untouched
+g3 'w': 1
+g3 'w': -> 'v'
+>> g3 'w' -> 'v'
+g3 'w': -> 'v'('start')
+>> g3 'w' -> 'v'
+g3 'w': -> 'v'
+>> g3 'w' -> 'v'
+>> g3 'v'
+>> len g3
+
+// `g 'from' -> 'to': label` sets the label of an existing edge
+g3 'x' -> 'z': 'strict'
+>> g3 'x' -> 'z'
+g3 'x' -> 'z': 'strict again'
+>> g3 'x' -> 'z'
+
+// Node values can be any type: arrays, maps, and so on
+deep: graph
+deep 'nums': 1, 2, 3
+deep 'cfg': { 'k': 7 }
+>> deep 'nums'
+>> deep 'nums' 0
+>> deep 'cfg' 'k'
+>> len deep
+
+// An array node value round-trips through the literal form
+lit: n(1, 2) -> m
+>> lit 'n'
+>> lit
+
+// Node values on sources, targets and isolated positions print inline
+targets: a -> b('val')
+>> targets
+>> targets 'b'
+>> targets 'a' -> 'b'
+both: a('src') -> b('dst'), c : 'l'
+>> both
+>> both 'b'
+>> both 'a' -> 'b'
+>> both 'a' -> 'c'
+
+// A bare re-appearance of a node in a literal does not conflict
+merge_ok: a('x') -> b; a -> c
+>> len merge_ok
+>> merge_ok 'a'
+>> merge_ok 'b'
+
+// Iteration visits the node ids in insertion order
+names: ''
+loop n: g
+ names: names + n + ','
+>> names
+
+// Re-printing after a mutation shows updated values inline
+g 'b': 42
+>> g

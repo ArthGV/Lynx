@@ -46,7 +46,7 @@ CONFIG_OUT = HERE / "language-configuration.json"
 CONTROL = {"IF", "ELSE", "LOOP"}
 
 # Zero-argument constructor keywords: colour as builtins like the unary methods.
-CONSTRUCTOR = {"ARRAY", "MAP", "TABLE"}
+CONSTRUCTOR = {"ARRAY", "MAP", "TABLE", "GRAPH"}
 
 # Control keywords that open an indented block, and the subset of those that
 # also close the previous one (so typing `else` dedents to line up with `if`).
@@ -78,6 +78,7 @@ SYMBOL_SCOPE = {
     "PREPEND": "keyword.operator.assignment.lynx",
     "COMMA": "punctuation.separator.comma.lynx",
     "SEMICOLON": "punctuation.separator.lynx",
+    "ARROW": "keyword.operator.arrow.lynx",
     "LBRACE": "punctuation.section.braces.lynx",
     "RBRACE": "punctuation.section.braces.lynx",
     "LBRACK": "punctuation.section.brackets.lynx",

@@ -17,7 +17,11 @@ from src.core.nodes import (
     Branch,
     Call,
     Delete,
+    EdgeCreate,
+    EdgeStep,
     Function,
+    GraphLiteral,
+    GraphSegment,
     If,
     Loop,
     Print,
@@ -135,6 +139,10 @@ class StatementMixin(Parser):
         # comma separates several, in which case it is an array literal. A
         # trailing comma closes a one-element array: `name: 2,` is `[2]`.
         # `,` consumed inside a call's args stays that call's args, never here.
+        # A leading node id followed by `->` (or a `;`-separated node run) is a
+        # graph literal rather than an expression.
+        if self._looks_like_graph_literal():
+            return self.parse_graph_literal()
         items = [self.parse_expression()]
         trailing = False
         while self.type() == "COMMA":
@@ -147,11 +155,83 @@ class StatementMixin(Parser):
             return items[0]
         return ArrayLiteral(items)
 
+    def _looks_like_graph_literal(self) -> bool:
+        # At the head of an assignment RHS: an IDENTIFIER that is a node id,
+        # then either an ARROW (`a -> b`), a SEMICOLON (a bare leading isolated
+        # node), or a parenthesized value followed by one of those
+        # (`a('x') -> b`). A read like `g 'a' -> 'b'` doesn't match because its
+        # step is a bare text/number, not parens — node values in literals are
+        # always parenthesized (and could also be an array like `(1, 2)`).
+        if self.type() != "IDENTIFIER":
+            return False
+        i = self.current + 1
+        if i >= len(self.tokens):
+            return False
+        nxt = self.tokens[i].type
+        if nxt in ("ARROW", "SEMICOLON"):
+            return True
+        if nxt != "LPAREN":
+            return False
+        depth = 0
+        while i < len(self.tokens):
+            token_type = self.tokens[i].type
+            if token_type == "LPAREN":
+                depth += 1
+            elif token_type == "RPAREN":
+                depth -= 1
+                if depth == 0:
+                    i += 1
+                    return i < len(self.tokens) and self.tokens[i].type in ("ARROW", "SEMICOLON")
+            i += 1
+        return False
+
+    def parse_graph_literal(self) -> GraphLiteral:
+        # `a('Ida') -> b, c : 'loves'; d -> e` — `;` separates statements, each
+        # building a source node, a target comma-run and (once) a shared label.
+        line = self.peek_line()
+        segments = [self.parse_graph_segment()]
+        while self.type() == "SEMICOLON":
+            self.advance()
+            segments.append(self.parse_graph_segment())
+        return GraphLiteral(segments, line)
+
+    def parse_graph_segment(self) -> GraphSegment:
+        line = self.peek_line()
+        source = self.match("IDENTIFIER").value
+        value: Any | None = None
+        if self.type() == "LPAREN":
+            value = self.parse_parenthesized(False)
+        targets: list[tuple[str, Any | None]] = []
+        if self.type() == "ARROW":
+            self.advance()
+            targets.append(self._parse_graph_target())
+            while self.type() == "COMMA":
+                self.advance()
+                targets.append(self._parse_graph_target())
+        label: Any | None = None
+        if self.type() == "COLON":
+            self.advance()
+            label = self.parse_expression()
+        return GraphSegment(source, value, targets, label, line)
+
+    def _parse_graph_target(self) -> tuple[str, Any | None]:
+        target = self.match("IDENTIFIER").value
+        value: Any | None = None
+        if self.type() == "LPAREN":
+            value = self.parse_parenthesized(False)
+        return (target, value)
+
     def parse_call(self, name: str, line: int | None) -> Call:
         args = [self.parse_expression(False)]
         while self.type() == "COMMA":
             self.advance()
             args.append(self.parse_expression(False))
+        if self.type() == "ARROW":
+            # An edge access — `g 'a' -> 'b'` — keeps both endpoint ids in the
+            # same run's args so the interpreter sees the source and target
+            # together.
+            self.advance()
+            args.append(EdgeStep(self.parse_expression(False)))
         return Call(name, args, line)
 
     def parse_append(self, name: str, line: int | None) -> Append:
@@ -171,6 +251,9 @@ class StatementMixin(Parser):
                 if self.type() == "COMMA":
                     self.advance()
                     steps.append(self.parse_expression(False))
+                elif self.type() == "ARROW":
+                    self.advance()
+                    steps.append(EdgeStep(self.parse_expression(False)))
                 elif self._starts_expression(self.type()):
                     steps.append(self.parse_expression(False))
                 else:
@@ -190,6 +273,9 @@ class StatementMixin(Parser):
                 if self.type() == "COMMA":
                     self.advance()
                     steps.append(self.parse_expression(False))
+                elif self.type() == "ARROW":
+                    self.advance()
+                    steps.append(EdgeStep(self.parse_expression(False)))
                 elif self._starts_expression(self.type()):
                     steps.append(self.parse_expression(False))
                 else:
@@ -211,6 +297,15 @@ class StatementMixin(Parser):
         # kept as one element (`a 0: (4, 5)` sets a single array) — the array
         # still holds the whole run, but for a table column `t 'c': (4, 5)`
         # writes one cell instead of spreading the array.
+        if self.type() == "ARROW":
+            # `g 'x': -> 'z'` creates an edge, optionally seeding the target
+            # node and the label together: `g 'x': -> 'z'('loves')`.
+            token = self.advance()
+            target = self.parse_expression(False)
+            value: Any | None = None
+            if self.type() == "LPAREN":
+                value = self.parse_parenthesized(False)
+            return EdgeCreate(target, value, token.line)
         first = self.parse_cell_value()
         if self.type() != "COMMA":
             return first

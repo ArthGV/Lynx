@@ -1,0 +1,2 @@
+// setting the label of an edge that does not exist is an error
+Error on line 2: edge 'a' -> 'c' does not exist

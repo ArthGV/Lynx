@@ -23,6 +23,9 @@ from src.core.nodes import (
     Cell,
     Delete,
     Function,
+    GraphBuild,
+    GraphLiteral,
+    GraphQuery,
     Identifier,
     If,
     Loop,
@@ -187,6 +190,18 @@ def evaluate(node: Any, env: Environment) -> values.Type:
 
         case TableQuery(kind, expression, line):
             return _expressions.evaluate_table_query(kind, expression, line, env)
+
+        case GraphBuild(operand, line):
+            if operand is None:
+                return values.Graph()
+            source = evaluate(operand, env)
+            return values.Graph(source, line)
+
+        case GraphLiteral(segments, line):
+            return _expressions.build_graph(segments, line, env)
+
+        case GraphQuery(kind, graph, node, line):
+            return _expressions.evaluate_graph_query(kind, graph, node, line, env)
 
         case UnaryExpression(operator, operand, line):
             return _operators.apply_unary(operator, evaluate(operand, env), line)

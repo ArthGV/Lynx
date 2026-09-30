@@ -262,6 +262,209 @@ def test_csv_text_crosses_formats_via_txt_read(tmp_path):
 
 
 # ---------------------------------------------------------------------------
+# .csv — Graph
+# ---------------------------------------------------------------------------
+
+GRAPH_HEADER = "kind,from,to,value\n"
+
+
+def test_graph_csv_write_bytes_and_roundtrip(tmp_path):
+    p = tmp_path / "g.csv"
+    src = "g: a('Ida') -> b, c : 'loves'; d -> e\n"
+    run_lx(src + f"write g, '{p}'")
+    assert p.read_text() == (
+        GRAPH_HEADER
+        + "node,a,,Ida\n"
+        + "node,b,,void\n"
+        + "node,c,,void\n"
+        + "node,d,,void\n"
+        + "node,e,,void\n"
+        + "edge,a,b,loves\n"
+        + "edge,a,c,loves\n"
+        + "edge,d,e,void\n"
+    )
+    out = run_lx(src + f"h: read '{p}'\n>> type h\n>> g = h\n>> h 'a' -> 'c'\n>> from h 'a'\n>> len h\n")
+    assert out == "Graph\ntrue\nloves\n[ b, c ]\n[ 5, 3 ]\n"
+
+
+def test_graph_csv_array_value_cell_roundtrip(tmp_path):
+    p = tmp_path / "g.csv"
+    run_lx("g: graph\ng 'nums': 1, 2, 3\n" f"write g, '{p}'")
+    assert p.read_text() == GRAPH_HEADER + 'node,nums,,"(1, 2, 3)"\n'
+    out = run_lx(f"h: read '{p}'\n>> type h\n>> h 'nums'\n>> type h 'nums'\n>> h 'nums' 0\n")
+    assert out == "Graph\n[ 1, 2, 3 ]\nArray\n1\n"
+
+
+def test_graph_csv_ambiguous_cells_keep_types(tmp_path):
+    p = tmp_path / "g.csv"
+    src = (
+        "g: graph\n"
+        "g '42': true\n"
+        "g 'seven': '42'\n"
+        "g 'seven': -> 'eight'('void')\n"
+    )
+    run_lx(src + f"write g, '{p}'")
+    assert p.read_text() == (
+        GRAPH_HEADER
+        + 'node,"42",,true\n'
+        + 'node,seven,,"42"\n'
+        + 'node,eight,,"void"\n'
+        + 'edge,seven,eight,"void"\n'
+    )
+    out = run_lx(
+        f"h: read '{p}'\n"
+        ">> type h\n"
+        ">> h '42'\n"
+        ">> type h '42'\n"
+        ">> h 'seven' -> 'eight'\n"
+        ">> type h 'seven' -> 'eight'\n"
+    )
+    assert out == "Graph\ntrue\nBoolean\nvoid\nText\n"
+
+
+def test_graph_csv_full_roundtrip_is_identity(tmp_path):
+    p = tmp_path / "g.csv"
+    build = (
+        "g: graph\n"
+        "g 'a': 'Ida'\n"
+        "g 'b': 42\n"
+        "g 'c': true\n"
+        "g 'nums': 1, 2, 3\n"
+        "g 'a': -> 'b'\n"
+        "g 'a': -> 'c'\n"
+        "g 'b': -> 'a'\n"
+        "g 'a' -> 'b': 'loves'\n"
+        "g 'a' -> 'c': 'loves'\n"
+        "g 'iso': 'solo'\n"
+    )
+    run_lx(build + f"write g, '{p}'\n")
+    assert p.read_text() == (
+        GRAPH_HEADER
+        + "node,a,,Ida\n"
+        + "node,b,,42\n"
+        + "node,c,,true\n"
+        + "node,nums,,\"(1, 2, 3)\"\n"
+        + "node,iso,,solo\n"
+        + "edge,a,b,loves\n"
+        + "edge,a,c,loves\n"
+        + "edge,b,a,void\n"
+    )
+    out = run_lx(
+        build + f"h: read '{p}'\n"
+        ">> type h\n"
+        ">> g = h\n"
+        ">> len h\n"
+        ">> h 'a'\n"
+        ">> type h 'b'\n"
+        ">> h 'a' -> 'b'\n"
+        ">> h 'a' -> 'c'\n"
+        ">> h 'b' -> 'a'\n"
+        ">> from h 'a'\n"
+        ">> to h 'b'\n"
+        ">> h 'nums'\n"
+        ">> h 'iso'\n"
+    )
+    assert out == (
+        "Graph\n"
+        "true\n"
+        "[ 5, 3 ]\n"
+        "Ida\n"
+        "Number\n"
+        "loves\n"
+        "loves\n"
+        "void\n"
+        "[ b, c ]\n"
+        "[ a ]\n"
+        "[ 1, 2, 3 ]\n"
+        "solo\n"
+    )
+
+
+def test_graph_csv_empty_roundtrip(tmp_path):
+    p = tmp_path / "g.csv"
+    run_lx(f"g: graph\nwrite g, '{p}'")
+    assert p.read_text() == GRAPH_HEADER
+    out = run_lx(f"h: read '{p}'\n>> type h\n>> len h\n>> h\n")
+    assert out == "Graph\n[ 0, 0 ]\n->\n"
+
+
+def test_graph_csv_copy_constructor_still_works(tmp_path):
+    p = tmp_path / "g.csv"
+    src = "g: a -> b : 'loves'\n"
+    run_lx(src + f"write g, '{p}'")
+    assert run_lx(f"h: graph (read '{p}')\n>> type h\n>> h 'a' -> 'b'\n") == "Graph\nloves\n"
+
+
+def test_graph_csv_parenthesized_text_value_stays_text(tmp_path):
+    p = tmp_path / "g.csv"
+    run_lx("g: graph\ng 'k': '(oops'\n" f"write g, '{p}'")
+    assert p.read_text() == GRAPH_HEADER + "node,k,,(oops\n"
+    out = run_lx(f"h: read '{p}'\n>> type h\n>> h 'k'\n>> type h 'k'\n")
+    assert out == "Graph\n(oops\nText\n"
+
+
+def test_graph_csv_unsupported_node_value_is_error(tmp_path):
+    p = tmp_path / "g.csv"
+    assert run_err(f"g: graph\ng 'k': {{ 'a': 1 }}\nwrite g, '{p}'") == (
+        "TypeError on line 3: cannot write Map values in a .csv; only scalars and arrays are supported"
+    )
+    assert run_err(f"g: graph\ng 'k': ['a': 1]\nwrite g, '{p}'") == (
+        "TypeError on line 3: cannot write Table values in a .csv; only scalars and arrays are supported"
+    )
+
+
+def test_graph_csv_empty_graph_writes_header_only(tmp_path):
+    p = tmp_path / "g.csv"
+    run_lx("g: graph\n" f"write g, '{p}'")
+    assert p.read_text() == GRAPH_HEADER
+
+
+def test_graph_write_type_mismatches(tmp_path):
+    assert run_err("g: graph\n" f"write g, '{tmp_path / 'y.yaml'}'") == (
+        "TypeError on line 2: a value of type Graph writes to .csv, not .yaml"
+    )
+    assert run_err("g: graph\n" f"write g, '{tmp_path / 't.txt'}'") == (
+        "TypeError on line 2: a value of type Graph writes to .csv, not .txt"
+    )
+
+
+def test_graph_conversion_from_an_in_memory_table(tmp_path):
+    src = (
+        "t: ['kind': 'edge', 'edge'; 'from': 'a', 'b'; 'to': 'b', 'a'; 'value': 'x', 'y']\n"
+        "g: graph t\n"
+        ">> len g\n"
+        ">> g 'a' -> 'b'\n"
+        ">> from g 'a'\n"
+        ">> 'b' in g\n"
+    )
+    assert run_lx(src) == "[ 2, 2 ]\nx\n[ b ]\ntrue\n"
+
+
+def test_graph_conversion_needs_kind_columns_is_error(tmp_path):
+    p = tmp_path / "g.csv"
+    p.write_text("from,to,label\na,b,loves\n")
+    assert run_err(f">> graph (read '{p}')") == (
+        "Error on line 1: cannot convert a table into a graph without the columns kind, from, to, value"
+    )
+
+
+def test_graph_conversion_unknown_kind_is_error(tmp_path):
+    p = tmp_path / "g.csv"
+    p.write_text(GRAPH_HEADER + "banana,a,,42\n")
+    assert run_err(f">> graph (read '{p}')") == (
+        "Error on line 1: unknown graph row kind 'banana'"
+    )
+
+
+def test_graph_conversion_duplicate_node_is_error(tmp_path):
+    p = tmp_path / "g.csv"
+    p.write_text(GRAPH_HEADER + "node,a,,1\nnode,a,,2\n")
+    assert run_err(f">> graph (read '{p}')") == (
+        "TypeError on line 1: node 'a' is defined twice"
+    )
+
+
+# ---------------------------------------------------------------------------
 # .yaml
 # ---------------------------------------------------------------------------
 

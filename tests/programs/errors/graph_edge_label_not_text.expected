@@ -1,0 +1,2 @@
+// an edge label in a literal must be a text
+TypeError on line 1: an edge label must be a Text, got Number

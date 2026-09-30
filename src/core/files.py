@@ -10,12 +10,17 @@ from typing import Any, cast
 from src.errors.errors import LynxError, LynxTypeError
 from src.types.array import Array
 from src.types.base_type import Type
+from src.types.graph import Graph
 from src.types.map import Map
 from src.types.simple_type import Boolean, Number, Text, Void
 from src.types.table import Table
 from src.utils.keys import map_key, value_from_key
 
 SUPPORTED = {".txt", ".csv", ".yaml"}
+
+# A csv whose header is exactly these columns holds graph records. `read`
+# re-assembles it into a Graph; the writer emits the same header for a Graph.
+GRAPH_SCHEMA = ["kind", "from", "to", "value"]
 
 
 # ---------------------------------------------------------------------------
@@ -81,7 +86,7 @@ def write(value: Type, path: Type, line: int | None = None) -> None:
 
 
 def _formats_to(value: Type) -> str:
-    if isinstance(value, (Array, Table)):
+    if isinstance(value, (Array, Table, Graph)):
         return ".csv"
     if isinstance(value, Map):
         return ".yaml"
@@ -125,10 +130,51 @@ def _write_csv(value: Type, ext: str, line: int | None) -> str:
         for i in range(value.nrows):
             rows.append(_csv_line([_csv_cell(value.columns[name][i], line) for name in names]))
         return header + "\n" + "\n".join(rows) + "\n"
+    if isinstance(value, Graph):
+        rows = [",".join(GRAPH_SCHEMA)]
+        for node_id in value.nodes:
+            cell = _graph_cell(value.nodes[node_id], line)
+            rows.append(_csv_line(["node", _csv_cell(Text(node_id), line), "", cell]))
+        for (source, target), label in value.edges.items():
+            rows.append(
+                _csv_line(
+                    [
+                        "edge",
+                        _csv_cell(Text(source), line),
+                        _csv_cell(Text(target), line),
+                        _graph_cell(label, line),
+                    ]
+                )
+            )
+        return "\n".join(rows) + "\n"
     raise LynxTypeError(
         f"a value of type {value.type_name()} writes to {_formats_to(value)}, not .csv",
         line,
     )
+
+
+def _graph_cell(value: Type, line: int | None) -> str:
+    # A graph value or label cell: scalars serialize exactly like any csv cell,
+    # arrays as a parenthesized comma-run (`(1, 2, 3)`) so they read back as
+    # arrays; the deeper collections have no csv form.
+    if isinstance(value, Array):
+        return _csv_cell(Text("(" + ", ".join(_graph_array_item(item) for item in value.value) + ")"), line)
+    if isinstance(value, (Map, Table, Graph)):
+        raise LynxTypeError(
+            f"cannot write {value.type_name()} values in a .csv; only scalars and arrays are supported",
+            line,
+        )
+    return _csv_cell(value, line)
+
+
+def _graph_array_item(value: Type) -> str:
+    if isinstance(value, Text):
+        return f"'{value.value}'"
+    if isinstance(value, Number):
+        return str(value)
+    if isinstance(value, Boolean):
+        return "true" if value.value else "false"
+    return "void"
 
 
 def _csv_line(cells: list[str]) -> str:
@@ -185,9 +231,19 @@ def _read_csv(content: str, line: int | None) -> Type:
         data_lines.append(_parse_csv_line(stripped))
     if not data_lines:
         return Array([])
+    header = [text for text, _ in data_lines[0]]
+    if header == GRAPH_SCHEMA:
+        # A graph csv: a bare header is an empty graph, rows go through the
+        # table shape so every `_from_table` rule and error message applies.
+        if len(data_lines) == 1:
+            return Graph()
+        return Graph(_table_from_lines(data_lines, line), line)
     if len(data_lines) == 1:
         return Array([_infer_cell(text, quoted) for text, quoted in data_lines[0]])
-    # table path
+    return _table_from_lines(data_lines, line)
+
+
+def _table_from_lines(data_lines: list[list[tuple[str, bool]]], line: int | None) -> Table:
     header = [text for text, _ in data_lines[0]]
     seen = {}
     for name in header:
