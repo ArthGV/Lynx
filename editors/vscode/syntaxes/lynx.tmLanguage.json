@@ -20,7 +20,7 @@
       "match": "'((?:[^'\\\\]|\\\\.)*)'"
     },
     {
-      "match": "^\\s*(?!(?:distinct|boolean|Boolean|middle|number|Number|select|first|Array|Table|Graph|array|table|graph|count|order|group|where|write|false|else|loop|stop|skip|type|last|text|Text|Void|from|sqrt|root|join|read|true|void|xor|len|end|not|del|Map|map|sum|avg|min|max|if|in|to|pi)\\b)([a-zA-Z_](?:[a-zA-Z0-9]|_(?!_))*)(?=\\s*:)",
+      "match": "^\\s*(?!(?:distinct|boolean|Boolean|middle|number|Number|select|first|Array|Table|Graph|array|table|graph|count|order|group|where|write|error|false|else|loop|stop|skip|type|last|text|Text|Void|from|sqrt|root|join|read|test|true|void|xor|len|end|not|del|Map|map|sum|avg|min|max|if|in|to|pi)\\b)([a-zA-Z_](?:[a-zA-Z0-9]|_(?!_))*)(?=\\s*:)",
       "captures": {
         "1": {
           "name": "variable.other.definition.lynx"
@@ -37,7 +37,7 @@
     },
     {
       "name": "keyword.operator.word.lynx",
-      "match": "\\b(?:Boolean|Number|select|Array|Table|Graph|order|group|where|write|stop|skip|Text|Void|from|root|join|xor|del|Map|in|to)\\b"
+      "match": "\\b(?:Boolean|Number|select|Array|Table|Graph|order|group|where|write|error|stop|skip|Text|Void|from|root|join|test|xor|del|Map|in|to)\\b"
     },
     {
       "name": "support.function.builtin.lynx",

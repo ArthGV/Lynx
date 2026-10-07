@@ -22,6 +22,7 @@ from src.core.nodes import (
     Call,
     Cell,
     Delete,
+    Error,
     Function,
     GraphBuild,
     GraphLiteral,
@@ -41,12 +42,13 @@ from src.core.nodes import (
     Stop,
     TableLiteral,
     TableQuery,
+    Test,
     Text,
     UnaryExpression,
     Void,
     Write,
 )
-from src.errors.errors import LynxError, LynxTypeError
+from src.errors.errors import LynxError, LynxTestError, LynxTypeError
 from src.runtime import values
 from src.runtime.environment import Environment
 from src.runtime.functions import FunctionValue, _Return, _Skip, _Stop
@@ -139,6 +141,15 @@ def execute(node: Any, env: Environment) -> None:
         case Skip(condition, line):
             if condition is None or evaluate(condition, env).boolean().is_true():
                 raise _Skip()
+
+        case Test(condition, message, line):
+            if not evaluate(condition, env).boolean().is_true():
+                msg = str(evaluate(message, env)) if message is not None else ''
+                raise LynxTestError(msg, line)
+
+        case Error(message, line):
+            msg = str(evaluate(message, env)) if message is not None else ''
+            raise LynxError(msg, line)
 
         case _:
             raise LynxTypeError(f"cannot execute {type(node).__name__}")

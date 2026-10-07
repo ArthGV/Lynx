@@ -19,6 +19,7 @@ from src.core.nodes import (
     Delete,
     EdgeCreate,
     EdgeStep,
+    Error,
     Function,
     GraphLiteral,
     GraphSegment,
@@ -29,6 +30,7 @@ from src.core.nodes import (
     SetItem,
     Skip,
     Stop,
+    Test,
     Write,
 )
 from src.core.parser._base import EOF, Parser
@@ -54,6 +56,10 @@ class StatementMixin(Parser):
                 return self.parse_write()
             case "DELETE":
                 return self.parse_delete()
+            case "TEST":
+                return self.parse_test()
+            case "ERROR":
+                return self.parse_error()
             case "IDENTIFIER":
                 return self.parse_name_statement()
         token = self.peek()
@@ -65,6 +71,23 @@ class StatementMixin(Parser):
         self.match("COMMA")
         path = self.parse_expression()
         return Write(value, path, token.line)
+
+    def parse_test(self) -> Test:
+        token = self.match("TEST")
+        condition = self.parse_expression()
+        message = None
+        if self.type() == "COMMA":
+            self.advance()
+            if self._starts_expression(self.type()):
+                message = self.parse_expression()
+        return Test(condition, message, token.line)
+
+    def parse_error(self) -> Error:
+        token = self.match("ERROR")
+        message = None
+        if self._starts_expression(self.type()):
+            message = self.parse_expression()
+        return Error(message, token.line)
 
     def parse_print(self) -> Print:
         self.match("PRINT")

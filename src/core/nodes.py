@@ -152,6 +152,19 @@ class Skip:
 
 
 @dataclass
+class Test:
+    condition: Any
+    message: Any | None = None
+    line: int | None = None
+
+
+@dataclass
+class Error:
+    message: Any | None = None
+    line: int | None = None
+
+
+@dataclass
 class Number:
     value: Any
 

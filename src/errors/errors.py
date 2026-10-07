@@ -41,3 +41,9 @@ class LynxNotImplemented(LynxError):
     written the logic for yet — a hole to fill, not a user mistake."""
 
     kind = "NotImplemented"
+
+
+class LynxTestError(LynxError):
+    """A test assertion failure."""
+
+    kind = "TestError"

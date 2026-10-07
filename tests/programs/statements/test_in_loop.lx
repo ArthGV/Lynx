@@ -1,0 +1,4 @@
+x: 0
+loop x < 3
+  test x >= 0, 'x is negative'
+  x: x + 1

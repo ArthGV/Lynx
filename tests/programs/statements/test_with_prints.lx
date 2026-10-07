@@ -1,0 +1,3 @@
+>> 'before'
+test 2 + 2 = 4, 'math works'
+>> 'after'
