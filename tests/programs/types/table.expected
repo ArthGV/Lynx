@@ -13,14 +13,30 @@ Table
 [ 10, 20, 30 ]
 // Missing column returns void
 void
-// Row access returns a Map
-{ id: 1; price: 10 }
-{ id: 3; price: 30 }
+// Row access returns a Table
+┌────┬─────┐
+│ id │price│
+├────┼─────┤
+│  1 │  10 │
+└────┴─────┘
+┌────┬─────┐
+│ id │price│
+├────┼─────┤
+│  3 │  30 │
+└────┴─────┘
 // Chained access: column then index
 1
 // First / last row
-{ id: 1; price: 10 }
-{ id: 3; price: 30 }
+┌────┬─────┐
+│ id │price│
+├────┼─────┤
+│  1 │  10 │
+└────┴─────┘
+┌────┬─────┐
+│ id │price│
+├────┼─────┤
+│  3 │  30 │
+└────┴─────┘
 // Empty table (keyword constructor)
 ┌────┐
 └────┘

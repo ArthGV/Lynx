@@ -171,9 +171,21 @@ def test_csv_table_read_typed_columns(tmp_path):
     p = tmp_path / "people.csv"
     p.write_text("name,age,city\nada,36,london\nbob,hidden,\ncharlie,,")
     out = run_lx(f"t: read '{p}'\n>> t 'age'\n>> t 0\n>> t 1\n>> type t 'age' 0\n>> type t 'age' 1\n")
-    assert out == (
-        "[ 36, hidden,  ]\n{ name: ada; age: 36; city: london }\n{ name: bob; age: hidden; city:  }\nNumber\nText\n"
+    expected = (
+        "[ 36, hidden,  ]\n"
+        "┌─────┬────┬────────┐\n"
+        "│ name│ age│ city   │\n"
+        "├─────┼────┼────────┤\n"
+        "│'ada'│ 36 │'london'│\n"
+        "└─────┴────┴────────┘\n"
+        "┌─────┬────────┬────┐\n"
+        "│ name│ age    │city│\n"
+        "├─────┼────────┼────┤\n"
+        "│'bob'│'hidden'│''  │\n"
+        "└─────┴────────┴────┘\n"
+        "Number\nText\n"
     )
+    assert out == expected
 
 
 def test_csv_table_write_bytes_and_roundtrip(tmp_path):
@@ -201,7 +213,7 @@ def test_csv_table_row_too_long_is_error(tmp_path):
 def test_csv_table_non_text_spellings_are_valid_titles(tmp_path):
     p = write_file(tmp_path / "smart.csv", "42,true,name\n42,1,1")
     out = run_lx(f"t: read '{p}'\n>> t '42' 0\n>> t 'true' 0\n>> t 'name' 0\n>> t 0\n")
-    assert out == "42\n1\n1\n{ 42: 42; true: 1; name: 1 }\n"
+    assert out == "42\n1\n1\n┌────┬────┬────┐\n│ 42 │true│name│\n├────┼────┼────┤\n│ 42 │  1 │  1 │\n└────┴────┴────┘\n"
 
 
 def test_csv_table_duplicate_titles_is_error(tmp_path):

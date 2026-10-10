@@ -1,0 +1,169 @@
+// Table multiple row indices and range slicing tests
+
+// Setup: create a test table
+t: ['id': 1, 2, 3, 4, 5; 'name': 'a', 'b', 'c', 'd', 'e'; 'value': 10, 20, 30, 40, 50]
+
+// ============================================================
+// Multiple row indices: table 1, 2, 67 (comma-separated)
+// ============================================================
+
+// Get rows 1 and 2 as Array of Maps
+>> type (t 1, 2)
+>> len (t 1, 2)
+>> (t 1, 2) 0 'id'
+>> (t 1, 2) 1 'id'
+
+// Get rows 0, 2, 4
+>> (t 0, 2, 4) 0 'id'
+>> (t 0, 2, 4) 1 'id'
+>> (t 0, 2, 4) 2 'id'
+
+// ============================================================
+// Range slicing: table 0__3 (0 to 2), table 1__4 (1 to 3), etc.
+// ============================================================
+
+// First 3 rows (0 to 2)
+>> len (t 0__3)
+>> (t 0__3) 0 'id'
+>> (t 0__3) 1 'id'
+>> (t 0__3) 2 'id'
+
+// Rows 1 to 3
+>> len (t 1__4)
+>> (t 1__4) 0 'id'
+>> (t 1__4) 1 'id'
+>> (t 1__4) 2 'id'
+
+// Last 2 rows (descending: 4 to 3)
+>> len (t 4__3)
+>> (t 4__3) 0 'id'
+>> (t 4__3) 1 'id'
+
+// All rows (0 to 4)
+>> len (t 0__5)
+>> (t 0__5) 0 'id'
+>> (t 0__5) 4 'id'
+
+// ============================================================
+// Array of indices: table my_array
+// ============================================================
+
+indices: 1, 3
+>> type (t indices)
+>> len (t indices)
+>> (t indices) 0 'id'
+>> (t indices) 1 'id'
+
+// Array with duplicate indices
+dup_indices: 1, 1, 2
+>> len (t dup_indices)
+>> (t dup_indices) 0 'id'
+>> (t dup_indices) 1 'id'
+>> (t dup_indices) 2 'id'
+
+// ============================================================
+// Column + row indices: table 'column_1', 1, 2, 67 (comma-separated)
+// ============================================================
+
+// Get 'name' column values at rows 1, 2
+>> type (t 'name', 1, 2)
+>> len (t 'name', 1, 2)
+>> (t 'name', 1, 2) 0
+>> (t 'name', 1, 2) 1
+
+// Get 'value' column at rows 0, 2, 4
+>> (t 'value', 0, 2, 4) 0
+>> (t 'value', 0, 2, 4) 1
+>> (t 'value', 0, 2, 4) 2
+
+// ============================================================
+// Column + range: table 'column_1', 0__3
+// ============================================================
+
+// First 3 values of 'name'
+>> type (t 'name', 0__3)
+>> len (t 'name', 0__3)
+>> (t 'name', 0__3) 0
+>> (t 'name', 0__3) 1
+>> (t 'name', 0__3) 2
+
+// Values 1 to 3 of 'value'
+>> (t 'value', 1__4) 0
+>> (t 'value', 1__4) 1
+>> (t 'value', 1__4) 2
+
+// ============================================================
+// Column + array: table 'column_1', my_array
+// ============================================================
+
+name_indices: 0, 2, 4
+>> type (t 'name', name_indices)
+>> len (t 'name', name_indices)
+>> (t 'name', name_indices) 0
+>> (t 'name', name_indices) 1
+>> (t 'name', name_indices) 2
+
+// ============================================================
+// Multiple columns + row indices: table 'column_1', 'column_2', 1, 2, 67
+// ============================================================
+
+// Select 'id' and 'name' columns for rows 1, 3
+sub: t 'id', 'name', 1, 3
+>> type sub
+>> len sub
+>> sub 0
+>> sub 1
+>> sub 'id'
+>> sub 'name'
+
+// Select 'name' and 'value' for rows 0, 2, 4
+sub2: t 'name', 'value', 0, 2, 4
+>> type sub2
+>> len sub2
+>> sub2 0
+>> sub2 'name'
+>> sub2 'value'
+
+// ============================================================
+// Multiple columns + range: table 'column_1', 'column_2', 0__2
+// ============================================================
+
+// First 2 rows of 'id' and 'name'
+sub3: t 'id', 'name', 0__2
+>> type sub3
+>> len sub3
+>> sub3 'id'
+>> sub3 'name'
+
+// Rows 2 to 4 of 'name' and 'value'
+sub4: t 'name', 'value', 2__5
+>> type sub4
+>> len sub4
+>> sub4 'name'
+>> sub4 'value'
+
+// ============================================================
+// Column array + row array: table column_name_array, row_id_array
+// ============================================================
+
+col_names: 'id', 'value'
+row_ids: 1, 3
+sub5: t col_names, row_ids
+>> type sub5
+>> len sub5
+>> sub5 'id'
+>> sub5 'value'
+
+// ============================================================
+// Edge cases
+// ============================================================
+
+// Single row table
+single: ['a': 1]
+>> type (single 0)
+>> len (single 0)
+>> single 0
+
+// Non-existent column with row indices
+>> type (t 'nonexistent', 0, 1)
+>> len (t 'nonexistent', 0, 1)
