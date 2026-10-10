@@ -281,6 +281,17 @@ class EdgeCreate:
 
 
 @dataclass
+class Try:
+    """`try` / `catch` [var] / `else` block for error handling."""
+
+    try_body: list[Any]
+    catch_body: list[Any] | None = None
+    catch_var: str | None = None
+    else_body: list[Any] | None = None
+    line: int | None = None
+
+
+@dataclass
 class UnaryExpression:
     operator: str  # a token type, e.g. "LENGTH" — never the spelling
     operand: Any

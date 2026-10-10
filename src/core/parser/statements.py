@@ -31,6 +31,7 @@ from src.core.nodes import (
     Skip,
     Stop,
     Test,
+    Try,
     Write,
 )
 from src.core.parser._base import EOF, Parser
@@ -60,6 +61,8 @@ class StatementMixin(Parser):
                 return self.parse_test()
             case "ERROR":
                 return self.parse_error()
+            case "TRY":
+                return self.parse_try()
             case "IDENTIFIER":
                 return self.parse_name_statement()
         token = self.peek()
@@ -88,6 +91,27 @@ class StatementMixin(Parser):
         if self._starts_expression(self.type()):
             message = self.parse_expression()
         return Error(message, token.line)
+
+    def parse_try(self) -> Try:
+        token = self.match("TRY")
+        try_body = self.parse_body()
+        catch_body = None
+        catch_var = None
+        else_body = None
+
+        if self.type() == "CATCH":
+            self.match("CATCH")
+            if self.type() == "IDENTIFIER":
+                catch_var = self.match("IDENTIFIER").value
+            catch_body = self.parse_body()
+
+        if self.type() == "ELSE":
+            if catch_body is None:
+                raise LynxSyntaxError("else block requires a catch block", self.peek().line)
+            self.match("ELSE")
+            else_body = self.parse_body()
+
+        return Try(try_body, catch_body, catch_var, else_body, token.line)
 
     def parse_print(self) -> Print:
         self.match("PRINT")

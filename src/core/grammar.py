@@ -91,6 +91,8 @@ KEYWORDS = {
     # test / error
     "test": "TEST",
     "error": "ERROR",
+    "try": "TRY",
+    "catch": "CATCH",
     **{word: _literal_token(value) for word, value in LITERALS.items()},
 }
 

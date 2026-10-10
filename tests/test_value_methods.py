@@ -790,9 +790,7 @@ def test_graph_almost():
     # one edge removed
     assert base.almost(gr(nodes=[("a", Void()), ("b", Void())])).is_true()
     # one edge label changed
-    assert base.almost(
-        gr(nodes=[("a", Void()), ("b", Void())], edges=[("a", "b", Text("hates"))])
-    ).is_true()
+    assert base.almost(gr(nodes=[("a", Void()), ("b", Void())], edges=[("a", "b", Text("hates"))])).is_true()
     # two isolated nodes added is two edits
     two = gr(
         nodes=[("a", Void()), ("b", Void()), ("c", Void()), ("d", Void())],

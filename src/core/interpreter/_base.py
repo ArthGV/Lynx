@@ -44,6 +44,7 @@ from src.core.nodes import (
     TableQuery,
     Test,
     Text,
+    Try,
     UnaryExpression,
     Void,
     Write,
@@ -144,12 +145,28 @@ def execute(node: Any, env: Environment) -> None:
 
         case Test(condition, message, line):
             if not evaluate(condition, env).boolean().is_true():
-                msg = str(evaluate(message, env)) if message is not None else ''
+                msg = str(evaluate(message, env)) if message is not None else ""
                 raise LynxTestError(msg, line)
 
         case Error(message, line):
-            msg = str(evaluate(message, env)) if message is not None else ''
+            msg = str(evaluate(message, env)) if message is not None else ""
             raise LynxError(msg, line)
+
+        case Try(try_body, catch_body, catch_var, else_body, line):
+            error_occurred = False
+            try:
+                execute(try_body, env)
+            except LynxError as e:
+                error_occurred = True
+                if catch_body is not None:
+                    catch_env = Environment(env)
+                    if catch_var is not None:
+                        catch_env.set(catch_var, values.Text(e.message))
+                    execute(catch_body, catch_env)
+                else:
+                    raise
+            if not error_occurred and else_body is not None:
+                execute(else_body, env)
 
         case _:
             raise LynxTypeError(f"cannot execute {type(node).__name__}")

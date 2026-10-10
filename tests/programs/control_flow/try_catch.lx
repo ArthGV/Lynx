@@ -1,0 +1,94 @@
+// basic try/catch with error variable
+try
+  error 'this error'
+catch message
+  >> message
+
+// try/catch without error variable
+try
+  error 'oops'
+catch
+  >> 'caught something'
+
+// try/catch/else (no error) - catch is empty but present
+try
+  >> 'no error here'
+catch
+  // empty catch
+else
+  >> 'no error'
+
+// try/catch/else - error caught, else skipped
+try
+  error 'fail'
+catch message
+  >> 'caught: ' + message
+else
+  >> 'this should not print'
+
+// try/catch/else - no error, else runs
+try
+  >> 'success'
+catch message
+  >> 'caught: ' + message
+else
+  >> 'else ran'
+
+// nested try/catch - inner catches
+try
+  try
+    error 'inner'
+  catch msg
+    >> 'inner caught: ' + msg
+catch msg
+  >> 'outer caught: ' + msg
+
+// nested try/catch - outer catches when inner doesn't
+try
+  try
+    error 'inner'
+  catch msg
+    if msg = 'other'
+      >> 'wrong'
+    else
+      error 'rethrow'
+catch msg
+  >> 'outer caught rethrow: ' + msg
+
+// catch block can have multiple statements
+try
+  error 'multi'
+catch msg
+  a: msg
+  b: 'handled'
+  >> a + ' ' + b
+
+// catch variable is block-scoped (doesn't leak)
+leaked: 'global var'
+try
+  error 'scope test'
+catch leaked
+  >> leaked
+// leaked should be the global var
+>> leaked
+// control flow exceptions propagate (not caught by try/catch)
+test_return: _
+  try
+    >>> 'returned'
+  catch msg
+    >> 'caught: ' + msg
+  >> 'after return'  // should not print
+
+test_return void
+>> 'function returned'
+
+// stop in loop inside try - caught by loop, not by try/catch
+try
+  x: 0
+  loop x < 3
+    x: x + 1
+    if x = 2
+      stop
+catch msg
+  >> 'caught: ' + msg
+>> 'after loop'
