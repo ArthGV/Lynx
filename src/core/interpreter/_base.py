@@ -228,10 +228,20 @@ def execute(node: Any, env: Environment) -> None:
             except LynxError as e:
                 error_occurred = True
                 if catch_body is not None:
-                    catch_env = Environment(env)
+                    # Same scope as the try, so names set in the catch survive
+                    # it. Only the error variable is scoped to the catch: any
+                    # earlier binding of that name is put back afterwards.
+                    saved = env.values.get(catch_var) if catch_var is not None else None
                     if catch_var is not None:
-                        catch_env.set(catch_var, values.Text(e.message))
-                    execute(catch_body, catch_env)
+                        env.set(catch_var, values.Text(e.message))
+                    try:
+                        execute(catch_body, env)
+                    finally:
+                        if catch_var is not None:
+                            if saved is None:
+                                env.values.pop(catch_var, None)
+                            else:
+                                env.values[catch_var] = saved
                 else:
                     raise
             if not error_occurred and else_body is not None:

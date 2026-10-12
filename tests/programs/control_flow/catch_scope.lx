@@ -1,0 +1,41 @@
+// names assigned in a catch survive it
+try
+  error 'x'
+catch e
+  r: 'failed'
+>> r
+
+// the error variable itself is scoped to the catch
+try
+  >> e
+catch err
+  >> 'e is gone'
+
+// assignments made in the try before the error are kept
+try
+  before: 1
+  error 'boom'
+  after: 2
+catch msg
+  fallback: before + 10
+>> before
+>> fallback
+
+// without an error the else branch runs and the catch is skipped
+try
+  ok: 'fine'
+catch
+  ok: 'caught'
+else
+  extra: 'else ran'
+>> ok
+>> extra
+
+// inside a function
+safe: n
+  try
+    error 'bad'
+  catch
+    result: n * 2
+  >>> result
+>> safe 21
