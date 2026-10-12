@@ -1,0 +1,22 @@
+//a map gives one [key, value] pair per entry
+a, b: { 'x': 1; 'y': 2 }
+>> a
+>> b
+>> type a
+
+//a pair unpacks again
+k, v: a
+>> k
+>> v
+
+//a map held in a variable
+m: { 'one': 1; 2: 'two'; 'three': 3 }
+p, q, r: m
+>> p
+>> q
+>> r
+
+//a single entry
+s: { 'only': 1 }
+t: s
+>> t

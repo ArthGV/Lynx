@@ -25,6 +25,7 @@ from src.core.nodes import (
     GraphSegment,
     If,
     Loop,
+    MultiAssignment,
     Print,
     Return,
     SetItem,
@@ -128,6 +129,7 @@ class StatementMixin(Parser):
         # (`f a, b`) or an element mutation (`a 0: 5`). A colon means
         # declaration-or-assignment, decided by whether the right-hand side is
         # a parameter list followed by an indented block.
+        # Also handle multi-assignment: `a, b, c: value`
         start = self.current
         line = self.peek().line
         name = self.advance().value
@@ -137,6 +139,10 @@ class StatementMixin(Parser):
             return self.parse_expression()
         if self.type() in ("APPEND", "PREPEND"):
             return self.parse_append(name, line)
+        # Check for multi-assignment: a, b, c: value
+        if self.type() == "COMMA" and self._is_multi_assignment_at(start):
+            self.current = start
+            return self._parse_multi_assignment()
         if self.type() != "COLON":
             if self._starts_expression(self.type()):
                 mutation = self.try_parse_mutation(name, line)
@@ -147,6 +153,22 @@ class StatementMixin(Parser):
             return self._parse_function(name)
         self.current = start
         return self.parse_assignment()
+
+    def _is_multi_assignment_at(self, start_pos: int) -> bool:
+        # Check if we have: IDENTIFIER (, IDENTIFIER)* COLON
+        i = start_pos + 1  # skip first IDENTIFIER
+        if self._type_at(i) != "COMMA":
+            return False
+        i += 1
+        while True:
+            if self._type_at(i) != "IDENTIFIER":
+                return False
+            i += 1
+            if self._type_at(i) == "COMMA":
+                i += 1
+                continue
+            break
+        return self._type_at(i) == "COLON"
 
     def _is_function_declaration(self) -> bool:
         # At the COLON. True when the right-hand side is IDENTIFIER
@@ -176,10 +198,37 @@ class StatementMixin(Parser):
             params.append(self.match("IDENTIFIER").value)
         return Function(name, params, self.parse_body())
 
-    def parse_assignment(self) -> Assignment:
+    def parse_assignment(self) -> Any:
+        # Check if this is a multi-assignment: a, b, c: value
+        if self._is_multi_assignment():
+            return self._parse_multi_assignment()
         name = self.match("IDENTIFIER").value
         self.match("COLON")
         return Assignment(name, self.parse_assign_rhs())
+
+    def _is_multi_assignment(self) -> bool:
+        # Look ahead for: IDENTIFIER (, IDENTIFIER)+ COLON (at least one comma)
+        i = self.current
+        if self._type_at(i) != "IDENTIFIER":
+            return False
+        i += 1
+        has_comma = False
+        while self._type_at(i) == "COMMA":
+            has_comma = True
+            i += 1
+            if self._type_at(i) != "IDENTIFIER":
+                return False
+            i += 1
+        return has_comma and self._type_at(i) == "COLON"
+
+    def _parse_multi_assignment(self) -> MultiAssignment:
+        names = [self.match("IDENTIFIER").value]
+        while self.type() == "COMMA":
+            self.advance()
+            names.append(self.match("IDENTIFIER").value)
+        self.match("COLON")
+        value = self.parse_assign_rhs()
+        return MultiAssignment(names, value, self.peek_line())
 
     def parse_assign_rhs(self) -> Any:
         # The right-hand side of `name:` is one expression unless a top-level
@@ -380,10 +429,10 @@ class StatementMixin(Parser):
         token = self.match("LOOP")
         targets = self._loop_targets()
         if targets is not None:
-            # `loop <name>[, <name>]: <iterable>` — a for-loop. One name binds
-            # the element; two bind index + element like enumerate.
-            if len(targets) > 2:
-                raise LynxInputError(f"loop takes 1 or 2 loop variables, got {len(targets)}", token.line)
+            # Count simple targets (non-unpack groups)
+            simple_count = sum(1 for t in targets if not isinstance(t, list))
+            if simple_count > 2:
+                raise LynxInputError(f"loop takes at most 2 simple loop variables, got {simple_count}", token.line)
             iterable = self.parse_assign_rhs()
             body = self.parse_body()
             return Loop(None, body, targets, iterable)
@@ -391,28 +440,89 @@ class StatementMixin(Parser):
         body = self.parse_body()
         return Loop(condition, body)
 
-    def _loop_targets(self) -> list[str] | None:
-        # Look ahead for a for-header: an IDENTIFIER [, IDENTIFIER]* run that
-        # ends in COLON. Expressions can't contain a top-level `,` or `:` in a
-        # loop header, so this is unambiguous with the while form. Consumes the
-        # header on a match, returns None (tokens untouched) otherwise.
+    def _loop_targets(self) -> list[Any] | None:
+        # Look ahead for a for-header: targets can be:
+        # - IDENTIFIER (, IDENTIFIER)* COLON (simple targets)
+        # - (IDENTIFIER (, IDENTIFIER)*) (, (IDENTIFIER (, IDENTIFIER)*))* COLON (unpack groups)
+        # Returns nested list structure: ["i", ["a", "b"]] for "loop i, (a, b):"
         i = self.current
-        if self._type_at(i) != "IDENTIFIER":
+        if self._type_at(i) not in ("IDENTIFIER", "LPAREN"):
             return None
-        i += 1
+
+        targets: list[Any] = []
+
+        def parse_target_group(start_i: int) -> tuple[Any, int]:
+            """Parse a target group: either IDENTIFIER or (IDENTIFIER, ...)."""
+            if self._type_at(start_i) == "LPAREN":
+                # Unpack group: (a, b, c)
+                i = start_i + 1
+                group: list[str] = []
+                if self._type_at(i) != "IDENTIFIER":
+                    return None, -1
+                while True:
+                    group.append(self._type_at(i))  # placeholder, will consume later
+                    i += 1
+                    if self._type_at(i) == "COMMA":
+                        i += 1
+                        if self._type_at(i) != "IDENTIFIER":
+                            return None, -1
+                        continue
+                    if self._type_at(i) == "RPAREN":
+                        return group, i + 1
+                    return None, -1
+            elif self._type_at(start_i) == "IDENTIFIER":
+                return self._type_at(start_i), start_i + 1
+            return None, -1
+
+        # Parse first target
+        first_group, next_i = parse_target_group(i)
+        if first_group is None:
+            return None
+        i = next_i
+
+        # Handle the first target
+        if isinstance(first_group, list):
+            targets.append(first_group)
+        else:
+            targets.append(first_group)
+
+        # Parse remaining targets
         while self._type_at(i) == "COMMA":
             i += 1
-            if self._type_at(i) != "IDENTIFIER":
+            group, next_i = parse_target_group(i)
+            if group is None:
                 return None
-            i += 1
+            i = next_i
+            if isinstance(group, list):
+                targets.append(group)
+            else:
+                targets.append(group)
+
         if self._type_at(i) != "COLON":
             return None
-        targets = [self.advance().value]
+
+        # Now consume the actual tokens
+        consumed: list[Any] = []
+
+        def consume_target_group() -> Any:
+            if self.type() == "LPAREN":
+                self.advance()  # consume LPAREN
+                group: list[str] = []
+                group.append(self.match("IDENTIFIER").value)
+                while self.type() == "COMMA":
+                    self.advance()
+                    group.append(self.match("IDENTIFIER").value)
+                self.match("RPAREN")
+                return group
+            else:
+                return self.match("IDENTIFIER").value
+
+        consumed.append(consume_target_group())
         while self.type() == "COMMA":
             self.advance()
-            targets.append(self.match("IDENTIFIER").value)
+            consumed.append(consume_target_group())
         self.match("COLON")
-        return targets
+        return consumed
 
     def parse_loop_control(self, node_type: type[Any]) -> Any:
         # `stop`/`skip` may take an optional condition: `stop x > 3` desugars

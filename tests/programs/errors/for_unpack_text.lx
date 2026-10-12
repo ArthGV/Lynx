@@ -1,0 +1,4 @@
+//only arrays unpack: a text yields characters
+s: 'ab'
+loop (a, b): s
+ >> a

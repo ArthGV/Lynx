@@ -20,6 +20,13 @@ class Assignment:
 
 
 @dataclass
+class MultiAssignment:
+    names: list[str]
+    value: Any
+    line: int | None = None
+
+
+@dataclass
 class ArrayLiteral:
     items: list[Any]
     line: int | None = None

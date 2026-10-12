@@ -1,0 +1,3 @@
+//a graph unpacks one name per node
+g: a -> b; c
+x, y: g

@@ -89,8 +89,7 @@ def index_map(map_value: values.Map, args: list[Any], line: int | None, env: Env
 
 def index_table(table: values.Table, args: list[Any], line: int | None, env: Environment) -> values.Type:
     # Several all-text args project a subset of columns: `t 'id', 'price'` is a
-    # new table with those columns, same as `select t 'id', 'price'`. Any other
-    # access falls through to the single-step descent (`t 'id' 0`).
+    # new table with those columns, same as `select t 'id', 'price'`.
     if len(args) > 1:
         columns: list[str] = []
         for arg in args:
@@ -102,14 +101,116 @@ def index_table(table: values.Table, args: list[Any], line: int | None, env: Env
             columns.append(key.value)
         else:
             return table.select(columns, line)
-    # Each arg is one access step: a text key picks a column, a number picks a
-    # row. A run of args descends through the returned value (`t 'id' 0`).
+
+    # Evaluate all args to determine their types
+    evaluated = [evaluate(arg, env) for arg in args]
+
+    # Case 1: Multiple Text args (column names) followed by row indices/range/array
+    # → Return new Table with selected columns AND rows
+    if len(args) > 1:
+        selected_columns: list[str] = []
+        first_non_text_idx = -1
+        for i, arg in enumerate(args):
+            if is_range(arg):
+                first_non_text_idx = i
+                break
+            key = evaluate(arg, env)
+            if not isinstance(key, values.Text):
+                first_non_text_idx = i
+                break
+            selected_columns.append(key.value)
+        if selected_columns and first_non_text_idx > 0 and first_non_text_idx < len(args):
+            row_indices_args = args[first_non_text_idx:]
+            return table.select_rows(selected_columns, row_indices_args, line, env)
+
+    # Case 2: First arg is Array of Text (column names), second is row indices
+    # → Return new Table with selected columns AND rows
+    if len(args) >= 2 and isinstance(evaluated[0], values.Array):
+        # Check if array contains Text values (column names)
+        col_names = evaluated[0].value
+        if all(isinstance(item, values.Text) for item in col_names):
+            selected_columns = [cast(values.Text, item).value for item in col_names]
+            row_indices_args = args[1:]
+            return table.select_rows(selected_columns, row_indices_args, line, env)
+
+    # Case 3: First arg is Text (single column name), rest are row indices/range/array
+    # → Return Array of column values at those row indices
+    if evaluated and isinstance(evaluated[0], values.Text):
+        col_name = evaluated[0].value
+        if col_name not in table.columns:
+            return values.Void()
+        col_data = table.columns[col_name]
+        row_indices_args = args[1:] if len(args) > 1 else []
+        return _index_column(col_data, row_indices_args, line, env)
+
+    # Case 4: Row indices (Number, RangeExpression, or Array of Numbers)
+    # → Return Table with selected rows (Option B: always returns Table)
+    if all(isinstance(e, (values.Number, values.Array)) or is_range(args[i]) for i, e in enumerate(evaluated)):
+        return _index_rows(table, args, line, env)
+
+    # Fallback: single-step descent (existing behavior for mixed cases)
     current: values.Type = table
     for arg in args:
         if is_range(arg):
             raise LynxError("range slicing is only supported for arrays", line)
         current = get_element(current, arg, line, env)
     return current
+
+
+def _index_column(
+    col_data: list[values.Type], row_indices_args: list[Any], line: int | None, env: Environment
+) -> values.Type:
+    """Extract values from a column at specified row indices."""
+    if not row_indices_args:
+        return values.Array(list(col_data))
+
+    indices = _resolve_row_indices(row_indices_args, len(col_data), line, env)
+    result = [col_data[i] for i in indices]
+    return values.Array(result)
+
+
+def _index_rows(table: values.Table, row_indices_args: list[Any], line: int | None, env: Environment) -> values.Type:
+    """Extract rows from a table as a new Table."""
+    indices = _resolve_row_indices(row_indices_args, table.nrows, line, env)
+    return table._from_row_indices(indices)
+
+
+def _resolve_row_indices(row_indices_args: list[Any], max_rows: int, line: int | None, env: Environment) -> list[int]:
+    """Resolve row index arguments (Numbers, RangeExpression, Array) into a list of indices."""
+    indices: list[int] = []
+    for arg in row_indices_args:
+        if is_range(arg):
+            start_node = arg.start
+            end_node = arg.end
+            start = 0 if start_node is None else _int_bound(evaluate(start_node, env), "start", line)
+            end = 0 if end_node is None else _int_bound(evaluate(end_node, env), "end", line)
+            if start < 0 or end < 0:
+                raise LynxError("table row slice indices must be non-negative", line)
+            step = 1 if end >= start else -1
+            stop = end + 1 if end >= start else end - 1
+            for i in range(start, stop, step):
+                if 0 <= i < max_rows:
+                    indices.append(i)
+        else:
+            key = evaluate(arg, env)
+            if isinstance(key, values.Number):
+                idx = key.value
+                if not isinstance(idx, int) or idx < 0 or idx >= max_rows:
+                    raise LynxError(f"index {idx} out of range for table with {max_rows} rows", line)
+                indices.append(idx)
+            elif isinstance(key, values.Array):
+                for item in key.value:
+                    if not isinstance(item, values.Number):
+                        raise LynxTypeError(f"array index must contain numbers, got {item.type_name()}", line)
+                    idx = item.value
+                    if not isinstance(idx, int) or idx < 0 or idx >= max_rows:
+                        raise LynxError(f"index {idx} out of range for table with {max_rows} rows", line)
+                    indices.append(idx)
+            else:
+                raise LynxTypeError(
+                    f"table row index must be a number, range, or array of numbers, got {key.type_name()}", line
+                )
+    return indices
 
 
 def index_text(text_value: values.Text, args: list[Any], line: int | None, env: Environment) -> values.Type:

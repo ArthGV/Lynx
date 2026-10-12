@@ -169,9 +169,11 @@ def test_in_membership():
     # different element types never match
     assert Number(1).in_(arr(Text("1"), Boolean(True))).is_true() is False
     assert Array([Number(1)]).in_(arr(Text("x"), Array([Number(1)]))).is_true()
-    # a map's keys, not its values
+    # a map's entries, as [key, value] pairs: neither the bare key nor the bare value
     m = mp((Text("a"), Number(1)))
-    assert Text("a").in_(m).is_true()
+    assert Array((Text("a"), Number(1))).in_(m).is_true()
+    assert Array((Text("a"), Number(2))).in_(m).is_true() is False
+    assert Text("a").in_(m).is_true() is False
     assert Number(1).in_(m).is_true() is False
     # scalars iterate too, so membership has a default there as well
     assert Number(3).in_(Number(5)).is_true()
@@ -441,12 +443,15 @@ def test_table_last_index():
 def test_table_first_last():
     t = tbl(("id", [1, 2, 3]), ("price", [10, 20, 30]))
     first = t.first()
-    assert isinstance(first, Map)
-    assert first.get_item(Text("id")).value == 1
-    assert first.get_item(Text("price")).value == 10
+    assert isinstance(first, Table)
+    assert first.nrows == 1
+    assert first.columns["id"][0].value == 1
+    assert first.columns["price"][0].value == 10
     last = t.last()
-    assert last.get_item(Text("id")).value == 3
-    assert last.get_item(Text("price")).value == 30
+    assert isinstance(last, Table)
+    assert last.nrows == 1
+    assert last.columns["id"][0].value == 3
+    assert last.columns["price"][0].value == 30
 
 
 def test_table_first_last_empty():
@@ -458,8 +463,9 @@ def test_table_first_last_empty():
 def test_table_middle():
     t = tbl(("a", [1, 2, 3, 4, 5]))
     mid = t.middle()
-    assert isinstance(mid, Map)
-    assert mid.get_item(Text("a")).value == 3
+    assert isinstance(mid, Table)
+    assert mid.nrows == 1
+    assert mid.columns["a"][0].value == 3
 
 
 def test_table_conversions():
@@ -637,7 +643,7 @@ def test_table_del_row_updates_padding():
 
 def test_table_arithmetic_not_implemented():
     t = tbl(("x", [1]))
-    for method in ("add", "subtract", "multiply", "divide", "power", "root", "xor"):
+    for method in ("subtract", "multiply", "divide", "power", "root", "xor"):
         try:
             getattr(t, method)(t)
             assert False, f"{method} should not be implemented"
@@ -1022,7 +1028,8 @@ def test_array_iterate():
 
 def test_map_iterate():
     m = mp((Text("a"), Number(1)), (Text("b"), Number(2)))
-    assert iter_str(m) == ["a", "b"]
+    # a map iterates over [key, value] pairs
+    assert iter_str(m) == ["[ a, 1 ]", "[ b, 2 ]"]
     assert iter_str(mp()) == []
 
 

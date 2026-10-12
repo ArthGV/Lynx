@@ -1,0 +1,6 @@
+//a graph gives one node id per name
+g: a -> b
+x, y: g
+>> x
+>> y
+>> type x

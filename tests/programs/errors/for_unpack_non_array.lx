@@ -1,0 +1,4 @@
+//only arrays unpack: here every element is a number
+rows: 1, 2
+loop (a, b): rows
+ >> a

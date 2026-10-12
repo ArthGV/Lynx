@@ -1,0 +1,30 @@
+//one name per element of an array
+a, b, c: 1, 2, 3
+>> a
+>> b
+>> c
+
+//elements can be of mixed types
+n, t, f, v: 1, 'x', true, void
+>> type n
+>> type t
+>> type f
+>> type v
+
+//each element is an expression
+s, p: 1 + 2, 3 * 4
+>> s
+>> p
+
+//nested arrays stay whole, then unpack again
+x, y: (1, 2), (3, 4)
+>> x
+>> y
+q, r: x
+>> q
+>> r
+
+//a trailing comma still closes the array
+g, h: 1, 2,
+>> g
+>> h

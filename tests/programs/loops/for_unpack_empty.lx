@@ -1,0 +1,10 @@
+//nothing to iterate over: the body never runs
+empty: {}
+none: array
+loop (a, b): none
+ >> 'never'
+loop (a, b): empty
+ >> 'never'
+loop i, (a, b): empty
+ >> 'never'
+>> 'done'
