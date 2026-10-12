@@ -196,7 +196,14 @@ class StatementMixin(Parser):
         while self.type() == "COMMA":
             self.advance()
             params.append(self.match("IDENTIFIER").value)
-        return Function(name, params, self.parse_body())
+        # A function body starts outside any loop: `stop`/`skip` can't reach
+        # a loop in the caller.
+        outer_depth, self.loop_depth = self.loop_depth, 0
+        try:
+            body = self.parse_body()
+        finally:
+            self.loop_depth = outer_depth
+        return Function(name, params, body)
 
     def parse_assignment(self) -> Any:
         # Check if this is a multi-assignment: a, b, c: value
@@ -434,11 +441,18 @@ class StatementMixin(Parser):
             if simple_count > 2:
                 raise LynxInputError(f"loop takes at most 2 simple loop variables, got {simple_count}", token.line)
             iterable = self.parse_assign_rhs()
-            body = self.parse_body()
+            body = self._parse_loop_body()
             return Loop(None, body, targets, iterable)
         condition = self.parse_expression()
-        body = self.parse_body()
+        body = self._parse_loop_body()
         return Loop(condition, body)
+
+    def _parse_loop_body(self) -> list[Any]:
+        self.loop_depth += 1
+        try:
+            return self.parse_body()
+        finally:
+            self.loop_depth -= 1
 
     def _loop_targets(self) -> list[Any] | None:
         # Look ahead for a for-header: targets can be:
@@ -529,6 +543,8 @@ class StatementMixin(Parser):
         # to `if x > 3: stop`. With no trailing expression the control is
         # unconditional.
         token = self.advance()
+        if self.loop_depth == 0:
+            raise LynxSyntaxError(f"{token.value} outside of a loop", token.line)
         condition = None
         if self._starts_expression(self.type()):
             condition = self.parse_expression()

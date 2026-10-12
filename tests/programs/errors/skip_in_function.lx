@@ -1,0 +1,6 @@
+//skip inside a function cannot skip the caller's iteration
+f: x
+  skip
+loop i: 1__3
+  f 1
+  >> i

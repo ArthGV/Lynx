@@ -1,0 +1,6 @@
+//stop inside a function cannot end the caller's loop
+f: x
+  stop
+loop i: 1__3
+  f 1
+  >> i

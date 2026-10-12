@@ -1,0 +1,12 @@
+// a function's own loop may use stop and skip
+f: n
+  total: 0
+  loop i: 0__n
+    skip i = 2
+    stop i > 4
+    total: total + i
+  >>> total
+>> f 10
+// a loop around the call is unaffected
+loop j: 1__3
+  >> f 3
