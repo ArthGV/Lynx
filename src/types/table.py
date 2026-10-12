@@ -128,6 +128,9 @@ class Table(ComplexType):
     def type_name(self) -> str:
         return "Table"
 
+    def copy(self) -> Table:
+        return Table([(name, [cell.copy() for cell in column]) for name, column in self.columns.items()])
+
     def get_column(self, name: str) -> Type:
         column = self.columns.get(name)
         if column is None:
@@ -311,16 +314,16 @@ class Table(ComplexType):
     # --- not implemented yet ---
     def add(self, other: Table, line: int | None = None) -> Type:
         if other.columns == {}:
-            return self
+            return self.copy()
         if self.columns == {}:
-            return other
+            return other.copy()
         if self.columns.keys() != other.columns.keys():
             raise LynxError(
                 f"cannot add table with columns {Array(list(self.columns))} "
                 f"and table with columns {Array(list(other.columns))}",
                 line,
             )
-        return Table([(key, self.columns[key] + other.columns[key]) for key in self.columns])
+        return Table([(key, [c.copy() for c in self.columns[key] + other.columns[key]]) for key in self.columns])
 
     def subtract(self, other: Table) -> Type:
         self.todo("subtract")

@@ -55,7 +55,7 @@ def call(callee: Any, args: list[Any], line: int | None, env: Environment) -> va
         raise LynxInputError(f"{callee} expected {len(fn.params)} input but got {len(args)}", line)
     scope = fn.env.child()
     for param, arg in zip(fn.params, args):
-        scope.set(param, evaluate(arg, env))
+        scope.set(param, evaluate(arg, env).copy())
     try:
         execute(fn.body, scope)
     except _Return as returned:
@@ -362,7 +362,7 @@ def slice_assign(container: values.Type, node: Any, value_node: Any, line: int |
     if worst >= len(container.value):
         which = "start" if start > end else "end"
         raise LynxError(f"range {which} {worst} out of bounds for an array of length {len(container.value)}", line)
-    new_value = evaluate(value_node, env)
+    new_value = evaluate(value_node, env).copy()
     if not isinstance(new_value, values.Array):
         new_value = values.Array([new_value])
     if len(new_value.value) != len(indices):
@@ -452,8 +452,8 @@ def cell_value(node: Any, line: int | None, env: Environment) -> list[values.Typ
     # `(a)` or `(__7)`) is kept as a single element; any other value that
     # evaluates to an array is spread into the column.
     if isinstance(node, Cell):
-        return [evaluate(node.inner, env)]
-    value = evaluate(node, env)
+        return [evaluate(node.inner, env).copy()]
+    value = evaluate(node, env).copy()
     if isinstance(value, values.Array):
         return list(value.value)
     return [value]
@@ -488,10 +488,10 @@ def build_graph(segments: list[GraphSegment], line: int | None, env: Environment
         if segment.value is not None:
             if source in graph.nodes:
                 raise LynxTypeError(f"node '{source}' is defined twice", segment.line)
-            graph.nodes[source] = evaluate(segment.value, env)
+            graph.nodes[source] = evaluate(segment.value, env).copy()
         else:
             graph.nodes.setdefault(source, values.Void())
-        label = None if segment.label is None else evaluate(segment.label, env)
+        label = None if segment.label is None else evaluate(segment.label, env).copy()
         if label is not None and not isinstance(label, values.Text):
             raise LynxTypeError(f"an edge label must be a Text, got {label.type_name()}", segment.line)
         for target_id, target_value_node in segment.targets:
@@ -502,10 +502,10 @@ def build_graph(segments: list[GraphSegment], line: int | None, env: Environment
             if target_value_node is not None:
                 if target_id in graph.nodes:
                     raise LynxTypeError(f"node '{target_id}' is defined twice", segment.line)
-                graph.nodes[target_id] = evaluate(target_value_node, env)
+                graph.nodes[target_id] = evaluate(target_value_node, env).copy()
             else:
                 graph.nodes.setdefault(target_id, values.Void())
-            graph.edges[(source, target_id)] = label if label is not None else values.Void()
+            graph.edges[(source, target_id)] = label.copy() if label is not None else values.Void()
     return graph
 
 

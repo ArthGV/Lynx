@@ -73,7 +73,7 @@ def _bind_unpack(names: list[str], value: values.Type, env: Environment, line: i
     if len(value.value) != len(names):
         raise LynxError(f"expected {len(names)} values to unpack, got {len(value.value)}", line)
     for name, elem in zip(names, value.value):
-        env.set(name, elem)
+        env.set(name, elem.copy())
 
 
 def _handle_loop_targets(targets: list[Any], index: int, item: values.Type, env: Environment, line: int | None) -> None:
@@ -113,11 +113,11 @@ def _handle_loop_targets(targets: list[Any], index: int, item: values.Type, env:
         # No unpack groups - simple targets
         if len(targets) == 1:
             # Single target: loop v: items -> bind element
-            env.set(targets[0], item)
+            env.set(targets[0], item.copy())
         elif len(targets) == 2:
             # Two targets: loop i, v: items -> bind index and element
             env.set(targets[0], values.Number(index))
-            env.set(targets[1], item)
+            env.set(targets[1], item.copy())
         else:
             raise LynxError("invalid loop targets", line)
 
@@ -139,21 +139,21 @@ def execute(node: Any, env: Environment) -> None:
             print(evaluate(value, env))
 
         case Assignment(name, value):
-            env.set(name, evaluate(value, env))
+            env.set(name, evaluate(value, env).copy())
 
         case MultiAssignment(names, value, line):
             val = evaluate(value, env)
             # Simple types (Number, Text, Boolean, Void): assign same value to all
             if isinstance(val, (values.Number, values.Text, values.Boolean, values.Void)):
                 for name in names:
-                    env.set(name, val)
+                    env.set(name, val.copy())
             else:
                 # Complex types (Array, Map, Table, Graph): iterate and unpack
                 items = val.iterate()
                 if len(items) != len(names):
                     raise LynxError(f"expected {len(names)} values from {val.type_name()}, got {len(items)}", line)
                 for name, item in zip(names, items):
-                    env.set(name, item)
+                    env.set(name, item.copy())
 
         case SetItem(base, steps, value, line):
             _statements.assign_item(base, steps, value, line, env)
@@ -256,13 +256,13 @@ def evaluate(node: Any, env: Environment) -> values.Type:
             return values.Void()
 
         case ArrayLiteral(items, line):
-            return values.Array([evaluate(item, env) for item in items])
+            return values.Array([evaluate(item, env).copy() for item in items])
 
         case Append(base, value, front, line):
             return _statements.append_to(base, value, front, line, env)
 
         case MapLiteral(pairs, line):
-            return values.Map([(evaluate_key(k, env, line), evaluate(v, env)) for k, v in pairs], line)
+            return values.Map([(evaluate_key(k, env, line), evaluate(v, env).copy()) for k, v in pairs], line)
 
         case TableLiteral(columns, line):
             return values.Table(

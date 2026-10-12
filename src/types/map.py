@@ -63,6 +63,11 @@ class Map(ComplexType):
     def type_name(self) -> str:
         return "Map"
 
+    def copy(self) -> Map:
+        duplicate = Map()
+        duplicate.value = {raw: item.copy() for raw, item in self.value.items()}
+        return duplicate
+
     def length(self) -> Number:
         return Number(len(self.value))
 

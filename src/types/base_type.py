@@ -121,6 +121,11 @@ class Type(ABC):
             return Void()
         return cls(cls.default_value)  # type: ignore[call-arg]
 
+    @abstractmethod
+    def copy(self) -> Type:
+        """An independent value equal to this one: changing either never
+        changes the other. Immutable scalars may return `self`."""
+
     # conversions
     @abstractmethod
     def number(self) -> Number: ...

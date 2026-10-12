@@ -30,7 +30,7 @@ def append_to(base: str, value_node: Any, front: bool, line: int | None, env: En
     container = env.get(base, line)
     if not isinstance(container, values.Array):
         raise LynxTypeError(f"cannot {'prepend' if front else 'append'} onto a {container.type_name()}", line)
-    added = evaluate(value_node, env)
+    added = evaluate(value_node, env).copy()
     items = added.value if isinstance(added, values.Array) else [added]
     if front:
         container.value[0:0] = items
@@ -63,7 +63,7 @@ def assign_item(base: str, steps: list[Any], value_node: Any, line: int | None, 
             raise LynxTypeError(f"table column name must be text, got {key.type_name()}", line)
         container.set_column(key.value, table_cells(value_node, line, env))
         return
-    new_value = evaluate(value_node, env)
+    new_value = evaluate(value_node, env).copy()
     if isinstance(container, values.Array):
         if not isinstance(key, values.Number):
             raise LynxTypeError(f"array index must be a number, got {key.type_name()}", line)
@@ -108,7 +108,7 @@ def _graph_assign(graph: values.Graph, steps: list[Any], value_node: Any, line: 
         target = _graph_node_id(value_node.target, line, env)
         label: values.Type = values.Void()
         if value_node.value is not None:
-            label = evaluate(value_node.value, env)
+            label = evaluate(value_node.value, env).copy()
             if not isinstance(label, values.Text):
                 raise LynxTypeError(f"an edge label must be a Text, got {label.type_name()}", line)
         if source == target:
@@ -130,7 +130,7 @@ def _graph_assign(graph: values.Graph, steps: list[Any], value_node: Any, line: 
             raise LynxSyntaxError("an edge label looks like: g 'a' -> 'b': 'loves'", line)
         source = _graph_node_id(steps[0], line, env)
         target = _graph_node_id(steps[-1].target, line, env)
-        label = evaluate(value_node, env)
+        label = evaluate(value_node, env).copy()
         if not isinstance(label, values.Text):
             raise LynxTypeError(f"an edge label must be a Text, got {label.type_name()}", line)
         graph.set_edge_label(source, target, label, line)
@@ -138,7 +138,7 @@ def _graph_assign(graph: values.Graph, steps: list[Any], value_node: Any, line: 
     if len(steps) == 1:
         # `g 'x': value` — upsert the node (create it or overwrite its value).
         key = _graph_node_id(steps[0], line, env)
-        graph.set_node(key, evaluate(value_node, env))
+        graph.set_node(key, evaluate(value_node, env).copy())
         return True
     return False
 

@@ -27,6 +27,9 @@ class Array(ComplexType):
     def type_name(self) -> str:
         return "Array"
 
+    def copy(self) -> Array:
+        return Array([item.copy() for item in self.value])
+
     def length(self) -> Number:
         return Number(len(self.value))
 

@@ -1,0 +1,59 @@
+// b: a gives an independent value, for every type
+a: 'abc'
+b: a
+a 0: 'x'
+>> a
+>> b
+
+arr: 1, 2, 3
+copy: arr
+copy 0: 99
+arr <: 4
+>> arr
+>> copy
+
+m: { 'k': 1 }
+n: m
+n 'k': 2
+>> m 'k'
+>> n 'k'
+
+t: ['x': 1, 2]
+u: t
+u 'x': 9
+>> t 'x'
+>> u 'x'
+
+// multi-assignment, function parameters, element reads
+p, q: 'hi'
+p 0: 'H'
+>> p
+>> q
+
+change: s
+  s 0: 'Z'
+  >>> s
+name: 'bob'
+>> change name
+>> name
+
+nested: 'ab', 'cd'
+inner: nested 0
+inner 0: 'X'
+>> nested
+>> inner
+
+// nested mutation of the real container still works
+nested 1 0: 'Q'
+>> nested
+
+// table add and graph copy share nothing
+base: ['x': 1]
+sum2: base + table
+sum2 'x': 7
+>> base 'x'
+g: a1(1, 2) -> b1
+h: graph g
+h 'a1' 0: 99
+>> g 'a1'
+>> h 'a1'

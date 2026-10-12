@@ -46,8 +46,9 @@ class Graph(ComplexType):
             return
         if isinstance(records, Graph):
             # A copy: `h: graph g` aliases nothing.
-            self.nodes = dict(records.nodes)
-            self.edges = dict(records.edges)
+            duplicate = records.copy()
+            self.nodes = duplicate.nodes
+            self.edges = duplicate.edges
             return
         if isinstance(records, Table):
             self._from_table(records, line)
@@ -97,6 +98,12 @@ class Graph(ComplexType):
 
     def type_name(self) -> str:
         return "Graph"
+
+    def copy(self) -> Graph:
+        duplicate = Graph()
+        duplicate.nodes = {node_id: value.copy() for node_id, value in self.nodes.items()}
+        duplicate.edges = {edge: label.copy() for edge, label in self.edges.items()}
+        return duplicate
 
     def get_item(self, key: Type) -> Type:
         if not isinstance(key, Text):

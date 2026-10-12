@@ -30,6 +30,9 @@ class Number(SimpleType):
     def __repr__(self) -> str:
         return str(self.value)
 
+    def copy(self) -> Number:
+        return self  # never mutated in place
+
     def boolean(self) -> Boolean:
         return Boolean(self.value > 0)
 
@@ -129,6 +132,9 @@ class Text(SimpleType):
 
     def __repr__(self) -> str:
         return str(self.value)
+
+    def copy(self) -> Text:
+        return Text(self.value)  # index assignment rewrites `value` in place
 
     def add(self, other: Text) -> Text:
         return Text(self.value + other.value)
@@ -243,6 +249,9 @@ class Boolean(SimpleType):
     def __repr__(self) -> str:
         return SPELLING[self.value]
 
+    def copy(self) -> Boolean:
+        return self
+
     def number(self) -> Number:
         return Number(1 if self.value else 0)
 
@@ -338,6 +347,9 @@ class Void(SimpleType):
 
     def __repr__(self) -> str:
         return SPELLING[None]
+
+    def copy(self) -> Void:
+        return self
 
     def number(self) -> Number:
         return Number(0)
