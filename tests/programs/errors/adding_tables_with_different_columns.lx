@@ -1,0 +1,4 @@
+//adding table with different columns
+table1: ['item': 'c']
+table2: ['item': 'c'; 'price': 30]
+>> table1 + table2

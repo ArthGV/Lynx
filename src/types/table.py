@@ -309,8 +309,14 @@ class Table(ComplexType):
         return Number(self.nrows)
 
     # --- not implemented yet ---
-    def add(self, other: Table) -> Type:
-        self.todo("add")
+    def add(self, other: Table, line: int | None = None) -> Type:
+        if other.columns == {}:
+            return self
+        if self.columns == {}:
+            return other
+        if self.columns.keys() != other.columns.keys():
+            raise LynxError(f"cannot add table with columns {Array(list(self.columns))} and table with columns {Array(list(other.columns))}", line)
+        return Table([(key, self.columns[key] + other.columns[key]) for key in self.columns])
 
     def subtract(self, other: Table) -> Type:
         self.todo("subtract")

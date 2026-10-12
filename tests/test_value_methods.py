@@ -641,7 +641,7 @@ def test_table_del_row_updates_padding():
 
 def test_table_arithmetic_not_implemented():
     t = tbl(("x", [1]))
-    for method in ("add", "subtract", "multiply", "divide", "power", "root", "xor"):
+    for method in ("subtract", "multiply", "divide", "power", "root", "xor"):
         try:
             getattr(t, method)(t)
             assert False, f"{method} should not be implemented"

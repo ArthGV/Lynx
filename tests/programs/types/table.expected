@@ -86,3 +86,25 @@ false
 false
 // For-loop iterates over rows
 3
+//adding tables
+┌────┬─────┐
+│item│price│
+├────┼─────┤
+│'a' │  10 │
+│'b' │  20 │
+│'c' │  30 │
+└────┴─────┘
+┌────┬─────┐
+│item│price│
+├────┼─────┤
+│'c' │  30 │
+│'a' │  10 │
+│'b' │  20 │
+└────┴─────┘
+//adding an empty table
+┌────┬─────┐
+│item│price│
+├────┼─────┤
+│'a' │  10 │
+│'b' │  20 │
+└────┴─────┘

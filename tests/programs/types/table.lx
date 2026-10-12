@@ -63,3 +63,13 @@ total: 0
 loop row: my_table
  total: total + 1
 >> total
+
+//adding tables
+table1: ['item': 'a', 'b'; 'price': 10, 20]
+table2: ['item': 'c'; 'price': 30]
+>> table1 + table2
+>> table2 + table1
+
+//adding an empty table
+empty_table: table
+>> table1 + empty_table
