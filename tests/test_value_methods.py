@@ -1026,7 +1026,8 @@ def test_array_iterate():
 
 def test_map_iterate():
     m = mp((Text("a"), Number(1)), (Text("b"), Number(2)))
-    assert iter_str(m) == ["a", "b"]
+    # a map iterates over [key, value] pairs
+    assert iter_str(m) == ["[ a, 1 ]", "[ b, 2 ]"]
     assert iter_str(mp()) == []
 
 

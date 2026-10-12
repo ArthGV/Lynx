@@ -102,14 +102,19 @@ class Type(ABC):
         return Boolean(self.compare(other) < 0 or self.almost(other).is_true())
 
     def in_(self, other: Any) -> Boolean:
-        """True when this value appears among `other`'s iterated elements —
+        """True when this value appears among `other`'s members —
         an element of an array, a key of a map, and so on."""
         from src.types.simple_type import Boolean
 
-        for item in other.iterate():
+        for item in other.members():
             if type(item) is type(self) and self.equals(item).is_true():
                 return Boolean(True)
         return Boolean(False)
+
+    def members(self) -> list[Type]:
+        """What `in` searches. Iterating visits these by default; a map
+        iterates over pairs but is searched by key."""
+        return self.iterate()
 
     # Every value must define all of these.
 

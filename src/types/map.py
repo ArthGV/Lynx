@@ -126,6 +126,9 @@ class Map(ComplexType):
     def iterate(self) -> list[Type]:
         return [Array((k, self.get_item(k))) for k in self.keys()]
 
+    def members(self) -> list[Type]:
+        return self.keys()
+
     def count(self) -> Number:
         return Number(len(self.value))
 
