@@ -1,14 +1,14 @@
-// `in` checks membership: elements of an array, [key, value] pairs of a map
+// `in` checks membership: elements of an array, keys of a map
 true
 false
 // Cross-type: 4 is not the same as '4'
 false
 true
 true
-// Maps: membership is about [key, value] pairs, not a bare key or value
+// Maps: membership is about keys, not [key, value] pairs or bare values
+false
+false
 true
-false
-false
 false
 // Empty containers contain nothing
 false
@@ -20,5 +20,5 @@ true
 true
 false
 // Binds tighter than =, so a flag reads left to right
-true
+false
 true

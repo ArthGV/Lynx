@@ -1,0 +1,40 @@
+// `x in y`: is x one of the things y contains (same type required)
+arr: 1, 'a', true
+>> 1 in arr
+>> '1' in arr
+>> 2 in arr
+
+// text: characters only
+>> 'b' in 'abc'
+>> 'bc' in 'abc'
+
+// number counts 0 up to itself
+>> 3 in 5
+>> 6 in 5
+
+>> true in true
+>> false in true
+>> void in void
+
+// graph: node ids
+g: a -> b
+>> 'a' in g
+>> 'z' in g
+
+// table: rows
+t: ['id': 1, 2]
+>> ({'id': 1}) in t
+>> 'id' in t
+
+// map: keys only, iteration still yields pairs
+m: { 'k': 1; 'v': void; '1': 2; 3: 'x' }
+>> 'k' in m
+>> 'z' in m
+>> 'v' in m
+>> '1' in m
+>> 1 in m
+>> 3 in m
+>> ('k', 1) in m
+>> 1 in m
+loop pair: m
+  >> pair

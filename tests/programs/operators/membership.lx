@@ -1,4 +1,4 @@
-// `in` checks membership: elements of an array, [key, value] pairs of a map
+// `in` checks membership: elements of an array, keys of a map
 nums: 1, 2, 3
 >> 2 in nums
 >> 4 in nums
@@ -9,7 +9,7 @@ mix: 1, '4', true
 >> '4' in mix
 >> true in mix
 
-// Maps: membership is about [key, value] pairs, not a bare key or value
+// Maps: membership is about keys, not [key, value] pairs or bare values
 m: { 'a': 1; 'b': 2 }
 pair: 'a', 1
 bad: 'a', 2

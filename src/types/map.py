@@ -128,6 +128,10 @@ class Map(ComplexType):
         """The map's keys in insertion order, rebuilt into values."""
         return [value_from_key(raw) for raw in self.value]
 
+    def contains(self, item: Type) -> bool:
+        # `in` asks about keys, even though iteration yields [key, value] pairs.
+        return map_key(item) in self.value
+
     def iterate(self) -> list[Type]:
         return [Array((k, self.get_item(k))) for k in self.keys()]
 
