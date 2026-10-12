@@ -152,6 +152,19 @@ class Skip:
 
 
 @dataclass
+class Test:
+    condition: Any
+    message: Any | None = None
+    line: int | None = None
+
+
+@dataclass
+class Error:
+    message: Any | None = None
+    line: int | None = None
+
+
+@dataclass
 class Number:
     value: Any
 
@@ -264,6 +277,17 @@ class EdgeCreate:
 
     target: Any
     value: Any | None
+    line: int | None = None
+
+
+@dataclass
+class Try:
+    """`try` / `catch` [var] / `else` block for error handling."""
+
+    try_body: list[Any]
+    catch_body: list[Any] | None = None
+    catch_var: str | None = None
+    else_body: list[Any] | None = None
     line: int | None = None
 
 

@@ -1,0 +1,14 @@
+this error
+caught something
+no error here
+no error
+caught: fail
+success
+else ran
+inner caught: inner
+outer caught rethrow: rethrow
+multi handled
+scope test
+global var
+function returned
+after loop

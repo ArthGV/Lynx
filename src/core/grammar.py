@@ -88,6 +88,11 @@ KEYWORDS = {
     # file I/O
     "read": "READ",
     "write": "WRITE",
+    # test / error
+    "test": "TEST",
+    "error": "ERROR",
+    "try": "TRY",
+    "catch": "CATCH",
     **{word: _literal_token(value) for word, value in LITERALS.items()},
 }
 

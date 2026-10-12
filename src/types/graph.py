@@ -128,7 +128,7 @@ class Graph(ComplexType):
 
     def delete_node(self, node_id: str) -> None:
         self.nodes.pop(node_id, None)
-        for (source, target) in list(self.edges):
+        for source, target in list(self.edges):
             if source == node_id or target == node_id:
                 del self.edges[(source, target)]
 
@@ -260,10 +260,7 @@ class Graph(ComplexType):
         return Boolean(node_edits + edge_edits <= 1)
 
     def _edge_signatures(self) -> set[str]:
-        return {
-            f"{source}->{target}:{_label_key(label)!r}"
-            for (source, target), label in self.edges.items()
-        }
+        return {f"{source}->{target}:{_label_key(label)!r}" for (source, target), label in self.edges.items()}
 
     # --- SQL-style operations --------------------------------------------------
 
