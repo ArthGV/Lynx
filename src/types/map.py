@@ -7,6 +7,7 @@ from typing import Any
 from src.errors.errors import LynxTypeError
 from src.types.base_type import ComplexType, Type
 from src.types.simple_type import Boolean, Number, Text, Void
+from src.types.array import Array
 from src.utils.keys import map_key, value_from_key
 from src.utils.text import compare_raw, edit_distance_sets
 
@@ -123,7 +124,7 @@ class Map(ComplexType):
         return [value_from_key(raw) for raw in self.value]
 
     def iterate(self) -> list[Type]:
-        return self.keys()
+        return [Array((k, self.get_item(k))) for k in self.keys()]
 
     def count(self) -> Number:
         return Number(len(self.value))
