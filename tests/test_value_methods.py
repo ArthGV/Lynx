@@ -441,12 +441,15 @@ def test_table_last_index():
 def test_table_first_last():
     t = tbl(("id", [1, 2, 3]), ("price", [10, 20, 30]))
     first = t.first()
-    assert isinstance(first, Map)
-    assert first.get_item(Text("id")).value == 1
-    assert first.get_item(Text("price")).value == 10
+    assert isinstance(first, Table)
+    assert first.nrows == 1
+    assert first.columns["id"][0].value == 1
+    assert first.columns["price"][0].value == 10
     last = t.last()
-    assert last.get_item(Text("id")).value == 3
-    assert last.get_item(Text("price")).value == 30
+    assert isinstance(last, Table)
+    assert last.nrows == 1
+    assert last.columns["id"][0].value == 3
+    assert last.columns["price"][0].value == 30
 
 
 def test_table_first_last_empty():
@@ -458,8 +461,9 @@ def test_table_first_last_empty():
 def test_table_middle():
     t = tbl(("a", [1, 2, 3, 4, 5]))
     mid = t.middle()
-    assert isinstance(mid, Map)
-    assert mid.get_item(Text("a")).value == 3
+    assert isinstance(mid, Table)
+    assert mid.nrows == 1
+    assert mid.columns["a"][0].value == 3
 
 
 def test_table_conversions():

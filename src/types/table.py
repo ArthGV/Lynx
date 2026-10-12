@@ -6,6 +6,7 @@ from functools import cmp_to_key
 from typing import Any
 
 from src.errors.errors import LynxError, LynxTypeError
+from src.runtime.environment import Environment
 from src.types.array import Array
 from src.types.base_type import ComplexType, Type
 from src.types.map import Map
@@ -141,18 +142,18 @@ class Table(ComplexType):
 
     def first(self) -> Type:
         if self.nrows:
-            return self.get_row(0)
+            return self._from_row_indices([0])
         return Void()
 
     def last(self) -> Type:
         if self.nrows:
-            return self.get_row(self.nrows - 1)
+            return self._from_row_indices([self.nrows - 1])
         return Void()
 
     def middle(self) -> Type:
         if not self.nrows:
             return Void()
-        return self.get_row(self.nrows // 2)
+        return self._from_row_indices([self.nrows // 2])
 
     def compare(self, other: Table) -> int:
         if self.nrows != other.nrows:
@@ -216,6 +217,28 @@ class Table(ComplexType):
             if name not in self.columns:
                 return Void()
         return Table([(name, list(self.columns[name])) for name in names], line)
+
+    def select_rows(self, names: list[str], row_indices_args: list[Any], line: int | None, env: Environment) -> Type:
+        """Select specific columns and rows from the table.
+
+        Args:
+            names: List of column names to select
+            row_indices_args: List of row index arguments (numbers, ranges, arrays)
+            line: Source line number for error reporting
+            env: Environment for evaluating expressions
+        """
+        # Validate column names
+        for name in names:
+            if name not in self.columns:
+                return Void()
+
+        # Resolve row indices
+        from src.core.interpreter.expressions import _resolve_row_indices
+
+        indices = _resolve_row_indices(row_indices_args, self.nrows, line, env)
+
+        # Build new table with selected columns and rows
+        return Table([(name, [self.columns[name][i] for i in indices]) for name in names], line)
 
     def order_by(self, name: str, line: int | None = None) -> Table:
         if name not in self.columns:

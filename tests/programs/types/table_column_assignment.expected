@@ -25,5 +25,13 @@
 [ 5, void, void, void ]
 [ 4, 7 ]
 // Row still spans all columns after assignment
-{ id: 99; val: 5; newcol: 100; label: x; range: 1; tag: [ 7, 8 ]; mark: 1 }
-{ id: 88; val: void; newcol: 200; label: void; range: 2; tag: void; mark: void }
+┌────┬────┬──────┬─────┬─────┬────────┬────┐
+│ id │ val│newcol│label│range│ tag    │mark│
+├────┼────┼──────┼─────┼─────┼────────┼────┤
+│ 99 │  5 │  100 │'x'  │   1 │[ 7, 8 ]│  1 │
+└────┴────┴──────┴─────┴─────┴────────┴────┘
+┌────┬──────┬──────┬──────┬─────┬──────┬──────┐
+│ id │ val  │newcol│ label│range│ tag  │ mark │
+├────┼──────┼──────┼──────┼─────┼──────┼──────┤
+│ 88 │ void │  200 │ void │   2 │ void │ void │
+└────┴──────┴──────┴──────┴─────┴──────┴──────┘
