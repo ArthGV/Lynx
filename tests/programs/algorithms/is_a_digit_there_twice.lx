@@ -2,7 +2,7 @@ is_a_digit_there_twice: entry
  entry_text: text entry
  digit_map: {}
  loop char: entry_text
-  if char in digit_map
+  if digit_map char
     >>>true
   else
     digit_map char: true

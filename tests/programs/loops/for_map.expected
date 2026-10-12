@@ -1,12 +1,12 @@
-//a map iterates over its keys in insertion order
-one
-two
-3
+//a map iterates over [key, value] pairs in insertion order
+[ one, 1 ]
+[ two, 2 ]
+[ 3, three ]
 --
-//two variables give index + key
+//two variables give index + pair
 0
-one
+[ one, 1 ]
 1
-two
+[ two, 2 ]
 2
-3
+[ 3, three ]

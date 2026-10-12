@@ -169,9 +169,11 @@ def test_in_membership():
     # different element types never match
     assert Number(1).in_(arr(Text("1"), Boolean(True))).is_true() is False
     assert Array([Number(1)]).in_(arr(Text("x"), Array([Number(1)]))).is_true()
-    # a map's keys, not its values
+    # a map's entries, as [key, value] pairs: neither the bare key nor the bare value
     m = mp((Text("a"), Number(1)))
-    assert Text("a").in_(m).is_true()
+    assert Array((Text("a"), Number(1))).in_(m).is_true()
+    assert Array((Text("a"), Number(2))).in_(m).is_true() is False
+    assert Text("a").in_(m).is_true() is False
     assert Number(1).in_(m).is_true() is False
     # scalars iterate too, so membership has a default there as well
     assert Number(3).in_(Number(5)).is_true()
@@ -1026,7 +1028,8 @@ def test_array_iterate():
 
 def test_map_iterate():
     m = mp((Text("a"), Number(1)), (Text("b"), Number(2)))
-    assert iter_str(m) == ["a", "b"]
+    # a map iterates over [key, value] pairs
+    assert iter_str(m) == ["[ a, 1 ]", "[ b, 2 ]"]
     assert iter_str(mp()) == []
 
 

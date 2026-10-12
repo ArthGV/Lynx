@@ -1,4 +1,4 @@
-// `in` checks membership: elements of an array, keys of a map
+// `in` checks membership: elements of an array, [key, value] pairs of a map
 nums: 1, 2, 3
 >> 2 in nums
 >> 4 in nums
@@ -9,10 +9,13 @@ mix: 1, '4', true
 >> '4' in mix
 >> true in mix
 
-// Maps: membership is about keys, not values
+// Maps: membership is about [key, value] pairs, not a bare key or value
 m: { 'a': 1; 'b': 2 }
+pair: 'a', 1
+bad: 'a', 2
+>> pair in m
+>> bad in m
 >> 'a' in m
->> 'c' in m
 >> 1 in m
 
 // Empty containers contain nothing
@@ -30,6 +33,6 @@ outer: 'x', inner
 >> 'z' in 'hello'
 
 // Binds tighter than =, so a flag reads left to right
-flag: 'a' in m
+flag: pair in m
 >> flag
 >> 2 in nums = true
