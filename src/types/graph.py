@@ -215,21 +215,21 @@ class Graph(ComplexType):
         if self.nodes:
             node_name = next(iter(self.nodes))
             node_value = self.nodes[node_name]
-            return Array([node_name, node_value])
+            return Array([Text(node_name), node_value])
         return Void()
 
     def last(self) -> Type:
         if self.nodes:
             node_name = list(self.nodes)[-1]
             node_value = self.nodes[node_name]
-            return Array([node_name, node_value])
+            return Array([Text(node_name), node_value])
         return Void()
 
     def middle(self) -> Type:
         if self.nodes:
             node_name = list(self.nodes)[len(self.nodes) // 2]
             node_value = self.nodes[node_name]
-            return Array([node_name, node_value])
+            return Array([Text(node_name), node_value])
         return Void()
 
     def iterate(self) -> list[Type]:
