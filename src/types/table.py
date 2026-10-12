@@ -315,7 +315,11 @@ class Table(ComplexType):
         if self.columns == {}:
             return other
         if self.columns.keys() != other.columns.keys():
-            raise LynxError(f"cannot add table with columns {Array(list(self.columns))} and table with columns {Array(list(other.columns))}", line)
+            raise LynxError(
+                f"cannot add table with columns {Array(list(self.columns))} "
+                f"and table with columns {Array(list(other.columns))}",
+                line,
+            )
         return Table([(key, self.columns[key] + other.columns[key]) for key in self.columns])
 
     def subtract(self, other: Table) -> Type:

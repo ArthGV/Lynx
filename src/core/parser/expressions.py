@@ -235,17 +235,47 @@ class ExpressionMixin(Parser):
             return Cell(node)
         return self.parse_expression(allow_chain)
 
-    def parse_table_literal(self) -> TableLiteral:
+    def parse_table_literal(self) -> Any:
         # `[ 'id': 1, 2, 3; 'price': 10, 20 ]` — `:` separates a column name
         # from its values, `;` separates columns. A column with no values is
         # allowed: `['id': ; 'price': 1, 2]` and bare `['id'; 'price': 1, 2]`
         # both build an empty `id` column. Names can't be empty, so a stray
         # `:` or `;` right after `[` is a syntax error before parsing starts.
+        # Array literals like `[1, 2, 3]` are also parsed here but detected
+        # and converted to ArrayLiteral.
         opening = self.match("LBRACK")
-        columns: list[Any] = []
         if self.type() == "RBRACK":
             self.advance()
-            return TableLiteral(columns, opening.line)
+            return TableLiteral([], opening.line)
+        # Check for stray colon or semicolon right after [
+        if self.type() in ("COLON", "SEMICOLON"):
+            token = self.peek()
+            raise LynxSyntaxError("table column needs a name", token.line)
+        # Peek at the first expression to determine if this is a table or array
+        # Table: starts with identifier followed by ':' (column name)
+        # Array: starts with value (number, text, etc.) or '(' or '[' or '{'
+        save = self.current
+        self.parse_expression()
+        if self.type() == "COLON":
+            # It's a table literal: `name: values`
+            self.current = save
+            return self._parse_table_literal_full(opening)
+        elif self.type() in ("COMMA", "RBRACK"):
+            # It's an array literal: `[expr, ...]` or `[expr]`
+            self.current = save
+            return self.parse_array_literal()
+        else:
+            # Single element without comma or colon - could be either
+            # If followed by SEMICOLON, it's a table with one column
+            if self.type() == "SEMICOLON":
+                self.current = save
+                return self._parse_table_literal_full(opening)
+            # Otherwise treat as array literal with single element
+            self.current = save
+            return self.parse_array_literal()
+
+    def _parse_table_literal_full(self, opening: Any) -> TableLiteral:
+        columns: list[Any] = []
         while True:
             token = self.peek()
             if self.type() in ("COLON", "SEMICOLON"):
@@ -267,6 +297,20 @@ class ExpressionMixin(Parser):
                 continue
             self.match("RBRACK")
             return TableLiteral(columns, opening.line)
+
+    def parse_array_literal(self) -> Any:
+        items = [self.parse_expression()]
+        trailing = False
+        while self.type() == "COMMA":
+            self.advance()
+            if not self._starts_comma_item(self.type()):
+                trailing = True
+                break
+            items.append(self.parse_expression())
+        self.match("RBRACK")
+        if len(items) == 1 and not trailing:
+            return items[0]
+        return ArrayLiteral(items)
 
     def parse_table_query(self, kind: str, line: int | None) -> TableQuery:
         # `select`/`order`/`group` take the whole rest of the line as their
