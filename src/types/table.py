@@ -184,7 +184,7 @@ class Table(ComplexType):
         for name, column in self.columns.items():
             other_column = other.columns[name]
             for a, b in zip(column, other_column):
-                if type(a) is not type(b) or not a.equals(b).is_true():
+                if not cells_equal(a, b):
                     return Boolean(False)
         return Boolean(True)
 
@@ -311,7 +311,6 @@ class Table(ComplexType):
     def count(self) -> Number:
         return Number(self.nrows)
 
-    # --- not implemented yet ---
     def add(self, other: Table, line: int | None = None) -> Type:
         if other.columns == {}:
             return self.copy()
@@ -325,6 +324,7 @@ class Table(ComplexType):
             )
         return Table([(key, [c.copy() for c in self.columns[key] + other.columns[key]]) for key in self.columns])
 
+    # --- not implemented yet ---
     def subtract(self, other: Table) -> Type:
         self.todo("subtract")
 

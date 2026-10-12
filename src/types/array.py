@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from src.types.base_type import ComplexType, Type
 from src.types.simple_type import Boolean, Number, Text, Void
+from src.utils.keys import cells_equal
 from src.utils.text import compare_raw, edit_distance_seq
 
 
@@ -58,25 +59,12 @@ class Array(ComplexType):
         return 0
 
     def almost(self, other: Array) -> Boolean:
-        return Boolean(
-            edit_distance_seq(
-                self.value,
-                other.value,
-                lambda a, b: type(a) is type(b) and a.equals(b).is_true(),
-            )
-            <= 1
-        )
+        return Boolean(edit_distance_seq(self.value, other.value, cells_equal) <= 1)
 
     def equals(self, other: Array) -> Boolean:
         if len(self.value) != len(other.value):
             return Boolean(False)
-        for a, b in zip(self.value, other.value):
-            if type(a) is type(b):
-                if not a.equals(b).is_true():
-                    return Boolean(False)
-            else:
-                return Boolean(False)
-        return Boolean(True)
+        return Boolean(all(cells_equal(a, b) for a, b in zip(self.value, other.value)))
 
     def number(self) -> Number:
         return Number(len(self.value))
@@ -125,7 +113,7 @@ class Array(ComplexType):
     def distinct(self) -> Array:
         seen: list[Type] = []
         for item in self.value:
-            if not any(type(item) is type(seen_item) and item.equals(seen_item).is_true() for seen_item in seen):
+            if not any(cells_equal(item, seen_item) for seen_item in seen):
                 seen.append(item)
         return Array(seen)
 

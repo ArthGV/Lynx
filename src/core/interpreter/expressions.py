@@ -194,18 +194,12 @@ def _resolve_row_indices(row_indices_args: list[Any], max_rows: int, line: int |
         else:
             key = evaluate(arg, env)
             if isinstance(key, values.Number):
-                idx = key.value
-                if not isinstance(idx, int) or idx < 0 or idx >= max_rows:
-                    raise LynxError(f"index {idx} out of range for table with {max_rows} rows", line)
-                indices.append(idx)
+                indices.append(checked_index(key.value, max_rows, "table", line))
             elif isinstance(key, values.Array):
                 for item in key.value:
                     if not isinstance(item, values.Number):
                         raise LynxTypeError(f"array index must contain numbers, got {item.type_name()}", line)
-                    idx = item.value
-                    if not isinstance(idx, int) or idx < 0 or idx >= max_rows:
-                        raise LynxError(f"index {idx} out of range for table with {max_rows} rows", line)
-                    indices.append(idx)
+                    indices.append(checked_index(item.value, max_rows, "table", line))
             else:
                 raise LynxTypeError(
                     f"table row index must be a number, range, or array of numbers, got {key.type_name()}", line
@@ -257,6 +251,28 @@ def index_graph(graph: values.Graph, args: list[Any], line: int | None, env: Env
     return current
 
 
+_EXTENT = {"array": "an array of length {}", "text": "text of length {}", "table": "a table with {} rows"}
+
+
+def checked_index(idx: Any, size: int, kind: str, line: int | None) -> int:
+    """`idx` as a valid position in a `kind` ("array"/"text"/"table") of `size`,
+    or the one out-of-range error every container shares."""
+    if not isinstance(idx, int) or idx < 0 or idx >= size:
+        raise LynxError(f"index {idx} out of range for {_EXTENT[kind].format(size)}", line)
+    return idx
+
+
+def resolve_slice(node: Any, env: Environment, size: int, kind: str, line: int | None) -> list[int]:
+    """The positions a range step covers in a `kind` of `size`, ascending or
+    descending with its bounds; both ends must lie inside the container."""
+    start, end = _slice_bounds(node, env, line)
+    worst = max(start, end)
+    if worst >= size:
+        which = "start" if start > end else "end"
+        raise LynxError(f"range {which} {worst} out of bounds for {_EXTENT[kind].format(size)}", line)
+    return _sliced_indices(start, end)
+
+
 def get_element(container: values.Type, step: Any, line: int | None, env: Environment) -> values.Type:
     """Fetch one index/key lookup into `container`. Shared by read access and
     mutation so both validate and report the same way."""
@@ -264,10 +280,7 @@ def get_element(container: values.Type, step: Any, line: int | None, env: Enviro
     if isinstance(container, values.Array):
         if not isinstance(key, values.Number):
             raise LynxTypeError(f"array index must be a number, got {key.type_name()}", line)
-        idx = key.value
-        if not isinstance(idx, int) or idx < 0 or idx >= len(container.value):
-            raise LynxError(f"index {idx} out of range for an array of length {len(container.value)}", line)
-        return container.value[idx]
+        return container.value[checked_index(key.value, len(container.value), "array", line)]
     if isinstance(container, values.Map):
         if not isinstance(key, values.SimpleType):
             raise LynxTypeError(f"map key must be a simple type, got {key.type_name()}", line)
@@ -276,10 +289,7 @@ def get_element(container: values.Type, step: Any, line: int | None, env: Enviro
         if isinstance(key, values.Text):
             return container.get_column(key.value)
         if isinstance(key, values.Number):
-            idx = key.value
-            if not isinstance(idx, int) or idx < 0 or idx >= container.nrows:
-                raise LynxError(f"index {idx} out of range for a table with {container.nrows} rows", line)
-            return container.get_row(idx)
+            return container.get_row(checked_index(key.value, container.nrows, "table", line))
         raise LynxTypeError(f"table access needs a column name or a row index, got {key.type_name()}", line)
     if isinstance(container, values.Graph):
         # Mid-path descent into a graph: a text step picks a node's value.
@@ -289,10 +299,7 @@ def get_element(container: values.Type, step: Any, line: int | None, env: Enviro
     if isinstance(container, values.Text):
         if not isinstance(key, values.Number):
             raise LynxTypeError(f"text index must be a number, got {key.type_name()}", line)
-        idx = key.value
-        if not isinstance(idx, int) or idx < 0 or idx >= len(container.value):
-            raise LynxError(f"index {idx} out of range for text of length {len(container.value)}", line)
-        return values.Text(container.value[idx])
+        return values.Text(container.value[checked_index(key.value, len(container.value), "text", line)])
     raise LynxTypeError("cannot index into a value that is not an array or map", line)
 
 
@@ -333,21 +340,13 @@ def _sliced_indices(start: int, end: int) -> list[int]:
 
 
 def slice_array(array: values.Array, node: Any, line: int | None, env: Environment) -> values.Type:
-    start, end = _slice_bounds(node, env, line)
-    worst = max(start, end)
-    if worst >= len(array.value):
-        which = "start" if start > end else "end"
-        raise LynxError(f"range {which} {worst} out of bounds for an array of length {len(array.value)}", line)
-    return values.Array([array.value[i] for i in _sliced_indices(start, end)])
+    indices = resolve_slice(node, env, len(array.value), "array", line)
+    return values.Array([array.value[i] for i in indices])
 
 
 def slice_text(text_value: values.Text, node: Any, line: int | None, env: Environment) -> values.Type:
-    start, end = _slice_bounds(node, env, line)
-    worst = max(start, end)
-    if worst >= len(text_value.value):
-        which = "start" if start > end else "end"
-        raise LynxError(f"range {which} {worst} out of bounds for text of length {len(text_value.value)}", line)
-    return values.Text("".join(text_value.value[i] for i in _sliced_indices(start, end)))
+    indices = resolve_slice(node, env, len(text_value.value), "text", line)
+    return values.Text("".join(text_value.value[i] for i in indices))
 
 
 def slice_assign(container: values.Type, node: Any, value_node: Any, line: int | None, env: Environment) -> None:
@@ -356,18 +355,13 @@ def slice_assign(container: values.Type, node: Any, value_node: Any, line: int |
         return
     if not isinstance(container, values.Array):
         raise LynxTypeError("cannot slice a value that is not an array", line)
-    start, end = _slice_bounds(node, env, line)
-    indices = _sliced_indices(start, end)
-    worst = max(start, end)
-    if worst >= len(container.value):
-        which = "start" if start > end else "end"
-        raise LynxError(f"range {which} {worst} out of bounds for an array of length {len(container.value)}", line)
+    indices = resolve_slice(node, env, len(container.value), "array", line)
     new_value = evaluate(value_node, env).copy()
     if not isinstance(new_value, values.Array):
         new_value = values.Array([new_value])
     if len(new_value.value) != len(indices):
         raise LynxInputError(
-            f"range {start}__{end} covers {len(indices)} elements but got {len(new_value.value)}", line
+            f"range {indices[0]}__{indices[-1]} covers {len(indices)} elements but got {len(new_value.value)}", line
         )
     for index, item in zip(indices, new_value.value):
         container.value[index] = item
@@ -376,18 +370,13 @@ def slice_assign(container: values.Type, node: Any, value_node: Any, line: int |
 def _slice_assign_text(container: values.Text, node: Any, value_node: Any, line: int | None, env: Environment) -> None:
     # Mirrors the array slice-assignment contract: the replacement text must
     # cover exactly the sliced characters, so the string keeps its length.
-    start, end = _slice_bounds(node, env, line)
-    indices = _sliced_indices(start, end)
-    worst = max(start, end)
-    if worst >= len(container.value):
-        which = "start" if start > end else "end"
-        raise LynxError(f"range {which} {worst} out of bounds for text of length {len(container.value)}", line)
+    indices = resolve_slice(node, env, len(container.value), "text", line)
     new_value = evaluate(value_node, env)
     if not isinstance(new_value, values.Text):
         raise LynxTypeError(f"text slice assignment needs a text, got {new_value.type_name()}", line)
     if len(new_value.value) != len(indices):
         raise LynxInputError(
-            f"range {start}__{end} covers {len(indices)} characters but got {len(new_value.value)}", line
+            f"range {indices[0]}__{indices[-1]} covers {len(indices)} characters but got {len(new_value.value)}", line
         )
     chars = list(container.value)
     for index, char in zip(indices, new_value.value):

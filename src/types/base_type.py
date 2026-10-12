@@ -19,6 +19,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, ClassVar, NoReturn, cast
 
 from src.errors.errors import LynxNotImplemented
+from src.utils.keys import cells_equal
 
 if TYPE_CHECKING:
     from src.types.simple_type import Boolean, Number, Text, Void
@@ -107,7 +108,7 @@ class Type(ABC):
         from src.types.simple_type import Boolean
 
         for item in other.iterate():
-            if type(item) is type(self) and self.equals(item).is_true():
+            if cells_equal(self, item):
                 return Boolean(True)
         return Boolean(False)
 

@@ -140,7 +140,7 @@ class StatementMixin(Parser):
         if self.type() in ("APPEND", "PREPEND"):
             return self.parse_append(name, line)
         # Check for multi-assignment: a, b, c: value
-        if self.type() == "COMMA" and self._is_multi_assignment_at(start):
+        if self.type() == "COMMA" and self._is_multi_assignment(start):
             self.current = start
             return self._parse_multi_assignment()
         if self.type() != "COLON":
@@ -154,21 +154,21 @@ class StatementMixin(Parser):
         self.current = start
         return self.parse_assignment()
 
-    def _is_multi_assignment_at(self, start_pos: int) -> bool:
-        # Check if we have: IDENTIFIER (, IDENTIFIER)* COLON
-        i = start_pos + 1  # skip first IDENTIFIER
-        if self._type_at(i) != "COMMA":
+    def _is_multi_assignment(self, start: int | None = None) -> bool:
+        # Lookahead for: IDENTIFIER (, IDENTIFIER)+ COLON (at least one comma),
+        # from `start` (default: the current token).
+        i = self.current if start is None else start
+        if self._type_at(i) != "IDENTIFIER":
             return False
         i += 1
-        while True:
+        has_comma = False
+        while self._type_at(i) == "COMMA":
+            has_comma = True
+            i += 1
             if self._type_at(i) != "IDENTIFIER":
                 return False
             i += 1
-            if self._type_at(i) == "COMMA":
-                i += 1
-                continue
-            break
-        return self._type_at(i) == "COLON"
+        return has_comma and self._type_at(i) == "COLON"
 
     def _is_function_declaration(self) -> bool:
         # At the COLON. True when the right-hand side is IDENTIFIER
@@ -206,27 +206,11 @@ class StatementMixin(Parser):
         return Function(name, params, body)
 
     def parse_assignment(self) -> Any:
-        # Check if this is a multi-assignment: a, b, c: value
         if self._is_multi_assignment():
             return self._parse_multi_assignment()
         name = self.match("IDENTIFIER").value
         self.match("COLON")
         return Assignment(name, self.parse_assign_rhs())
-
-    def _is_multi_assignment(self) -> bool:
-        # Look ahead for: IDENTIFIER (, IDENTIFIER)+ COLON (at least one comma)
-        i = self.current
-        if self._type_at(i) != "IDENTIFIER":
-            return False
-        i += 1
-        has_comma = False
-        while self._type_at(i) == "COMMA":
-            has_comma = True
-            i += 1
-            if self._type_at(i) != "IDENTIFIER":
-                return False
-            i += 1
-        return has_comma and self._type_at(i) == "COLON"
 
     def _parse_multi_assignment(self) -> MultiAssignment:
         names = [self.match("IDENTIFIER").value]
@@ -494,11 +478,7 @@ class StatementMixin(Parser):
             return None
         i = next_i
 
-        # Handle the first target
-        if isinstance(first_group, list):
-            targets.append(first_group)
-        else:
-            targets.append(first_group)
+        targets.append(first_group)
 
         # Parse remaining targets
         while self._type_at(i) == "COMMA":
@@ -507,10 +487,7 @@ class StatementMixin(Parser):
             if group is None:
                 return None
             i = next_i
-            if isinstance(group, list):
-                targets.append(group)
-            else:
-                targets.append(group)
+            targets.append(group)
 
         if self._type_at(i) != "COLON":
             return None

@@ -1,0 +1,3 @@
+// selecting rows past the end reports the same wording
+t: ['a': 1, 2]
+>> t 'a', 5

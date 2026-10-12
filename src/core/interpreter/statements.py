@@ -11,9 +11,9 @@ from typing import Any
 
 from src.core.interpreter._base import evaluate, is_range
 from src.core.interpreter.expressions import (
-    _slice_bounds,
-    _sliced_indices,
+    checked_index,
     get_element,
+    resolve_slice,
     slice_assign,
     table_cells,
 )
@@ -67,10 +67,7 @@ def assign_item(base: str, steps: list[Any], value_node: Any, line: int | None, 
     if isinstance(container, values.Array):
         if not isinstance(key, values.Number):
             raise LynxTypeError(f"array index must be a number, got {key.type_name()}", line)
-        idx = key.value
-        if not isinstance(idx, int) or idx < 0 or idx >= len(container.value):
-            raise LynxError(f"index {idx} out of range for an array of length {len(container.value)}", line)
-        container.value[idx] = new_value
+        container.value[checked_index(key.value, len(container.value), "array", line)] = new_value
         return
     if isinstance(container, values.Map):
         if not isinstance(key, values.SimpleType):
@@ -80,9 +77,7 @@ def assign_item(base: str, steps: list[Any], value_node: Any, line: int | None, 
     if isinstance(container, values.Text):
         if not isinstance(key, values.Number):
             raise LynxTypeError(f"text index must be a number, got {key.type_name()}", line)
-        idx = key.value
-        if not isinstance(idx, int) or idx < 0 or idx >= len(container.value):
-            raise LynxError(f"index {idx} out of range for text of length {len(container.value)}", line)
+        idx = checked_index(key.value, len(container.value), "text", line)
         if not isinstance(new_value, values.Text):
             raise LynxTypeError(f"text index assignment needs a text, got {new_value.type_name()}", line)
         if len(new_value.value) != 1:
@@ -191,12 +186,7 @@ def delete_item(base: str, steps: list[Any], line: int | None, env: Environment)
     if is_range(steps[-1]):
         if not isinstance(container, values.Array):
             raise LynxTypeError("range slicing is only supported for arrays", line)
-        start, end = _slice_bounds(steps[-1], env, line)
-        indices = _sliced_indices(start, end)
-        worst = max(start, end)
-        if worst >= len(container.value):
-            which = "start" if start > end else "end"
-            raise LynxError(f"range {which} {worst} out of bounds for an array of length {len(container.value)}", line)
+        indices = resolve_slice(steps[-1], env, len(container.value), "array", line)
         for index in sorted(indices, reverse=True):
             del container.value[index]
         return
@@ -204,10 +194,7 @@ def delete_item(base: str, steps: list[Any], line: int | None, env: Environment)
     if isinstance(container, values.Array):
         if not isinstance(key, values.Number):
             raise LynxTypeError(f"array index must be a number, got {key.type_name()}", line)
-        idx = key.value
-        if not isinstance(idx, int) or idx < 0 or idx >= len(container.value):
-            raise LynxError(f"index {idx} out of range for an array of length {len(container.value)}", line)
-        del container.value[idx]
+        del container.value[checked_index(key.value, len(container.value), "array", line)]
         return
     if isinstance(container, values.Map):
         if not isinstance(key, values.SimpleType):
@@ -223,10 +210,7 @@ def delete_item(base: str, steps: list[Any], line: int | None, env: Environment)
             container.del_column(key.value)
             return
         if isinstance(key, values.Number):
-            idx = key.value
-            if not isinstance(idx, int) or idx < 0 or idx >= container.nrows:
-                raise LynxError(f"index {idx} out of range for a table with {container.nrows} rows", line)
-            container.del_row(idx)
+            container.del_row(checked_index(key.value, container.nrows, "table", line))
             return
         raise LynxTypeError(f"table deletion needs a column name or a row index, got {key.type_name()}", line)
     raise LynxTypeError(f"cannot delete from a {container.type_name()}", line)

@@ -8,7 +8,7 @@ from src.errors.errors import LynxTypeError
 from src.types.array import Array
 from src.types.base_type import ComplexType, Type
 from src.types.simple_type import Boolean, Number, Text, Void
-from src.utils.keys import map_key, value_from_key
+from src.utils.keys import cells_equal, map_key, value_from_key
 from src.utils.text import compare_raw, edit_distance_sets
 
 
@@ -108,7 +108,7 @@ class Map(ComplexType):
             if rk not in other.value:
                 return Boolean(False)
             ov = other.value[rk]
-            if type(rv) is not type(ov) or not rv.equals(ov).is_true():
+            if not cells_equal(rv, ov):
                 return Boolean(False)
         return Boolean(True)
 

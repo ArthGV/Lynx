@@ -25,6 +25,7 @@ from src.types.array import Array
 from src.types.base_type import ComplexType, Type
 from src.types.simple_type import Boolean, Number, Text, Void
 from src.types.table import Table
+from src.utils.keys import cells_equal
 from src.utils.text import compare_raw, edit_distance_sets
 
 
@@ -251,13 +252,13 @@ class Graph(ComplexType):
             return Boolean(False)
         for node_id, value in self.nodes.items():
             other_value = other.nodes[node_id]
-            if type(value) is not type(other_value) or not value.equals(other_value).is_true():
+            if not cells_equal(value, other_value):
                 return Boolean(False)
         if set(self.edges) != set(other.edges):
             return Boolean(False)
         for edge, label in self.edges.items():
             other_label = other.edges[edge]
-            if type(label) is not type(other_label) or not label.equals(other_label).is_true():
+            if not cells_equal(label, other_label):
                 return Boolean(False)
         return Boolean(True)
 
