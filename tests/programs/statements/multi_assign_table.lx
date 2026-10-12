@@ -1,0 +1,15 @@
+//a table gives one row per name, each row a map
+a, b: ['id': 1, 2; 'n': 'x', 'y']
+>> a
+>> b
+>> type a
+
+//the rows can be read as maps
+>> a 'id'
+>> b 'n'
+
+//a table held in a variable
+t: ['id': 1, 2, 3]
+r1, r2, r3: t
+>> r1
+>> r3

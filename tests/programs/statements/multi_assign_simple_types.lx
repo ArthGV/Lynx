@@ -1,0 +1,43 @@
+//a Number is copied to every name, not counted
+a, b: 5
+>> a
+>> b
+c, d: 0
+>> c
+>> d
+e, f: -2
+>> e
+>> f
+g, h: 1.5
+>> g
+>> h
+
+//a Text is copied, not split into characters
+i, j, k: 'x'
+>> i + j + k
+l, m: ''
+>> l
+>> type m
+o, p: 'hi'
+>> o
+>> p
+
+//a Boolean is copied
+q, r: true
+>> q
+>> r
+s, t: false
+>> s
+>> t
+
+//void is copied
+u, w: void
+>> u
+>> w
+>> type u
+>> type w
+
+//the right-hand side is an expression evaluated once
+x, y: 1 + 2
+>> x
+>> y

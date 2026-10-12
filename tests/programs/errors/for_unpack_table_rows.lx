@@ -1,0 +1,4 @@
+//a table row is a map, not an array
+t: ['id': 1, 2; 'n': 'x', 'y']
+loop (a, b): t
+ >> a

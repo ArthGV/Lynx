@@ -1,0 +1,2 @@
+//an empty map gives no value to any name
+a, b: {}
