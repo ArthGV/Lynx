@@ -31,6 +31,7 @@ from src.core.nodes import (
     If,
     Loop,
     MapLiteral,
+    MultiAssignment,
     Number,
     Print,
     Program,
@@ -66,6 +67,61 @@ __all__ = [
 ]
 
 
+def _bind_unpack(names: list[str], value: values.Type, env: Environment, line: int | None) -> None:
+    if not isinstance(value, values.Array):
+        raise LynxError(f"cannot unpack {value.type_name()}, expected Array", line)
+    if len(value.value) != len(names):
+        raise LynxError(f"expected {len(names)} values to unpack, got {len(value.value)}", line)
+    for name, elem in zip(names, value.value):
+        env.set(name, elem)
+
+
+def _handle_loop_targets(targets: list[Any], index: int, item: values.Type, env: Environment, line: int | None) -> None:
+    """Bind loop targets for a single iteration.
+
+    targets structure examples:
+    - ["v"] -> bind element to "v" (single target = element)
+    - ["i", "v"] -> bind index to "i", element to "v"
+    - [["a", "b"]] -> unpack element to "a", "b"
+    - ["i", ["a", "b"]] -> bind index to "i", unpack element to "a", "b"
+    """
+    if not targets:
+        return
+
+    # Check if any target is an unpack group (list)
+    has_unpack = any(isinstance(t, list) for t in targets)
+
+    if has_unpack:
+        # Has unpack groups - first target might be index
+        first = targets[0]
+        if isinstance(first, list):
+            # First target is unpack group (no index): loop (a, b): items
+            _bind_unpack(first, item, env, line)
+        else:
+            # First target is index variable
+            env.set(first, values.Number(index))
+            remaining = targets[1:]
+            if len(remaining) == 1 and isinstance(remaining[0], list):
+                # Unpack target: loop i, (a, b): items
+                _bind_unpack(remaining[0], item, env, line)
+            elif not remaining:
+                # Just index: loop i: items
+                pass
+            else:
+                raise LynxError("invalid loop targets", line)
+    else:
+        # No unpack groups - simple targets
+        if len(targets) == 1:
+            # Single target: loop v: items -> bind element
+            env.set(targets[0], item)
+        elif len(targets) == 2:
+            # Two targets: loop i, v: items -> bind index and element
+            env.set(targets[0], values.Number(index))
+            env.set(targets[1], item)
+        else:
+            raise LynxError("invalid loop targets", line)
+
+
 def execute(node: Any, env: Environment) -> None:
     if isinstance(node, list):
         for statement in node:
@@ -84,6 +140,20 @@ def execute(node: Any, env: Environment) -> None:
 
         case Assignment(name, value):
             env.set(name, evaluate(value, env))
+
+        case MultiAssignment(names, value, line):
+            val = evaluate(value, env)
+            # Simple types (Number, Text, Boolean, Void): assign same value to all
+            if isinstance(val, (values.Number, values.Text, values.Boolean, values.Void)):
+                for name in names:
+                    env.set(name, val)
+            else:
+                # Complex types (Array, Map, Table, Graph): iterate and unpack
+                items = val.iterate()
+                if len(items) != len(names):
+                    raise LynxError(f"expected {len(names)} values from {val.type_name()}, got {len(items)}", line)
+                for name, item in zip(names, items):
+                    env.set(name, item)
 
         case SetItem(base, steps, value, line):
             _statements.assign_item(base, steps, value, line, env)
@@ -122,12 +192,11 @@ def execute(node: Any, env: Environment) -> None:
                         continue
             else:
                 items = evaluate(iterable, env).iterate()
+                iterable_line = getattr(iterable, "line", None)
                 for index, item in enumerate(items):
-                    if len(targets) == 1:
-                        env.set(targets[0], item)
-                    else:
-                        env.set(targets[0], values.Number(index))
-                        env.set(targets[1], item)
+                    _handle_loop_targets(
+                        targets, index, item, env, iterable_line
+                    )
                     try:
                         execute(body, env)
                     except _Stop:
