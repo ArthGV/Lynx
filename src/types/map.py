@@ -133,7 +133,7 @@ class Map(ComplexType):
         return map_key(item) in self.value
 
     def iterate(self) -> list[Type]:
-        return [Array((k, self.get_item(k))) for k in self.keys()]
+        return [Array([k, self.get_item(k)]) for k in self.keys()]
 
     def count(self) -> Number:
         return Number(len(self.value))

@@ -194,9 +194,7 @@ def execute(node: Any, env: Environment) -> None:
                 items = evaluate(iterable, env).iterate()
                 iterable_line = getattr(iterable, "line", None)
                 for index, item in enumerate(items):
-                    _handle_loop_targets(
-                        targets, index, item, env, iterable_line
-                    )
+                    _handle_loop_targets(targets, index, item, env, iterable_line)
                     try:
                         execute(body, env)
                     except _Stop:

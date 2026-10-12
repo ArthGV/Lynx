@@ -318,8 +318,8 @@ class Table(ComplexType):
             return other.copy()
         if self.columns.keys() != other.columns.keys():
             raise LynxError(
-                f"cannot add table with columns {Array(list(self.columns))} "
-                f"and table with columns {Array(list(other.columns))}",
+                f"cannot add table with columns {Array([Text(name) for name in self.columns])} "
+                f"and table with columns {Array([Text(name) for name in other.columns])}",
                 line,
             )
         return Table([(key, [c.copy() for c in self.columns[key] + other.columns[key]]) for key in self.columns])
