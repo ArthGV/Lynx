@@ -136,7 +136,7 @@ def execute(node: Any, env: Environment) -> None:
             _files.write(evaluate(value, env), evaluate(path, env), line)
 
         case Print(value):
-            print(evaluate(value, env))
+            print(_printable(value, env))
 
         case Assignment(name, value):
             env.set(name, evaluate(value, env).copy())
@@ -165,7 +165,7 @@ def execute(node: Any, env: Environment) -> None:
             _statements.delete_item(base, steps, line, env)
 
         case Function(name, params, body):
-            env.set(name, FunctionValue(params, body, env))
+            env.set(name, FunctionValue(name, params, body, env))
 
         case Call(callee, args, line):
             _expressions.call(callee, args, line, env)
@@ -280,7 +280,10 @@ def evaluate(node: Any, env: Environment) -> values.Type:
             return evaluate(inner, env)
 
         case Identifier(name, line):
-            return cast(values.Type, env.get(name, line))
+            value = env.get(name, line)
+            if isinstance(value, FunctionValue):
+                raise LynxTypeError(f"cannot use function '{name}' as a value", line)
+            return cast(values.Type, value)
 
         case Call(callee, args, line):
             return _expressions.call(callee, args, line, env)
@@ -322,6 +325,16 @@ def evaluate(node: Any, env: Environment) -> values.Type:
 
         case _:
             raise LynxTypeError(f"cannot evaluate {type(node).__name__}")
+
+
+def _printable(node: Any, env: Environment) -> Any:
+    """What `>>` prints: a bare function name prints the function itself;
+    everywhere else a function is not a value."""
+    if isinstance(node, Identifier):
+        named = env.get(node.name, node.line)
+        if isinstance(named, FunctionValue):
+            return named
+    return evaluate(node, env)
 
 
 def evaluate_key(node: Any, env: Environment, line: int | None) -> values.Type:

@@ -54,6 +54,9 @@ class Token:
     type: str
     value: Any
     line: int
+    # Whitespace came right before this token. Lets the parser tell a call
+    # with a negative argument (`f -1`) from a subtraction (`f - 1`, `f-1`).
+    space_before: bool = False
 
 
 def tokenize(source: str) -> list[Token]:
@@ -88,10 +91,15 @@ def tokenize(source: str) -> list[Token]:
             tokens.append(Token("DEDENT", None, line_no))
 
         rest = stripped
+        space = False
         while rest:
             if rest.startswith(COMMENT):
                 break
             rest = read_token(rest, line_no, tokens)
+            tokens[-1].space_before = space
+            trimmed = rest.lstrip()
+            space = len(trimmed) != len(rest)
+            rest = trimmed
 
         tokens.append(Token("NEWLINE", None, line_no))
 
@@ -109,11 +117,12 @@ def tokenize(source: str) -> list[Token]:
 
 
 def read_token(rest: str, line_no: int, tokens: list[Token]) -> str:
-    """Read one token from the front of `rest` and return what's left."""
+    """Read one token from the front of `rest` and return what's left
+    (leading whitespace included; `tokenize` trims it and records it)."""
     match = TEXT.match(rest)
     if match:
         tokens.append(Token("TEXT", _unescape(match.group(1)), line_no))
-        return rest[match.end() :].lstrip()
+        return rest[match.end() :]
 
     match = NUMBER.match(rest)
     if match:
@@ -124,12 +133,12 @@ def read_token(rest: str, line_no: int, tokens: list[Token]) -> str:
                 line_no,
             )
         tokens.append(Token("NUMBER", match.group(0), line_no))
-        return after.lstrip()
+        return after
 
     for symbol in ORDERED_SYMBOLS:
         if rest.startswith(symbol):
             tokens.append(Token(SYMBOLS[symbol], symbol, line_no))
-            return rest[len(symbol) :].lstrip()
+            return rest[len(symbol) :]
 
     match = IDENTIFIER.match(rest)
     if match:
@@ -137,6 +146,6 @@ def read_token(rest: str, line_no: int, tokens: list[Token]) -> str:
         # Literal keywords carry their Python value; everything else its text.
         value = LITERALS.get(word, word)
         tokens.append(Token(KEYWORDS.get(word, "IDENTIFIER"), value, line_no))
-        return rest[match.end() :].lstrip()
+        return rest[match.end() :]
 
     raise LynxSyntaxError(f"unexpected character near {rest!r}", line_no)

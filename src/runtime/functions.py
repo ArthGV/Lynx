@@ -7,10 +7,17 @@ class FunctionValue:
     """A user-defined function: parameter names, body, and the scope it was
     declared in (used as the parent of the call's fresh scope)."""
 
-    def __init__(self, params: list[str], body: list[Any], env: Environment) -> None:
+    def __init__(self, name: str, params: list[str], body: list[Any], env: Environment) -> None:
+        self.name = name
         self.params = params
         self.body = body
         self.env = env
+
+    def type_name(self) -> str:
+        return "Function"
+
+    def __repr__(self) -> str:
+        return f"LynxFunction: {self.name}"
 
 
 class _Return(Exception):

@@ -89,6 +89,14 @@ class Parser:
             return True
         return token_type in UNARY_METHOD or token_type in EXPRESSION_KEYWORDS
 
+    def _is_negative_argument(self) -> bool:
+        # `f -1`: a `-` with space before and none after, glued to a number,
+        # starts a call argument. `f - 1` and `f-1` stay subtraction.
+        if self.type() != "MINUS" or not self.peek().space_before:
+            return False
+        following = self.tokens[self.current + 1] if self.current + 1 < len(self.tokens) else None
+        return following is not None and following.type == "NUMBER" and not following.space_before
+
     def _starts_comma_item(self, token_type: str) -> bool:
         # What a comma-run element may begin with: any expression, plus MINUS
         # for a negative literal. Used to spot a trailing comma, which closes

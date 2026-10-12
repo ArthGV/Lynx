@@ -145,7 +145,7 @@ class ExpressionMixin(Parser):
                     return Identifier(name, token.line)
                 if self.type() in ("APPEND", "PREPEND"):
                     return self.parse_append(name, token.line)
-                if self._starts_expression(self.type()):
+                if self._starts_expression(self.type()) or self._is_negative_argument():
                     return self.parse_chain(self.parse_call(name, token.line))
                 return Identifier(name, token.line)
         raise LynxSyntaxError(f"unexpected {self.type()}", token.line if token else None)

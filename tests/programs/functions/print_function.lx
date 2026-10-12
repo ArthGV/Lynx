@@ -1,0 +1,4 @@
+// printing a function by name shows it; it is never a value
+f: x
+  >>> x
+>> f
