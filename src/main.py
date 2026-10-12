@@ -7,7 +7,7 @@ from src import __version__
 from src.core.interpreter import _Return, _Skip, _Stop, execute
 from src.core.lexer import tokenize
 from src.core.parser import Parser
-from src.errors.errors import LynxError, LynxInputError
+from src.errors.errors import LynxError, LynxInputError, LynxInterpreterError
 from src.runtime.environment import Environment
 
 
@@ -21,6 +21,10 @@ def run(source: str, env: Environment | None = None) -> None:
         raise LynxInputError("return outside of a function")
     except (_Stop, _Skip):
         raise LynxInputError("stop/skip outside of a loop")
+    except LynxError:
+        raise
+    except Exception as error:
+        raise LynxInterpreterError(f"{type(error).__name__}: {error}") from error
 
 
 def main() -> None:
@@ -33,8 +37,12 @@ def main() -> None:
     if not args.file.endswith(".lx"):
         print(f"warning: {args.file} does not end in .lx", file=sys.stderr)
 
-    with open(args.file) as f:
-        source = f.read()
+    try:
+        with open(args.file) as f:
+            source = f.read()
+    except OSError as error:
+        print(f"cannot read '{args.file}': {error.strerror}", file=sys.stderr)
+        sys.exit(1)
 
     try:
         run(source)

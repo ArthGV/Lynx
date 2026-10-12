@@ -1,0 +1,1 @@
+InterpreterError on line 1: ZeroDivisionError: 0.0 cannot be raised to a negative power

@@ -43,6 +43,13 @@ class LynxNotImplemented(LynxError):
     kind = "NotImplemented"
 
 
+class LynxInterpreterError(LynxError):
+    """A Python exception escaped the interpreter: a bug or an edge case not
+    yet converted to a specific lynx error. The original is kept as `__cause__`."""
+
+    kind = "InterpreterError"
+
+
 class LynxTestError(LynxError):
     """A test assertion failure."""
 

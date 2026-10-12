@@ -9,7 +9,7 @@ error to its line.
 from typing import cast
 
 from src.core.grammar import BINARY_METHOD, UNARY_METHOD
-from src.errors.errors import LynxError
+from src.errors.errors import LynxError, LynxInterpreterError
 from src.runtime import operations, values
 
 
@@ -23,6 +23,8 @@ def apply_binary(operator: str, left: values.Type, right: values.Type, line: int
         if error.line is None:
             error.line = line
         raise
+    except Exception as error:
+        raise LynxInterpreterError(f"{type(error).__name__}: {error}", line) from error
 
 
 def apply_unary(operator: str, value: values.Type, line: int | None) -> values.Type:
@@ -35,3 +37,5 @@ def apply_unary(operator: str, value: values.Type, line: int | None) -> values.T
         if error.line is None:
             error.line = line
         raise
+    except Exception as error:
+        raise LynxInterpreterError(f"{type(error).__name__}: {error}", line) from error
