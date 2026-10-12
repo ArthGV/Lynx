@@ -1,0 +1,18 @@
+// a parameter is always local: assigning to it never touches the global
+x: 100
+f: x
+  x: x + 1
+  >>> x
+>> f 1
+>> x
+
+// the parameter is a copy, even for text and arrays
+word: 'abc'
+arr: 1, 2, 3
+g: word, arr
+  word 0: 'Z'
+  arr 0: 99
+  >>> word
+>> g word, arr
+>> word
+>> arr

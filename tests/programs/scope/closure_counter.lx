@@ -1,0 +1,12 @@
+// a function defined inside a function updates the enclosing function's local
+outer: start
+  tally: start
+  step: x
+    tally: tally + x
+  step 1
+  step 10
+  >>> tally
+>> outer 100
+// each call of outer has its own tally
+>> outer 0
+>> outer 5

@@ -1,0 +1,11 @@
+// within one call, the first assignment decides which variable is meant
+f: n
+  v: n
+  v: v + 1
+  >>> v
+>> f 1
+>> f 2
+// a global v created later is updated by the next call
+v: 0
+>> f 5
+>> v

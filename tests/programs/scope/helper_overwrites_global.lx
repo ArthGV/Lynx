@@ -1,0 +1,19 @@
+// the known cost of implicit updates: a helper's "temporary" name that also
+// exists globally is the global. Parameters and loop variables stay local.
+total: 'precious global'
+sum_list: items
+  total: 0
+  loop item: items
+    total: total + item
+  >>> total
+>> sum_list (1, 2, 3)
+>> total
+
+// the safe way: make the temporary a parameter, or pick another name
+total: 'precious again'
+safe_sum: items, acc
+  loop item: items
+    acc: acc + item
+  >>> acc
+>> safe_sum (1, 2, 3), 0
+>> total

@@ -1,0 +1,11 @@
+// locals are fresh for every call, even in recursion
+calls: 0
+down: n
+  calls: calls + 1
+  mine: n
+  if n > 0
+    down n - 1
+  >>> mine
+>> down 3
+>> calls
+// `mine` was local to each call and never leaked

@@ -1,0 +1,28 @@
+// plain assignment inside a function updates an existing outer variable
+n: 0
+bump: x
+  n: n + 1
+bump 1
+bump 1
+>> n
+
+// every simple type
+label: 'a'
+flag: false
+arr: 1, 2
+change: x
+  label: label + 'b'
+  flag: true
+  arr: 9, 8, 7
+change 0
+>> label
+>> flag
+>> arr
+
+// the function's return value is unaffected
+total: 10
+add: x
+  total: total + x
+  >>> total
+>> add 5
+>> total

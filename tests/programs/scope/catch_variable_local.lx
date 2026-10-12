@@ -1,0 +1,11 @@
+// the catch variable is local; other names assigned in catch update globals
+msg: 'global msg'
+status: 'ok'
+risky: x
+  try
+    error 'boom'
+  catch msg
+    status: 'failed: ' + msg
+risky 1
+>> msg
+>> status

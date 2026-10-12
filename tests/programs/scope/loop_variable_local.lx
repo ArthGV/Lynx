@@ -1,0 +1,12 @@
+// at top level a loop variable is a global; inside a function it is local
+i: 'untouched'
+f: n
+  loop i: 1__n
+    skip
+  >>> i
+>> f 3
+>> i
+
+loop i: 1__3
+  skip
+>> i

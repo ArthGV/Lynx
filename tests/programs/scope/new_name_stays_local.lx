@@ -1,0 +1,5 @@
+// a name that exists nowhere outside is created locally and dies with the call
+make: x
+  fresh: x * 2
+  >>> fresh
+>> make 4

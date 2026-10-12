@@ -1,0 +1,7 @@
+// del finds the name by walking outward, like reads and assignments do
+temp: 5
+clear: x
+  del temp
+clear 0
+>> 'deleted'
+>> temp

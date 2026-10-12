@@ -1,0 +1,9 @@
+// defining a function inside a function declares it locally
+greet: x
+  >>> 'outer'
+wrap: x
+  greet: y
+    >>> 'inner'
+  >>> greet 0
+>> wrap 0
+>> greet 0

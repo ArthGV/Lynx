@@ -1,0 +1,9 @@
+// assignment inside a function still stores an independent copy
+a: 1, 2, 3
+b: 0
+snapshot: x
+  b: a
+snapshot 0
+a 0: 99
+>> a
+>> b

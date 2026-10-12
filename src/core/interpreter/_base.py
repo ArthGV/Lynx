@@ -139,21 +139,21 @@ def execute(node: Any, env: Environment) -> None:
             print(_printable(value, env))
 
         case Assignment(name, value):
-            env.set(name, evaluate(value, env).copy())
+            env.assign(name, evaluate(value, env).copy())
 
         case MultiAssignment(names, value, line):
             val = evaluate(value, env)
             # Simple types (Number, Text, Boolean, Void): assign same value to all
             if isinstance(val, (values.Number, values.Text, values.Boolean, values.Void)):
                 for name in names:
-                    env.set(name, val.copy())
+                    env.assign(name, val.copy())
             else:
                 # Complex types (Array, Map, Table, Graph): iterate and unpack
                 items = val.iterate()
                 if len(items) != len(names):
                     raise LynxError(f"expected {len(names)} values from {val.type_name()}, got {len(items)}", line)
                 for name, item in zip(names, items):
-                    env.set(name, item.copy())
+                    env.assign(name, item.copy())
 
         case SetItem(base, steps, value, line):
             _statements.assign_item(base, steps, value, line, env)

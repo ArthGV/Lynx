@@ -1,0 +1,5 @@
+// a name first assigned inside a function is not visible after the call
+make: x
+  fresh: x * 2
+make 4
+>> fresh

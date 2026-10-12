@@ -1,0 +1,9 @@
+// whether `g: ...` is local or global depends on whether g exists at call time
+f: x
+  g: x
+  >>> g
+>> f 1
+// g was local above; now a global g exists, so the same function updates it
+g: 'global'
+>> f 2
+>> g

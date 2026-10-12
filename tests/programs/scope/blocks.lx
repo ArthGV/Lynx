@@ -1,0 +1,15 @@
+// if, loop and try bodies create no scope: assignments reach the globals
+total: 0
+log: ''
+f: n
+  loop i: 1__n
+    total: total + i
+    if i = 2
+      log: log + 'two;'
+  try
+    error 'e'
+  catch
+    log: log + 'caught;'
+f 3
+>> total
+>> log

@@ -1,0 +1,4 @@
+// `x: x + 1` reads first, so with no x anywhere it is a NameError
+f: n
+  x: x + 1
+f 1

@@ -24,6 +24,19 @@ class Environment:
         raise LynxNameError(f"'{name}' is not defined", line)
 
     def set(self, name: str, value: Any) -> None:
+        # Declare `name` in *this* scope, shadowing any outer one: function
+        # parameters, loop variables, the catch variable, function definitions.
+        self.values[name] = value
+
+    def assign(self, name: str, value: Any) -> None:
+        # Plain assignment: update the nearest scope that already holds `name`,
+        # else create it here. Iterative so deep scope chains can't overflow.
+        scope: Environment | None = self
+        while scope is not None:
+            if name in scope.values:
+                scope.values[name] = value
+                return
+            scope = scope.parent
         self.values[name] = value
 
     def delete(self, name: str, line: int | None = None) -> None:

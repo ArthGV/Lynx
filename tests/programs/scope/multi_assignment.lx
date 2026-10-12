@@ -1,0 +1,12 @@
+// `a, b: ...` follows the same rule, per name
+a: 'old a'
+update: x
+  a, b: x
+  >>> b
+>> update 'new'
+>> a
+
+pair: x
+  c, d: x, x + 1
+  >>> c + d
+>> pair 5

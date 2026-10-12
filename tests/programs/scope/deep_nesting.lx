@@ -1,0 +1,17 @@
+// three levels: each assignment updates the nearest enclosing binding
+a: 'global a'
+level1: x
+  b: 'level1 b'
+  level2: y
+    c: 'level2 c'
+    level3: z
+      a: a + '+3'
+      b: b + '+3'
+      c: c + '+3'
+      d: 'level3 d'
+    level3 0
+    >>> c
+  r: level2 0
+  >>> b + ' / ' + r
+>> level1 0
+>> a
