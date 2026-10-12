@@ -1,0 +1,18 @@
+//a map iterates over [key, value] pairs, which a group unpacks
+m: { 'x': 1; 'y': 2; 3: 'three' }
+loop (k, v): m
+ >> k
+ >> v
+>> '--'
+
+//index plus group
+loop i, (k, v): m
+ >> i
+ >> k
+ >> v
+>> '--'
+
+//the key and value keep their own types
+loop (k, v): m
+ >> type k
+ >> type v

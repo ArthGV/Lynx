@@ -1,0 +1,52 @@
+//swap: the right side is evaluated before anything is bound
+a: 1
+b: 2
+a, b: b, a
+>> a
+>> b
+
+//the same name twice: the last one wins
+c, c: 1, 2
+>> c
+
+//rebinding an existing name can change its type
+d: 'text'
+d, e: 1, 2
+>> type d
+
+//a function call on the right side
+f: x
+ >>> x, x + 1
+g, h: f 5
+>> g
+>> h
+
+//a function with several inputs is still a function, not an assignment
+add: x, y
+ >>> x + y
+>> add 1, 2
+
+//inside a function
+swap: x, y
+ p, q: y, x
+ >>> p, q
+r, s: swap 1, 2
+>> r
+>> s
+
+//inside an if
+if true
+ i, j: 1, 2
+>> i
+>> j
+
+//inside a loop, rebound on every iteration
+loop n: 2
+ u, w: n, n * 2
+ >> u + w
+
+//a value from one assignment feeds the next
+k, l: 1, 2
+m, o: l, k + l
+>> m
+>> o

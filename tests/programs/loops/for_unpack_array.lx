@@ -1,0 +1,38 @@
+//a group of names unpacks each element
+loop (a, b): (1, 2), (3, 4)
+ >> a
+ >> b
+>> '--'
+
+//groups can be any width
+loop (a, b, c): (1, 2, 3), (4, 5, 6)
+ >> a + b + c
+>> '--'
+
+//index first, then a group
+loop i, (a, b): (1, 2), (3, 4)
+ >> i
+ >> a + b
+>> '--'
+
+//stop and skip work as usual
+loop (a, b): (1, 2), (3, 4), (5, 6)
+ skip a = 3
+ >> a
+ stop b = 6
+>> '--'
+
+//nested arrays held in a variable
+rows: (1, 'one'), (2, 'two')
+loop (n, name): rows
+ >> name
+ >> n
+
+//unpacking inside a function
+pairs: (1, 2), (3, 4)
+total: items
+ acc: 0
+ loop (a, b): items
+  acc: acc + a + b
+ >>> acc
+>> total pairs

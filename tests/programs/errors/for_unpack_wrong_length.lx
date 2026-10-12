@@ -1,0 +1,4 @@
+//the group must match the element length
+rows: (1, 2, 3), (4, 5, 6)
+loop (a, b): rows
+ >> a

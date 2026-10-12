@@ -1,0 +1,2 @@
+//a trailing comma in the names is not allowed
+a, b,: 2

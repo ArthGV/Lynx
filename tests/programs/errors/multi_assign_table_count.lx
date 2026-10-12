@@ -1,0 +1,3 @@
+//a table unpacks one name per row
+t: ['id': 1, 2, 3]
+a, b: t
