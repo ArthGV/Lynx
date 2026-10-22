@@ -10,7 +10,7 @@ labelled with a scope name (`keyword.control`, `constant.numeric`, …). The
 theme maps scopes to colours, so the extension never picks a colour itself —
 it only says what each piece of text *is*.
 
-Two of the three files here are generated from `src/core/grammar.py`, the
+Two of the three files here are generated from `lynx/core/grammar.py`, the
 language's single source of truth:
 
 | file | what it is |

@@ -24,8 +24,8 @@ from pathlib import Path
 
 import pytest
 
-from src.errors.errors import LynxError
-from src.main import run
+from lynx.errors.errors import LynxError
+from lynx.main import run
 
 
 def run_lx(source: str) -> str:

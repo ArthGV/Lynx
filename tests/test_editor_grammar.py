@@ -25,7 +25,7 @@ from generate import (  # noqa: E402
     build_grammar,
 )
 
-from src.core.grammar import KEYWORDS, SYMBOLS  # noqa: E402
+from lynx.core.grammar import KEYWORDS, SYMBOLS  # noqa: E402
 
 
 @pytest.mark.parametrize(

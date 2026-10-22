@@ -16,8 +16,8 @@ from pathlib import Path
 
 import pytest
 
-from src.errors.errors import LynxError
-from src.main import run
+from lynx.errors.errors import LynxError
+from lynx.main import run
 
 PROGRAMS = sorted(Path(__file__).parent.glob("programs/**/*.lx"))
 

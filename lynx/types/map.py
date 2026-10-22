@@ -1,0 +1,182 @@
+"""The Map type: a mutable collection of key→value pairs."""
+
+from __future__ import annotations
+
+from typing import Any
+
+from lynx.errors.errors import LynxTypeError
+from lynx.types.array import Array
+from lynx.types.base_type import ComplexType, Type
+from lynx.types.simple_type import Boolean, Number, Text, Void
+from lynx.utils.keys import cells_equal, map_key, value_from_key
+from lynx.utils.text import compare_raw, edit_distance_sets
+
+
+class Map(ComplexType):
+    """A mutable collection of key→value pairs whose keys are simple types.
+
+    Literal form is `{ 'a': 1; 'b': 2 }` — `;` separates entries so values can
+    be arrays without colliding with the `,` of an array literal. Access reuses
+    the call machinery: `my_map 'a'`, chained for nested maps.
+    """
+
+    rank = 5
+    conversion = "map"
+    default_value = {}
+
+    def __init__(self, entries: list[tuple[Type, Type]] | None = None, line: int | None = None) -> None:
+        self.value: dict[tuple[str, Any], Type] = {}
+        if entries:
+            seen: set[tuple[str, Any]] = set()
+            duplicates: list[Any] = []
+            for key, value in entries:
+                raw = map_key(key)
+                if raw in seen and raw not in duplicates:
+                    duplicates.append(raw[1])
+                seen.add(raw)
+                self.value[raw] = value
+            if duplicates:
+                rendered = ", ".join(str(dup) for dup in duplicates)
+                raise LynxTypeError(f"map keys must be unique, got duplicates {rendered}", line)
+
+    def set_item(self, key: Type, value: Type) -> None:
+        self.value[map_key(key)] = value
+
+    def remove_item(self, key: Type) -> None:
+        # Deleting a key that isn't there is a silent no-op, matching the
+        # lenient lookup of get_item.
+        raw = map_key(key)
+        if raw in self.value:
+            del self.value[raw]
+
+    def get_item(self, key: Type) -> Type:
+        return self.value.get(map_key(key), Void())
+
+    def __repr__(self) -> str:
+        if not self.value:
+            return "{}"
+        parts = []
+        for raw, value in self.value.items():
+            parts.append(f"{raw[1]}: {value}")
+        return "{ " + "; ".join(parts) + " }"
+
+    def type_name(self) -> str:
+        return "Map"
+
+    def copy(self) -> Map:
+        duplicate = Map()
+        duplicate.value = {raw: item.copy() for raw, item in self.value.items()}
+        return duplicate
+
+    def length(self) -> Number:
+        return Number(len(self.value))
+
+    def first(self) -> Type:
+        if self.value:
+            return value_from_key(next(iter(self.value)))
+        return Void()
+
+    def last(self) -> Type:
+        if self.value:
+            return value_from_key(list(self.value)[-1])
+        return Void()
+
+    def middle(self) -> Type:
+        if not self.value:
+            return Void()
+        keys = list(self.value)
+        return value_from_key(keys[len(keys) // 2])
+
+    def compare(self, other: Map) -> int:
+        if len(self.value) != len(other.value):
+            return compare_raw(len(self.value), len(other.value))
+        for (rk, rv), (ok, ov) in zip(self.value.items(), other.value.items()):
+            if rk != ok:
+                return compare_raw(repr(rk), repr(ok))
+            c = rv.compare(ov) if type(rv) is type(ov) else compare_raw(rv.rank, ov.rank)
+            if c != 0:
+                return c
+        return 0
+
+    def almost(self, other: Map) -> Boolean:
+        return Boolean(edit_distance_sets(set(self.value.keys()), set(other.value.keys())) <= 1)
+
+    def equals(self, other: Map) -> Boolean:
+        if len(self.value) != len(other.value):
+            return Boolean(False)
+        for rk, rv in self.value.items():
+            if rk not in other.value:
+                return Boolean(False)
+            ov = other.value[rk]
+            if not cells_equal(rv, ov):
+                return Boolean(False)
+        return Boolean(True)
+
+    def number(self) -> Number:
+        return Number(len(self.value))
+
+    def text(self) -> Text:
+        return Text(self.__repr__())
+
+    def boolean(self) -> Boolean:
+        return Boolean(len(self.value) > 0)
+
+    def void(self) -> Void:
+        return Void()
+
+    def keys(self) -> list[Type]:
+        """The map's keys in insertion order, rebuilt into values."""
+        return [value_from_key(raw) for raw in self.value]
+
+    def contains(self, item: Type) -> bool:
+        # `in` asks about keys, even though iteration yields [key, value] pairs.
+        return map_key(item) in self.value
+
+    def iterate(self) -> list[Type]:
+        return [Array([k, self.get_item(k)]) for k in self.keys()]
+
+    def count(self) -> Number:
+        return Number(len(self.value))
+
+    def distinct(self) -> Map:
+        return self
+
+    # --- not implemented yet ---
+    def add(self, other: Map) -> Type:
+        self.todo("add")
+
+    def subtract(self, other: Map) -> Type:
+        self.todo("subtract")
+
+    def multiply(self, other: Map) -> Type:
+        self.todo("multiply")
+
+    def divide(self, other: Map) -> Type:
+        self.todo("divide")
+
+    def power(self, other: Map) -> Type:
+        self.todo("power")
+
+    def root(self, other: Map) -> Type:
+        self.todo("root")
+
+    def xor(self, other: Map) -> Type:
+        self.todo("xor")
+
+    def not_(self) -> Type:
+        self.todo("not_")
+
+    def sum(self) -> Type:
+        self.todo("sum")
+
+    def avg(self) -> Type:
+        self.todo("avg")
+
+    def min(self) -> Type:
+        self.todo("min")
+
+    def max(self) -> Type:
+        self.todo("max")
+
+    def join(self, other: Map) -> Type:
+        self.todo("join")

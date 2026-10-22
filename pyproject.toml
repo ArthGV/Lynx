@@ -11,13 +11,13 @@ requires-python = ">=3.10"
 dev = ["pytest", "mypy", "ruff"]
 
 [project.scripts]
-lynx = "src.main:main"
+lynx = "lynx.main:main"
 
-[tool.setuptools]
-packages = ["src"]
+[tool.setuptools.packages.find]
+include = ["lynx*"]
 
 [tool.setuptools.dynamic]
-version = { attr = "src.__version__" }
+version = { attr = "lynx.__version__" }
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
@@ -43,11 +43,11 @@ warn_return_any = true
 
 [[tool.mypy.overrides]]
 module = [
-    "src.core.nodes",
-    "src.core.lexer",
-    "src.core.interpreter._base",
-    "src.runtime.environment",
-    "src.errors.errors",
+    "lynx.core.nodes",
+    "lynx.core.lexer",
+    "lynx.core.interpreter._base",
+    "lynx.runtime.environment",
+    "lynx.errors.errors",
     "editors.vscode.generate",
     "tests.*",
 ]
@@ -57,6 +57,6 @@ disallow_any_explicit = false
 # statement rule calling an expression rule. `peek()` is also nullable, so
 # `.peek().line` after a successful `match()`/`type()` check can't be narrowed.
 [[tool.mypy.overrides]]
-module = ["src.core.parser.*"]
+module = ["lynx.core.parser.*"]
 disallow_any_explicit = false
 disable_error_code = ["attr-defined", "union-attr"]

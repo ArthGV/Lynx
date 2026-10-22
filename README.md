@@ -132,7 +132,7 @@ lynx program.lx
 ```
 
 Source files use the `.lx` extension. `lynx` warns if a file doesn't end in `.lx`, but runs it
-anyway. Without installing, `python -m src.main program.lx` does the same thing.
+anyway. Without installing, `python -m lynx.main program.lx` does the same thing.
 
 ## A tour of the language
 
@@ -339,11 +339,11 @@ A few things that make the codebase easy to work with:
   file of its exact stdout. Add a case by dropping in a new pair under the fitting subject folder
   — no code changes. Full suite: `python -m pytest`.
 - **One source of truth.** The whole surface syntax — keywords, symbols, operator precedence —
-  lives in `src/core/grammar.py`. Change nothing else by hand.
+  lives in `lynx/core/grammar.py`. Change nothing else by hand.
 - **Everything works with everything.** A new type must carry a stub for every interface method,
   even unimplemented ones. Covered in the layout notes below.
 
-If you are unsure where a feature starts, the grammar table in `src/core/grammar.py` and the
+If you are unsure where a feature starts, the grammar table in `lynx/core/grammar.py` and the
 golden test folders answer most questions.
 
 ## Project layout
@@ -353,15 +353,15 @@ source text → tokenize()  → Parser(tokens).parse()  → execute()/evaluate()
                lexer.py      core/parser/                core/interpreter/
 ```
 
-- `src/core/grammar.py` — the single source of truth: keywords, symbols, literals, and operator
+- `lynx/core/grammar.py` — the single source of truth: keywords, symbols, literals, and operator
   precedence. The lexer, parser, and error messages all follow from it.
-- `src/core/parser/` and `src/core/interpreter/` — syntax and semantics, split into statements and
+- `lynx/core/parser/` and `lynx/core/interpreter/` — syntax and semantics, split into statements and
   expressions.
-- `src/types/` — the value types: `Number`, `Text`, `Boolean`, `Void`, plus `Array` (`array.py`),
+- `lynx/types/` — the value types: `Number`, `Text`, `Boolean`, `Void`, plus `Array` (`array.py`),
   `Map` (`map.py`), and `Table` (`table.py`).
-- `src/runtime/` — how pairs of values resolve (including cross-type operations) and function
+- `lynx/runtime/` — how pairs of values resolve (including cross-type operations) and function
   values.
-- `src/core/files.py` — `read`/`write` for `.txt`, `.csv`, and `.yaml`.
+- `lynx/core/files.py` — `read`/`write` for `.txt`, `.csv`, and `.yaml`.
 - `editors/vscode/` — syntax highlighting, generated from `grammar.py`.
 
 ## License

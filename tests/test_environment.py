@@ -7,8 +7,8 @@ the nearest scope that already holds the name, else creates it locally.
 
 import pytest
 
-from src.errors.errors import LynxNameError
-from src.runtime.environment import Environment
+from lynx.errors.errors import LynxNameError
+from lynx.runtime.environment import Environment
 
 
 def chain(depth):

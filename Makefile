@@ -1,14 +1,14 @@
 .PHONY: lint fmt typecheck test check
 
 lint:
-	ruff check src/ tests/
+	ruff check lynx/ tests/
 
 fmt:
-	ruff format src/ tests/
-	ruff check --fix src/ tests/
+	ruff format lynx/ tests/
+	ruff check --fix lynx/ tests/
 
 typecheck:
-	mypy --strict src/
+	mypy --strict lynx/
 
 test:
 	python -m pytest

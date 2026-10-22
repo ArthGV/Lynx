@@ -14,8 +14,8 @@ jobs:
         with:
           python-version: "3.13"
       - run: pip install -e ".[dev]"
-      - run: ruff check src/ tests/
-      - run: ruff format --check src/ tests/
+      - run: ruff check lynx/ tests/
+      - run: ruff format --check lynx/ tests/
 
   typecheck:
     runs-on: ubuntu-latest
@@ -25,7 +25,7 @@ jobs:
         with:
           python-version: "3.13"
       - run: pip install -e ".[dev]"
-      - run: mypy --strict src/
+      - run: mypy --strict lynx/
 
   test:
     runs-on: ubuntu-latest
@@ -39,3 +39,20 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - run: pip install -e ".[dev]"
       - run: python -m pytest
+
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install build
+      - run: python -m build --wheel
+      # Install the wheel (not an editable checkout) in a clean venv and run it
+      # from outside the repo, so a missing package can't be masked.
+      - run: python -m venv "$RUNNER_TEMP/venv" && "$RUNNER_TEMP/venv/bin/pip" install dist/*.whl
+      - run: |
+          cd "$RUNNER_TEMP"
+          printf ">> 1 + 1\n" > hello.lx
+          test "$("$RUNNER_TEMP/venv/bin/lynx" hello.lx)" = "2"

@@ -5,8 +5,8 @@ are not reachable from `.lx` programs — there is no keyword for them. These ar
 tested here directly against the values module.
 """
 
-from src.errors.errors import LynxError, LynxNotImplemented, LynxTypeError
-from src.runtime.values import Array, Boolean, Graph, Map, Number, Table, Text, Void
+from lynx.errors.errors import LynxError, LynxNotImplemented, LynxTypeError
+from lynx.runtime.values import Array, Boolean, Graph, Map, Number, Table, Text, Void
 
 
 def arr(*items):

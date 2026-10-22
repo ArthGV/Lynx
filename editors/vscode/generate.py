@@ -26,7 +26,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from src.core.grammar import (  # noqa: E402
+from lynx.core.grammar import (  # noqa: E402
     BLOCK_COMMENT,
     COMMENT,
     EXPRESSION_KEYWORDS,
@@ -35,7 +35,7 @@ from src.core.grammar import (  # noqa: E402
     SYMBOLS,
     UNARY_METHOD,
 )
-from src.core.lexer import IDENTIFIER, NUMBER, TEXT  # noqa: E402
+from lynx.core.lexer import IDENTIFIER, NUMBER, TEXT  # noqa: E402
 
 HERE = Path(__file__).parent
 GRAMMAR_OUT = HERE / "syntaxes" / "lynx.tmLanguage.json"
