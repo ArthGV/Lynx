@@ -1,0 +1,5 @@
+id,note,ratio
+1,"first line
+second line",inf
+2,"say ""hi"", ok",0.5
+3,,nan

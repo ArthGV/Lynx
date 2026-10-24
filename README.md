@@ -290,14 +290,25 @@ r: pair 7, 9
 ```
 
 **File I/O** speaks the formats data lives in: `read` and `write` handle `.txt`, `.csv`, and
-`.yaml`, with typed-cell inference (numbers stay numbers, text stays text, nothing is lost in a
-round-trip).
+`.yaml`, with typed-cell inference. What lynx writes it reads back identically, whatever the text
+holds (commas, quotes, line breaks, `#`, `: `), and anything a format cannot hold is an error
+rather than a silent change.
 
 ```lynx
 t: read 'sales.csv'      // a CSV becomes a table, headers and all
 >> sum t 'amount'
-write 'report.yaml', t
+write t, 'report.csv'
 ```
+
+- **CSV:** quoted cells are text; bare cells are `void`, `true`/`false`, a number, or text. One line
+  reads as an array, more as a table. Cells are never trimmed, and quoted cells may span lines.
+- **YAML:** block maps and lists, quoted and plain scalars, comments. Flow collections with
+  content, `|`/`>` block scalars, multi-line values, anchors and tags are errors that name the
+  line, never skipped.
+- **Numbers** are read only when printing them gives the same text, so `007` and `1e3` stay
+  text. `inf` and `nan` are plain text: lynx has no infinity or NaN.
+
+See `docs/adr/0004-file-formats.md` for the full rules.
 
 **Cross-type operations** follow the everything-works-with-everything rule rather than raising.
 Booleans add as *or* and multiply as *and*, so `true + false` is `true` and `true * false` is

@@ -8,6 +8,8 @@ interface lives in `base_type.py`.
 
 from __future__ import annotations
 
+import math
+
 from lynx.core.grammar import SPELLING
 from lynx.types.base_type import Type
 from lynx.utils.text import compare_raw, edit_distance
@@ -144,9 +146,13 @@ class Text(SimpleType):
 
     def number(self) -> Number:
         try:
-            return Number(self.value)
+            number = Number(self.value)
         except ValueError:
             return Number(len(self.value))
+        # lynx has no infinity or NaN: `inf`, `nan` and `1e999` are plain text.
+        if not math.isfinite(number.value):
+            return Number(len(self.value))
+        return number
 
     def text(self) -> Text:
         return self

@@ -1,0 +1,22 @@
+---
+# a config as people actually write them
+name: "My App"
+url: http://example.com:8080/path?a=1&b=2#top
+description: Hello! A & B   # trailing comment
+enabled: True
+retries: 3
+owner: ~
+tags:
+- web
+- api
+servers:
+  - host: a.example.com
+    port: 80
+  - host: b.example.com
+    port: 8080
+matrix:
+  - - 1
+    - 2
+  - - 3
+quote: 'it''s'
+...

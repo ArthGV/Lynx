@@ -25,6 +25,7 @@ from lynx.types.array import Array
 from lynx.types.base_type import ComplexType, Type
 from lynx.types.simple_type import Boolean, Number, Text, Void
 from lynx.types.table import Table
+from lynx.utils.graph_cells import decode_value_cell
 from lynx.utils.keys import cells_equal
 from lynx.utils.text import compare_raw, edit_distance_sets
 
@@ -72,7 +73,7 @@ class Graph(ComplexType):
                 raise LynxError(f"unknown graph row kind '{kind}'", line)
             if kind.value == "node":
                 node_id = _text_cell(table.columns["from"][i], "node", line)
-                value = self._value_cell(table.columns["value"][i])
+                value = decode_value_cell(table.columns["value"][i])
                 if node_id in self.nodes:
                     raise LynxTypeError(f"node '{node_id}' is defined twice", line)
                 self.nodes[node_id] = value
@@ -81,19 +82,9 @@ class Graph(ComplexType):
                 target = _text_cell(table.columns["to"][i], "edge", line)
                 self.nodes.setdefault(source, Void())
                 self.nodes.setdefault(target, Void())
-                self.edges[(source, target)] = self._value_cell(table.columns["value"][i])
+                self.edges[(source, target)] = decode_value_cell(table.columns["value"][i])
             else:
                 raise LynxError(f"unknown graph row kind '{kind.value}'", line)
-
-    @staticmethod
-    def _value_cell(value: Type) -> Type:
-        # CSV reading types a `(1, 2, 3)` value cell as Text (it has commas
-        # and gets quoted); a parenthesized comma-run is an array round-trip.
-        if isinstance(value, Text):
-            parsed = _parse_array_cell(value.value)
-            if parsed is not None:
-                return parsed
-        return value
 
     # --- basic reads --------------------------------------------------------
 
@@ -348,23 +339,3 @@ def _inline(value: Type) -> str | None:
     if isinstance(value, Array):
         return ", ".join(_inline(item) or "void" for item in value.value)
     return str(value)
-
-
-def _parse_array_cell(text: str) -> Type | None:
-    """Turn a `(1, 2, 3)` value cell back into an Array, or None if the text
-    is not a balanced parenthesized comma-run (e.g. plain text `(oops`)."""
-    if not (text.startswith("(") and text.endswith(")") and len(text) > 2):
-        return None
-    parts = text[1:-1].split(",")
-    items: list[Type] = []
-    for part in parts:
-        items.append(_infer_array_item(part.strip()))
-    return Array(items)
-
-
-def _infer_array_item(text: str) -> Type:
-    from lynx.core.files import _infer_cell
-
-    if text.startswith("'") and text.endswith("'"):
-        return Text(text[1:-1])
-    return _infer_cell(text, False)

@@ -1,0 +1,18 @@
+// a YAML file written the way people write them
+m: read 'tests/programs/io/data/real_world.yaml'
+>> m 'name'
+>> m 'url'
+>> m 'description'
+>> m 'enabled'
+>> type (m 'enabled')
+>> (m 'retries') + 1
+>> type (m 'owner')
+// a list sitting at the same indent as its key
+>> m 'tags'
+>> m 'servers' 1 'host'
+>> m 'servers' 0 'port'
+// a list inside a list
+>> m 'matrix'
+>> m 'matrix' 0 1
+>> m 'quote'
+>> len m

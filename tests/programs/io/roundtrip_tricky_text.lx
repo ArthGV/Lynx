@@ -1,0 +1,35 @@
+// text that tends to break file parsers survives csv, yaml and txt unchanged
+tricky: ('a,b', 'say "hi"', 'it\'s', 'line1\nline2', '  padded  ', '', 'true', '12', 'nan', 'inf', '(1, 2)', 'x: y', '# not a comment', 'http://x.com/#frag', 'Hello!')
+
+// csv: one row, then one column of a table
+write tricky, 'tests/programs/io/out/tricky.csv'
+back: read 'tests/programs/io/out/tricky.csv'
+>> back = tricky
+>> len back
+
+t: ['text': tricky; 'n': 0__14]
+write t, 'tests/programs/io/out/tricky_table.csv'
+u: read 'tests/programs/io/out/tricky_table.csv'
+>> u = t
+>> len u
+
+// yaml: as values, as keys, inside a list and a nested map
+m: { 'list': tricky; 'a: b': 'it\'s'; '': 'empty key'; 'multi': 'x\ny'; 'nested': { '#': '- dash' } }
+write m, 'tests/programs/io/out/tricky.yaml'
+n: read 'tests/programs/io/out/tricky.yaml'
+>> n = m
+>> n 'list' 3
+>> n 'a: b'
+>> n '' 
+
+// a graph whose values and labels look like arrays
+g: a('(1, 2)') -> b('x,y') : '(3)'
+write g, 'tests/programs/io/out/tricky_graph.csv'
+h: read 'tests/programs/io/out/tricky_graph.csv'
+>> g = h
+>> h 'a'
+>> h 'a' -> 'b'
+
+// txt keeps line breaks exactly
+write 'one\r\ntwo\rthree', 'tests/programs/io/out/lines.txt'
+>> (read 'tests/programs/io/out/lines.txt') = 'one\r\ntwo\rthree'

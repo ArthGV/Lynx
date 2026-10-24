@@ -108,7 +108,7 @@ def test_csv_array_write_bytes_and_roundtrip(tmp_path):
 def test_csv_array_mixed_cells_keep_types(tmp_path):
     p = tmp_path / "mixed.csv"
     run_lx(f"a: (1, 'hello', true, void, '', '42')\nwrite a, '{p}'\n")
-    assert p.read_text() == '1,hello,true,void,,"42"'
+    assert p.read_text() == '1,hello,true,void,"","42"'
     out = run_lx(f"b: read '{p}'\n>> type b 0\n>> type b 1\n>> type b 2\n>> type b 3\n>> type b 4\n>> type b 5\n")
     assert out == "Number\nText\nBoolean\nVoid\nText\nText\n"
 
@@ -123,7 +123,7 @@ def test_csv_cells_quote_when_ambiguous_and_escape(tmp_path):
         ">> b 5\n"
     )
     out = run_lx(src)
-    assert p.read_text() == '"42","true","void",,"hello, world","say ""hi"""'
+    assert p.read_text() == '"42","true","void","","hello, world","say ""hi"""'
     assert out == 'true\nsay "hi"\n'
     assert (
         run_lx(f"b: read '{p}'\n>> type b 0\n>> type b 1\n>> type b 2\n>> type b 3\n>> type b 4\n>> type b 5\n")
@@ -257,12 +257,12 @@ def test_csv_write_empty_table_is_error(tmp_path):
     assert run_err(f"write table, '{p}'") == ("Error on line 1: cannot write a table with no columns to .csv")
 
 
-def test_csv_write_newline_text_is_error(tmp_path):
+def test_csv_text_with_newline_is_quoted_and_roundtrips(tmp_path):
     t = write_file(tmp_path / "multi.txt", "line one\nline two")
     p = tmp_path / "nl.csv"
-    assert run_err(f"a: ((read '{t}'), 'x')\nwrite a, '{p}'") == (
-        "Error on line 2: cannot write a text containing a newline to a .csv"
-    )
+    run_lx(f"a: ((read '{t}'), 'x')\nwrite a, '{p}'")
+    assert p.read_text() == '"line one\nline two",x'
+    assert run_lx(f"b: read '{p}'\n>> len b\n>> (b 0) = (read '{t}')\n") == "2\ntrue\n"
 
 
 def test_csv_text_crosses_formats_via_txt_read(tmp_path):
@@ -554,21 +554,24 @@ def test_yaml_root_sequence_or_scalar_is_error(tmp_path):
 
 
 @pytest.mark.parametrize(
-    "content, token",
+    "content, token, file_line",
     [
-        ("'a': &anchor 1\n", "&"),
-        ("'a': *alias\n", "*"),
-        ("'a': !tag 1\n", "!"),
-        ("'a': |\n  text\n", "|"),
-        ("<<: 'other'\n", "<<"),
-        ("'a': [1, 2]\n", "["),
-        ("'a': {b: 1}\n", "{"),
-        ("'a':\n\t'b': 1\n", "\t"),
+        ("'a': &anchor 1\n", "&", 1),
+        ("'a': *alias\n", "*", 1),
+        ("'a': !tag 1\n", "!", 1),
+        ("'a': |\n  text\n", "|", 1),
+        ("'a': >\n  text\n", ">", 1),
+        ("<<: 'other'\n", "<<", 1),
+        ("'a': [1, 2]\n", "[", 1),
+        ("'a': {b: 1}\n", "{", 1),
+        ("'a':\n\t'b': 1\n", "\t", 2),
     ],
 )
-def test_yaml_unsupported_features_error(tmp_path, content, token):
+def test_yaml_unsupported_features_error(tmp_path, content, token, file_line):
     p = write_file(tmp_path / "f.yaml", content)
-    assert run_err(f">> read '{p}'") == (f"Error on line 1: yaml feature '{token}' is not supported by lynx")
+    assert run_err(f">> read '{p}'") == (
+        f"Error on line 1: yaml feature '{token}' is not supported by lynx (line {file_line})"
+    )
 
 
 def test_yaml_write_nested_table_is_error(tmp_path):
@@ -578,12 +581,12 @@ def test_yaml_write_nested_table_is_error(tmp_path):
     )
 
 
-def test_yaml_write_newline_text_is_error(tmp_path):
+def test_yaml_text_with_newline_is_double_quoted_and_roundtrips(tmp_path):
     t = write_file(tmp_path / "multi.txt", "line one\nline two")
     p = tmp_path / "nl.yaml"
-    assert run_err(f"write {{ 'k': (read '{t}') }}, '{p}'\n") == (
-        "Error on line 1: cannot write a text containing a newline to a .yaml"
-    )
+    run_lx(f"write {{ 'k': (read '{t}') }}, '{p}'\n")
+    assert p.read_text() == "'k': \"line one\\nline two\"\n"
+    assert run_lx(f"m: read '{p}'\n>> (m 'k') = (read '{t}')\n") == "true\n"
 
 
 # ---------------------------------------------------------------------------

@@ -1,0 +1,9 @@
+// CRLF line endings, a quoted newline, quoted quotes, inf and nan as text
+t: read 'tests/programs/io/data/crlf_quoted.csv'
+>> len t
+>> t 'note' 0
+>> t 'note' 1
+>> (t 'note' 2) = ''
+>> t 'ratio'
+>> type (t 'ratio' 0)
+>> type (t 'ratio' 1)
