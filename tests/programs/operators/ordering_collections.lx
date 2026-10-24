@@ -1,0 +1,46 @@
+// bigger is greater; the same size is ordered by content, never by how it was built
+
+// tables: more rows, then more columns, then sorted column names, then cells
+t1: ['b': 1; 'a': 2]
+t2: ['a': 2; 'c': 1]
+>> t1 > t2
+>> t2 > t1
+>> t1 < t2
+>> t1 = t2
+
+a: ['a': 1; 'b': 2]
+b: ['b': 2; 'a': 1]
+>> a = b
+>> a > b
+>> a < b
+
+big: ['a': 1, 2]
+small: ['z': 9]
+>> big > small
+wide: ['a': 1; 'b': 1]
+>> wide > small
+
+// maps ignore insertion order too
+m1: { 'a': 1; 'b': 2 }
+m2: { 'b': 2; 'a': 1 }
+>> m1 = m2
+>> m1 > m2
+>> m1 > { 'z': 9 }
+>> { 'a': 1 } < { 'a': 2 }
+
+// graphs: more nodes, then more edges, then ids, values, edges, labels
+g1: a -> b
+g2: x -> y
+>> g1 = g2
+>> g1 > g2
+>> g1 < g2
+>> g1 >= g2
+>> g1 <= g2
+>> (graph) < g1
+g3: b -> a
+g4: a -> b
+>> g3 = g4
+>> g3 > g4
+g5: a -> b : 'l'
+g6: a -> b : 'm'
+>> g5 < g6

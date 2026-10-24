@@ -27,6 +27,14 @@ def map_key(value: Type) -> tuple[str, Any]:
     return (value.type_name(), repr(value))
 
 
+def compare_cells(a: Type, b: Type) -> int:
+    """Order two values of any types: same type by value, different types by
+    rank. The one cell comparison collections use, so it is written once."""
+    from lynx.utils.text import compare_raw
+
+    return a.compare(b) if type(a) is type(b) else compare_raw(a.rank, b.rank)
+
+
 def cells_equal(a: Type, b: Type) -> bool:
     """True when two table cells hold equal values of the same type."""
     return type(a) is type(b) and a.equals(b).is_true()

@@ -26,7 +26,7 @@ from lynx.types.base_type import ComplexType, Type
 from lynx.types.simple_type import Boolean, Number, Text, Void
 from lynx.types.table import Table
 from lynx.utils.graph_cells import decode_value_cell
-from lynx.utils.keys import cells_equal
+from lynx.utils.keys import cells_equal, compare_cells
 from lynx.utils.text import compare_raw, edit_distance_sets
 
 
@@ -230,10 +230,30 @@ class Graph(ComplexType):
     # --- ordering ------------------------------------------------------------
 
     def compare(self, other: Graph) -> int:
+        # A bigger graph is greater: more nodes, then more edges. Same size:
+        # node ids in sorted order, their values, then edges in sorted order
+        # and their labels. Creation order never matters, so this is 0 exactly
+        # when `equals` is true.
         if len(self.nodes) != len(other.nodes):
             return compare_raw(len(self.nodes), len(other.nodes))
         if len(self.edges) != len(other.edges):
             return compare_raw(len(self.edges), len(other.edges))
+        ids, other_ids = sorted(self.nodes), sorted(other.nodes)
+        for node_id, other_id in zip(ids, other_ids):
+            if node_id != other_id:
+                return compare_raw(node_id, other_id)
+        for node_id in ids:
+            c = compare_cells(self.nodes[node_id], other.nodes[node_id])
+            if c != 0:
+                return c
+        edges, other_edges = sorted(self.edges), sorted(other.edges)
+        for edge, other_edge in zip(edges, other_edges):
+            if edge != other_edge:
+                return compare_raw(edge, other_edge)
+        for edge in edges:
+            c = compare_cells(self.edges[edge], other.edges[edge])
+            if c != 0:
+                return c
         return 0
 
     def equals(self, other: Graph) -> Boolean:

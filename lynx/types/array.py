@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from lynx.types.base_type import ComplexType, Type
 from lynx.types.simple_type import Boolean, Number, Text, Void
-from lynx.utils.keys import cells_equal
+from lynx.utils.keys import cells_equal, compare_cells
 from lynx.utils.text import compare_raw, edit_distance_seq
 
 
@@ -53,7 +53,7 @@ class Array(ComplexType):
         if len(self.value) != len(other.value):
             return compare_raw(len(self.value), len(other.value))
         for a, b in zip(self.value, other.value):
-            c = a.compare(b) if type(a) is type(b) else compare_raw(a.rank, b.rank)
+            c = compare_cells(a, b)
             if c != 0:
                 return c
         return 0

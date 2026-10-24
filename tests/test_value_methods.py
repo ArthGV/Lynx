@@ -1061,3 +1061,18 @@ def test_boolean_iterate():
 
 def test_void_iterate():
     assert iter_str(Void()) == []
+
+
+def test_nan_is_void_so_ordering_stays_consistent():
+    # lynx has no NaN: a Number that would be one is a Void, like `x / 0`
+    assert type(Number(float("nan"))) is Void
+    assert type(Number("nan")) is Void
+    assert type(Number(1)) is Number
+    assert type(Number(float("inf"))) is Number  # infinity is left alone for now
+
+
+def test_text_that_spells_a_non_number_counts_its_length():
+    assert Text("nan").number().value == 3
+    assert Text("inf").number().value == 3
+    assert Text("1e999").number().value == 5
+    assert Text("12").number().value == 12

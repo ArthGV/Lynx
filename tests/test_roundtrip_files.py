@@ -327,12 +327,18 @@ def test_graph_csv_refuses_nested_arrays(tmp_path):
     expect_clean_error(graph_with({"n": Array([Map()])}), tmp_path, ".csv")
 
 
-@pytest.mark.parametrize("number", [float("inf"), float("-inf"), float("nan")])
-def test_csv_and_yaml_refuse_non_finite_numbers(number, tmp_path):
+@pytest.mark.parametrize("number", [float("inf"), float("-inf")])
+def test_csv_and_yaml_refuse_infinite_numbers(number, tmp_path):
     expect_clean_error(Array([Number(number)]), tmp_path, ".csv")
     expect_clean_error(Table([("a", [Number(number)])]), tmp_path, ".csv")
     expect_clean_error(map_with((Text("k"), Number(number))), tmp_path, ".yaml")
     expect_clean_error(map_with((Number(number), Text("v"))), tmp_path, ".yaml")
+
+
+def test_nan_cannot_exist_so_there_is_nothing_to_write(tmp_path):
+    assert same(Number(float("nan")), Void())  # lynx has no NaN: it is void
+    back, _ = roundtrip(Array([Number(float("nan")), Number(1)]), tmp_path, ".csv")
+    assert same(back, Array([Void(), Number(1)]))
 
 
 def test_csv_refuses_a_table_with_no_rows(tmp_path):

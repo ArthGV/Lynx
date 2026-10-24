@@ -8,7 +8,7 @@ from lynx.errors.errors import LynxTypeError
 from lynx.types.array import Array
 from lynx.types.base_type import ComplexType, Type
 from lynx.types.simple_type import Boolean, Number, Text, Void
-from lynx.utils.keys import cells_equal, map_key, value_from_key
+from lynx.utils.keys import cells_equal, compare_cells, map_key, value_from_key
 from lynx.utils.text import compare_raw, edit_distance_sets
 
 
@@ -88,12 +88,17 @@ class Map(ComplexType):
         return value_from_key(keys[len(keys) // 2])
 
     def compare(self, other: Map) -> int:
+        # A bigger map is greater. Same size: keys in sorted order (by type,
+        # then value), then the values under them. Insertion order never
+        # matters, so this is 0 exactly when `equals` is true.
         if len(self.value) != len(other.value):
             return compare_raw(len(self.value), len(other.value))
-        for (rk, rv), (ok, ov) in zip(self.value.items(), other.value.items()):
-            if rk != ok:
-                return compare_raw(repr(rk), repr(ok))
-            c = rv.compare(ov) if type(rv) is type(ov) else compare_raw(rv.rank, ov.rank)
+        mine, theirs = sorted(self.value), sorted(other.value)
+        for key, other_key in zip(mine, theirs):
+            if key != other_key:
+                return compare_raw(key, other_key)
+        for key in mine:
+            c = compare_cells(self.value[key], other.value[key])
             if c != 0:
                 return c
         return 0

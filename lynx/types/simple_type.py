@@ -24,6 +24,14 @@ class Number(SimpleType):
     conversion = "number"
     default_value = 0
 
+    def __new__(cls, value: float | str) -> Number:  # noqa: PYI034 - may return a Void, on purpose
+        # lynx has no NaN: a result that would be one (infinity - infinity)
+        # is void, like `x / 0`. `__init__` is skipped when this returns a Void.
+        number = float(value)
+        if number != number:
+            return Void()  # type: ignore[return-value]
+        return super().__new__(cls)
+
     def __init__(self, value: float | str) -> None:
         self.value = float(value)
         if self.value % 1 == 0:
@@ -149,8 +157,9 @@ class Text(SimpleType):
             number = Number(self.value)
         except ValueError:
             return Number(len(self.value))
-        # lynx has no infinity or NaN: `inf`, `nan` and `1e999` are plain text.
-        if not math.isfinite(number.value):
+        # `nan` is void and `inf` / `1e999` are infinite: none of them is a
+        # number here, so they count as plain text and give their length.
+        if not isinstance(number, Number) or not math.isfinite(number.value):
             return Number(len(self.value))
         return number
 

@@ -11,7 +11,7 @@ from lynx.types.array import Array
 from lynx.types.base_type import ComplexType, Type
 from lynx.types.map import Map
 from lynx.types.simple_type import Boolean, Number, Text, Void
-from lynx.utils.keys import cells_equal, map_key
+from lynx.utils.keys import cells_equal, compare_cells, map_key
 from lynx.utils.text import compare_raw, edit_distance_sets
 
 
@@ -159,16 +159,21 @@ class Table(ComplexType):
         return self._from_row_indices([self.nrows // 2])
 
     def compare(self, other: Table) -> int:
+        # A bigger table is greater: more rows, then more columns. Same shape:
+        # column names in sorted order, then the cells column by column in that
+        # order. Column order never matters, so this is 0 exactly when `equals`
+        # is true.
         if self.nrows != other.nrows:
             return compare_raw(self.nrows, other.nrows)
         if len(self.columns) != len(other.columns):
             return compare_raw(len(self.columns), len(other.columns))
-        for name, column in self.columns.items():
-            other_column = other.columns.get(name)
-            if other_column is None:
-                return compare_raw(repr(name), repr(next(iter(other.columns))))
-            for a, b in zip(column, other_column):
-                c = a.compare(b) if type(a) is type(b) else compare_raw(a.rank, b.rank)
+        mine, theirs = sorted(self.columns), sorted(other.columns)
+        for name, other_name in zip(mine, theirs):
+            if name != other_name:
+                return compare_raw(name, other_name)
+        for name in mine:
+            for a, b in zip(self.columns[name], other.columns[name]):
+                c = compare_cells(a, b)
                 if c != 0:
                     return c
         return 0
@@ -249,15 +254,9 @@ class Table(ComplexType):
         column = self.columns[name]
         ordered = sorted(
             range(self.nrows),
-            key=cmp_to_key(lambda i, j: self._compare_cells(column[i], column[j])),  # type: ignore[call-overload]
+            key=cmp_to_key(lambda i, j: compare_cells(column[i], column[j])),  # type: ignore[call-overload]
         )
         return self._from_row_indices(ordered)
-
-    @staticmethod
-    def _compare_cells(a: Type, b: Type) -> int:
-        if type(a) is type(b):
-            return a.compare(b)
-        return compare_raw(a.rank, b.rank)
 
     def group_by(self, name: str, line: int | None = None) -> Map:
         if name not in self.columns:
