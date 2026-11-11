@@ -29,6 +29,7 @@ class Parser:
     def __init__(self, tokens: list[Token]) -> None:
         self.tokens = tokens
         self.current = 0
+        self.function_depth = 0  # how many function bodies enclose the statement being parsed
         self.loop_depth = 0  # how many loop bodies enclose the statement being parsed
 
     def peek(self) -> Token | None:

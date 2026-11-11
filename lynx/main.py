@@ -4,10 +4,10 @@ import argparse
 import sys
 
 from lynx import __version__
-from lynx.core.interpreter import _Return, execute
+from lynx.core.interpreter import execute
 from lynx.core.lexer import tokenize
 from lynx.core.parser import Parser
-from lynx.errors.errors import LynxError, LynxInputError, LynxInterpreterError
+from lynx.errors.errors import LynxError, LynxInterpreterError
 from lynx.runtime.environment import Environment
 
 
@@ -17,8 +17,6 @@ def run(source: str, env: Environment | None = None) -> None:
     tree = Parser(tokens).parse()
     try:
         execute(tree, env or Environment())
-    except _Return:
-        raise LynxInputError("return outside of a function")
     except LynxError:
         raise
     except Exception as error:

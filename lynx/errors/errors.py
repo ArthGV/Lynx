@@ -15,7 +15,8 @@ class LynxError(Exception):
 
     def __str__(self) -> str:
         where = f" on line {self.line}" if self.line is not None else ""
-        return f"{self.kind}{where}: {self.message}"
+        suffix = f": {self.message}" if self.message else ""
+        return f"{self.kind}{where}{suffix}"
 
 
 class LynxSyntaxError(LynxError):
@@ -31,9 +32,17 @@ class LynxTypeError(LynxError):
 
 
 class LynxInputError(LynxError):
-    """A function was called with the wrong number of arguments."""
+    """An operation got input of the wrong count or shape: too few or too many
+    function arguments, a slice replaced by a different length, too many loop
+    variables."""
 
     kind = "InputError"
+
+
+class LynxReturnError(LynxError):
+    """`>>>` used outside of a function body."""
+
+    kind = "ReturnError"
 
 
 class LynxNotImplemented(LynxError):

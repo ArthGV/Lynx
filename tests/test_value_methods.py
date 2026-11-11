@@ -1,8 +1,8 @@
 """Unit tests for value methods not exposed as langauge keywords.
 
-`middle`, `power`, `root`, and `not_` are implemented on every value type but
-are not reachable from `.lx` programs — there is no keyword for them. These are
-tested here directly against the values module.
+`middle`, `power`, `root`, and `not_` are implemented on every value type and
+have keywords, but these unit tests call the methods directly on the values
+module so each type's behaviour is pinned without going through the parser.
 """
 
 from lynx.errors.errors import LynxError, LynxNotImplemented, LynxTypeError

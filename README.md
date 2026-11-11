@@ -333,8 +333,6 @@ language rather than in glue code.
 - **Native machine learning** — training and running models in the language itself, with syntax
   that reads like the rest of lynx instead of a model-serving wrapper.
 - **Imports / multi-file modules** — real projects and shared libraries beyond a single file.
-- **Error handling (`try`/`expect`)** — programs that catch and recover instead of aborting
-  on the first runtime error.
 
 Nothing here is set in stone. If you build one of them (or decide a planned one is the wrong
 direction), your voice carries — this is early software.
@@ -361,19 +359,21 @@ golden test folders answer most questions.
 
 ```
 source text → tokenize()  → Parser(tokens).parse()  → execute()/evaluate()
-               lexer.py      core/parser/                core/interpreter/
+               core/lexer.py  core/parser/              core/interpreter/
 ```
 
 - `lynx/core/grammar.py` — the single source of truth: keywords, symbols, literals, and operator
   precedence. The lexer, parser, and error messages all follow from it.
+- `lynx/core/lexer.py`, `lynx/core/nodes.py` — tokens (indentation-aware) and the AST node classes.
 - `lynx/core/parser/` and `lynx/core/interpreter/` — syntax and semantics, split into statements and
   expressions.
-- `lynx/types/` — the value types: `Number`, `Text`, `Boolean`, `Void`, plus `Array` (`array.py`),
-  `Map` (`map.py`), and `Table` (`table.py`).
-- `lynx/runtime/` — how pairs of values resolve (including cross-type operations) and function
-  values.
-- `lynx/core/files.py` — `read`/`write` for `.txt`, `.csv`, and `.yaml`.
-- `editors/vscode/` — syntax highlighting, generated from `grammar.py`.
+- `lynx/types/` — the value types: `Number`, `Text`, `Boolean`, `Void` (`simple_type.py`), plus
+  `Array` (`array.py`), `Map` (`map.py`), `Table` (`table.py`) and `Graph` (`graph.py`).
+- `lynx/runtime/` — how pairs of values resolve (including cross-type operations), variable scopes,
+  and function values.
+- `lynx/core/files.py` and `lynx/core/formats/` — `read`/`write` for `.txt`, `.csv`, and `.yaml`.
+- `lynx/errors/` — the `LynxError` family; `lynx/utils/` — helpers shared by the types and file formats.
+- `docs/adr/` — design decisions; `editors/vscode/` — syntax highlighting, generated from `grammar.py`.
 
 ## License
 

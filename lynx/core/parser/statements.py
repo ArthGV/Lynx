@@ -36,7 +36,7 @@ from lynx.core.nodes import (
     Write,
 )
 from lynx.core.parser._base import EOF, Parser
-from lynx.errors.errors import LynxInputError, LynxSyntaxError
+from lynx.errors.errors import LynxInputError, LynxReturnError, LynxSyntaxError
 
 
 class StatementMixin(Parser):
@@ -120,6 +120,8 @@ class StatementMixin(Parser):
 
     def parse_return(self) -> Return:
         token = self.match("RETURN")
+        if self.function_depth == 0:
+            raise LynxReturnError("return outside of a function", token.line)
         # Comma-separated right-hand side, so `>>> a, b` returns an array.
         return Return(self.parse_assign_rhs(), token.line)
 
@@ -199,10 +201,12 @@ class StatementMixin(Parser):
         # A function body starts outside any loop: `stop`/`skip` can't reach
         # a loop in the caller.
         outer_depth, self.loop_depth = self.loop_depth, 0
+        self.function_depth += 1
         try:
             body = self.parse_body()
         finally:
             self.loop_depth = outer_depth
+            self.function_depth -= 1
         return Function(name, params, body)
 
     def parse_assignment(self) -> Any:

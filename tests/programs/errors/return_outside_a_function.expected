@@ -1,2 +1,2 @@
 // return outside a function errors
-InputError: return outside of a function
+ReturnError on line 1: return outside of a function
